@@ -1,7 +1,7 @@
 {
   "name": "depay-payment-routing",
   "moduleName": "PaymentRouting",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "JavaScript library to scan crypto wallets for liquefiable assets and calculate most cost-effective means of payment.",
   "main": "dist/cjs/index.js",
   "module": "dist/es/index.js",
