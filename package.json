@@ -36,9 +36,9 @@
   "private": false,
   "dependencies": {
     "depay-blockchain-constants": "^1.4.0",
-    "depay-blockchain-token": "^1.2.0",
+    "depay-blockchain-token": "^1.5.1",
     "depay-crypto-wallets": "^2.4.0",
-    "depay-decentralized-exchanges": "^1.0.1"
+    "depay-decentralized-exchanges": "^1.1.1"
   },
   "peerDependencies": {},
   "engines": {
@@ -56,7 +56,8 @@
     "babel-preset-env": "^1.7.0",
     "babel-preset-react": "^6.24.1",
     "cypress": "^6.2.1",
-    "depay-web3mock": "^4.1.0",
+    "depay-blockchain-client": "^2.3.1",
+    "depay-web3mock": "^4.3.2",
     "eslint": "^7.15.0",
     "eslint-config-prettier": "^7.0.0",
     "eslint-loader": "^4.0.2",
