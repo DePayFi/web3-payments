@@ -2687,10 +2687,10 @@ depay-blockchain-token@^1.5.2:
     depay-crypto-wallets "^2.4.0"
     ethers "^5.3.1"
 
-depay-blockchain-transaction@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/depay-blockchain-transaction/-/depay-blockchain-transaction-1.0.0.tgz#43eb91eed798a0a65e65ae5d42c40f016a838ff0"
-  integrity sha512-2whoEsEjPINQI06UBIOacmzpkyrdwSjcBLRpQTMoyqwaI8fQyjkaG+ZG5XYiPrmwIsUG/WE+CPktDYr49IhzOg==
+depay-blockchain-transaction@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/depay-blockchain-transaction/-/depay-blockchain-transaction-1.0.1.tgz#675f56e5198caa7e7463049cb4403bee24e0d0a1"
+  integrity sha512-9sfX4VRuSTITVltC/TYOLXyp0QmxAr+wyVVMlqDIkLOXuXRFlfKbSYkx3EyLcv5WYfh08EtNx++6Pjv2Gjentg==
   dependencies:
     depay-blockchain-constants "^1.4.0"
     ethers "^5.3.1"
@@ -2707,15 +2707,15 @@ depay-crypto-wallets@^2.4.0:
   dependencies:
     depay-blockchains "^1.0.1"
 
-depay-decentralized-exchanges@^1.1.3:
-  version "1.1.3"
-  resolved "https://registry.yarnpkg.com/depay-decentralized-exchanges/-/depay-decentralized-exchanges-1.1.3.tgz#6905d1480a2d262cdd2d69b05b9a671d1c45b84e"
-  integrity sha512-nLgQ/hJBo/cG2BxagARjbPdNtD1qiTdX2i3mcxYnf4eXA2O5NbllZFdBGoq0zbC9A1sYckfUMCCAa/poDLSwKg==
+depay-decentralized-exchanges@^1.1.4:
+  version "1.1.4"
+  resolved "https://registry.yarnpkg.com/depay-decentralized-exchanges/-/depay-decentralized-exchanges-1.1.4.tgz#51a385cd90cc0e8c297045aabb74c15ce2f8324e"
+  integrity sha512-RLhjLHUxtL5DCI4znvKVlhE+d5XtNz6tyCoti/hTehy7g0/PXIonHOkryrAeFaXEkShIPAxgiWNZZDmg7PAl7A==
   dependencies:
     depay-blockchain-client "^2.3.2"
     depay-blockchain-constants "^1.4.0"
     depay-blockchain-token "^1.5.2"
-    depay-blockchain-transaction "^1.0.0"
+    depay-blockchain-transaction "^1.0.1"
 
 depay-web3mock@^4.3.2:
   version "4.3.2"
