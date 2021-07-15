@@ -1,3 +1,5 @@
+
+(function(l, r) { if (!l || l.getElementById('livereloadscript')) return; r = l.createElement('script'); r.async = 1; r.src = '//' + (self.location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1'; r.id = 'livereloadscript'; l.getElementsByTagName('head')[0].appendChild(r) })(self.document);
 import CONSTANTS from 'depay-blockchain-constants';
 import { setApiKey as setApiKey$1, getWallet } from 'depay-crypto-wallets';
 import { route as route$1 } from 'depay-decentralized-exchanges';

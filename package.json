@@ -36,9 +36,9 @@
   "private": false,
   "dependencies": {
     "depay-blockchain-constants": "^1.4.0",
-    "depay-blockchain-token": "^1.5.2",
+    "depay-blockchain-token": "^1.5.3",
     "depay-crypto-wallets": "^2.4.0",
-    "depay-decentralized-exchanges": "^1.1.4"
+    "depay-decentralized-exchanges": "^1.1.5"
   },
   "peerDependencies": {},
   "engines": {
