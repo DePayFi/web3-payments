@@ -1,7 +1,7 @@
 {
   "name": "depay-payment-routing",
   "moduleName": "PaymentRouting",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "JavaScript library to scan crypto wallets for liquefiable assets and calculate most cost-effective means of payment.",
   "main": "dist/cjs/index.js",
   "module": "dist/es/index.js",
@@ -38,7 +38,7 @@
     "depay-blockchain-constants": "^1.4.0",
     "depay-blockchain-token": "^1.5.2",
     "depay-crypto-wallets": "^2.4.0",
-    "depay-decentralized-exchanges": "^1.1.2"
+    "depay-decentralized-exchanges": "^1.1.3"
   },
   "peerDependencies": {},
   "engines": {
