@@ -86,7 +86,7 @@ let addExchangeRoutes = async ({ routes, amount, from, to }) => {
       return depayDecentralizedExchanges.route({
         tokenIn: route.fromToken.address,
         tokenOut: route.toToken.address,
-        amountOut: amount,
+        amountOutMin: amount,
         from,
         to,
       })

@@ -71,7 +71,7 @@ let addExchangeRoutes = async ({ routes, amount, from, to }) => {
       return exchangeRoute({
         tokenIn: route.fromToken.address,
         tokenOut: route.toToken.address,
-        amountOut: amount,
+        amountOutMin: amount,
         from,
         to,
       })
