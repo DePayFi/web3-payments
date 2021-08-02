@@ -1,24 +1,24 @@
-import { ERC20 } from 'depay-blockchain-token'
-import { mock } from 'depay-web3mock'
+import { Token } from 'depay-web3-tokens'
+import { mock } from 'depay-web3-mock'
 
-let mockDecimals = ({ blockchain, token, decimals })=>{
+let mockDecimals = ({ blockchain, api, token, decimals })=>{
   return mock({
-    blockchain: 'ethereum',
+    blockchain,
     call: {
       to: token,
-      api: ERC20,
+      api,
       method: 'decimals',
       return: decimals
     }
   })
 }
 
-let mockBalance = ({ blockchain, token, account, balance })=>{
+let mockBalance = ({ blockchain, api, token, account, balance })=>{
   mock({
     blockchain,
     call: {
       to: token,
-      api: ERC20,
+      api,
       method: 'balanceOf',
       params: account,
       return: balance
@@ -26,11 +26,11 @@ let mockBalance = ({ blockchain, token, account, balance })=>{
   })
 }
 
-let mockNotTransferable = ({ blockchain, token })=>{
+let mockNotTransferable = ({ blockchain, api, token })=>{
   mock({
-    blockchain: 'ethereum',
+    blockchain,
     estimate: {
-      api: ERC20,
+      api,
       to: token,
       method: 'transfer',
       return: Error('Not transferable')
@@ -38,12 +38,12 @@ let mockNotTransferable = ({ blockchain, token })=>{
   })
 }
 
-let mockAllowance = ({ blockchain, token, account, spender, allowance })=>{
+let mockAllowance = ({ blockchain, api, token, account, spender, allowance })=>{
   mock({
     blockchain,
     call: {
       to: token,
-      api: ERC20,
+      api,
       method: 'allowance',
       params: [account, spender],
       return: allowance

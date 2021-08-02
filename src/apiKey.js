@@ -1,4 +1,4 @@
-import { setApiKey as setCryptoWalletApiKey } from 'depay-crypto-wallets'
+import { setApiKey as setCryptoWalletApiKey } from 'depay-web3-wallets'
 
 let apiKey = undefined
 
