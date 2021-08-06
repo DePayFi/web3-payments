@@ -1,8 +1,9 @@
 import fetchMock from 'fetch-mock'
+import plugins from 'src/plugins'
+import routers from 'src/routers'
 import { CONSTANTS } from 'depay-web3-constants'
-import { DePayRouterV1 } from 'src/constants'
 import { ethers } from 'ethers'
-import { mock, resetMocks } from 'depay-web3-mock'
+import { mock, resetMocks, anything } from 'depay-web3-mock'
 import { mockAssets } from 'tests/mocks/DePayPRO'
 import { mockDecimals, mockBalance, mockNotTransferable, mockAllowance } from 'tests/mocks/tokens'
 import { mockPair, mockAmounts } from 'tests/mocks/Pancakeswap'
@@ -84,8 +85,8 @@ describe('route', ()=> {
     mockBalance({ blockchain, api: Token[blockchain].BEP20, token: CAKE, account: fromAddress, balance: CAKEBalanceBN })
     mockBalance({ blockchain, api: Token[blockchain].BEP20, token: BUSD, account: fromAddress, balance: BUSDBalanceBN })
 
-    mockAllowance({ blockchain, api: Token[blockchain].BEP20, token: CAKE, account: fromAddress, spender: DePayRouterV1, allowance: MAXINTBN })
-    mockAllowance({ blockchain, api: Token[blockchain].BEP20, token: BUSD, account: fromAddress, spender: DePayRouterV1, allowance: MAXINTBN })
+    mockAllowance({ blockchain, api: Token[blockchain].BEP20, token: CAKE, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
+    mockAllowance({ blockchain, api: Token[blockchain].BEP20, token: BUSD, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
 
     mock({ blockchain, balance: { for: fromAddress, return: bnbBalanceBN } })
   })
@@ -100,13 +101,13 @@ describe('route', ()=> {
       amount: tokenAmountOut
     })
 
-    console.log('routes', routes)
-
-
     // BUSD (direct transfer)
     expect(routes[0].blockchain).toEqual(blockchain)
     expect(routes[0].fromToken.address).toEqual(BUSD)
     expect(routes[0].toToken.address).toEqual(BUSD)
+    expect(routes[0].toAmount).toEqual(tokenAmountOutBN)
+    expect(routes[0].fromAddress).toEqual(fromAddress)
+    expect(routes[0].toAddress).toEqual(toAddress)
     expect(routes[0].fromBalance).toEqual(BUSDBalanceBN)
     expect(routes[0].exchangeRoutes).toEqual([])
 
@@ -114,10 +115,13 @@ describe('route', ()=> {
     expect(routes[1].blockchain).toEqual(blockchain)
     expect(routes[1].fromToken.address).toEqual(BNB)
     expect(routes[1].toToken.address).toEqual(BUSD)
+    expect(routes[1].toAmount).toEqual(tokenAmountOutBN)
+    expect(routes[1].fromAddress).toEqual(fromAddress)
+    expect(routes[1].toAddress).toEqual(toAddress)
     expect(routes[1].fromBalance).toEqual(bnbBalanceBN)
     expect(routes[1].exchangeRoutes[0].tokenIn).toEqual(BNB)
     expect(routes[1].exchangeRoutes[0].tokenOut).toEqual(BUSD)
-    expect(routes[1].exchangeRoutes[0].path).toEqual([BNB, BUSD])
+    expect(routes[1].exchangeRoutes[0].path).toEqual([BNB, WBNB, BUSD])
     expect(routes[1].exchangeRoutes[0].amountIn).toEqual(WBNBAmountInBN)
     expect(routes[1].exchangeRoutes[0].amountOutMin).toEqual(tokenAmountOutBN)
     expect(routes[1].exchangeRoutes[0].fromAddress).toEqual(fromAddress)
@@ -132,6 +136,9 @@ describe('route', ()=> {
     expect(routes[2].blockchain).toEqual(blockchain)
     expect(routes[2].fromToken.address).toEqual(CAKE)
     expect(routes[2].toToken.address).toEqual(BUSD)
+    expect(routes[2].toAmount).toEqual(tokenAmountOutBN)
+    expect(routes[2].fromAddress).toEqual(fromAddress)
+    expect(routes[2].toAddress).toEqual(toAddress)
     expect(routes[2].fromBalance).toEqual(CAKEBalanceBN)
     expect(routes[2].exchangeRoutes[0].tokenIn).toEqual(CAKE)
     expect(routes[2].exchangeRoutes[0].tokenOut).toEqual(BUSD)
@@ -250,8 +257,8 @@ describe('route', ()=> {
     mockAmounts({ method: 'getAmountsIn', params: [tokenAmountOutBN, [USDC, WBNB, BUSD]], amounts: [USDCAmountInBN, WBNBAmountInBN, tokenAmountOutBN] })
     mockBalance({ blockchain, api: Token[blockchain].BEP20, token: USDC, account: fromAddress, balance: ethers.BigNumber.from('310000000000000000')})
 
-    mockAllowance({ blockchain, api: Token[blockchain].BEP20, token: USDC, account: fromAddress, spender: DePayRouterV1, allowance: MAXINTBN })
-    mockAllowance({ blockchain, api: Token[blockchain].BEP20, token: CAKE, account: fromAddress, spender: DePayRouterV1, allowance: ethers.BigNumber.from('0') })
+    mockAllowance({ blockchain, api: Token[blockchain].BEP20, token: USDC, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
+    mockAllowance({ blockchain, api: Token[blockchain].BEP20, token: CAKE, account: fromAddress, spender: routers[blockchain].address, allowance: ethers.BigNumber.from('0') })
 
     let routes = await route({
       fromAddress,
@@ -264,4 +271,202 @@ describe('route', ()=> {
     expect(routes.map((route)=>route.fromToken.address)).toEqual([BUSD, BNB, USDC, CAKE])
   })
 
+  describe('transaction', ()=> {
+
+    it('performs direct TOKEN payments if it is the best option', async ()=>{
+
+      let routeMock = mock({
+        blockchain,
+        transaction: {
+          from: fromAddress,
+          to: routers[blockchain].address,
+          api: routers[blockchain].api,
+          method: 'route',
+          params: {
+            path: [BUSD],
+            amounts: [tokenAmountOutBN],
+            addresses: [fromAddress, toAddress],
+            plugins: [plugins[blockchain].payment],
+            data: []  
+          },
+          value: 0
+        }
+      })
+       
+      let routes = await route({
+        fromAddress,
+        toAddress,
+        blockchain,
+        token: toToken,
+        amount: tokenAmountOut
+      })
+
+      await routes[0].transaction.submit()
+      expect(routeMock).toHaveBeenCalled()
+    })
+
+    it('performs BNB to TOKEN swap payments if it is the best option', async ()=>{
+
+      mockBalance({ blockchain, api: Token[blockchain].BEP20, token: BUSD, account: fromAddress, balance: ethers.BigNumber.from('0') })
+
+      let routeMock = mock({
+        blockchain,
+        transaction: {
+          from: fromAddress,
+          to: routers[blockchain].address,
+          api: routers[blockchain].api,
+          method: 'route',
+          params: {
+            path: [CONSTANTS[blockchain].NATIVE, CONSTANTS[blockchain].WRAPPED, BUSD],
+            amounts: [WBNBAmountInBN, tokenAmountOutBN, anything],
+            addresses: [fromAddress, toAddress],
+            plugins: [plugins[blockchain].pancakeswap, plugins[blockchain].payment],
+            data: []  
+          },
+          value: 0
+        }
+      })
+
+      let routes = await route({
+        fromAddress,
+        toAddress,
+        blockchain,
+        token: toToken,
+        amount: tokenAmountOut
+      })
+
+      await routes[0].transaction.submit()
+      expect(routeMock).toHaveBeenCalled()
+    })
+
+    it('performs TOKEN_A to TOKEN_B swap payments if it is the best option', async ()=>{
+
+      mockBalance({ blockchain, api: Token[blockchain].BEP20, token: BUSD, account: fromAddress, balance: ethers.BigNumber.from('0') })
+      mock({
+        blockchain,
+        balance: {
+          for: fromAddress,
+          return: '0'
+        }
+      })
+
+      let routeMock = mock({
+        blockchain,
+        transaction: {
+          from: fromAddress,
+          to: routers[blockchain].address,
+          api: routers[blockchain].api,
+          method: 'route',
+          params: {
+            path: [CAKE, CONSTANTS[blockchain].WRAPPED, BUSD],
+            amounts: [CAKEAmountInBN, tokenAmountOutBN, anything],
+            addresses: [fromAddress, toAddress],
+            plugins: [plugins[blockchain].pancakeswap, plugins[blockchain].payment],
+            data: []  
+          },
+          value: 0
+        }
+      })
+
+      let routes = await route({
+        fromAddress,
+        toAddress,
+        blockchain,
+        token: toToken,
+        amount: tokenAmountOut
+      })
+
+      await routes[0].transaction.submit()
+      expect(routeMock).toHaveBeenCalled()
+    })
+
+    describe('NATIVE token payments', ()=> {
+
+      beforeEach(()=> {
+        toToken = CONSTANTS[blockchain].NATIVE        
+      })
+
+      it('performs direct BNB payments if it is the best option', async ()=>{
+
+        mock({
+          blockchain,
+          balance: {
+            for: fromAddress,
+            return: tokenAmountOutBN.toString()
+          }
+        })
+
+        let routeMock = mock({
+          blockchain,
+          transaction: {
+            from: fromAddress,
+            to: routers[blockchain].address,
+            api: routers[blockchain].api,
+            method: 'route',
+            params: {
+              path: [CONSTANTS[blockchain].NATIVE],
+              amounts: [tokenAmountOutBN],
+              addresses: [fromAddress, toAddress],
+              plugins: [plugins[blockchain].payment],
+              data: []  
+            },
+            value: tokenAmountOutBN
+          }
+        })
+
+        let routes = await route({
+          fromAddress,
+          toAddress,
+          blockchain,
+          token: toToken,
+          amount: tokenAmountOut
+        })
+
+        await routes[0].transaction.submit()
+        expect(routeMock).toHaveBeenCalled()
+      })
+
+      it('performs TOKEN to ETH swap payments if it is the best option', async ()=>{
+        
+        mock({
+          blockchain,
+          balance: {
+            for: fromAddress,
+            return: '0'
+          }
+        })
+
+        mockAmounts({ method: 'getAmountsIn', params: [tokenAmountOutBN, [CAKE, WBNB]], amounts: [CAKEAmountInBN, tokenAmountOutBN] })
+
+        let routeMock = mock({
+          blockchain,
+          transaction: {
+            from: fromAddress,
+            to: routers[blockchain].address,
+            api: routers[blockchain].api,
+            method: 'route',
+            params: {
+              path: [CAKE, CONSTANTS[blockchain].WRAPPED, CONSTANTS[blockchain].NATIVE],
+              amounts: [CAKEAmountInBN, tokenAmountOutBN, anything],
+              addresses: [fromAddress, toAddress],
+              plugins: [plugins[blockchain].pancakeswap, plugins[blockchain].payment],
+              data: []  
+            },
+            value: 0
+          }
+        })
+
+        let routes = await route({
+          fromAddress,
+          toAddress,
+          blockchain,
+          token: toToken,
+          amount: tokenAmountOut
+        })
+
+        await routes[0].transaction.submit()
+        expect(routeMock).toHaveBeenCalled()
+      })
+    })
+  })
 })

@@ -1,17 +1,22 @@
+import routers from './routers'
 import { CONSTANTS } from 'depay-web3-constants'
-import { DePayRouterV1 } from './constants'
 import { getApiKey } from './apiKey'
 import { getWallet } from 'depay-web3-wallets'
 import { route as exchangeRoute } from 'depay-web3-exchanges'
+import { routeToTransaction } from './transaction'
 import { Token } from 'depay-web3-tokens'
 
 class PaymentRoute {
-  constructor({ blockchain, fromToken, toToken }) {
+  constructor({ blockchain, fromToken, toToken, toAmount, fromAddress, toAddress }) {
     this.blockchain = blockchain
     this.fromToken = fromToken
     this.fromBalance = 0
     this.toToken = toToken
+    this.toAmount = toAmount
+    this.fromAddress = fromAddress
+    this.toAddress = toAddress
     this.exchangeRoutes = []
+    this.transaction = undefined
   }
 }
 
@@ -23,13 +28,14 @@ async function route({ blockchain, fromAddress, toAddress, token, amount }) {
     .assets(blockchain)
     .then(assetsToTokens)
     .then(filterTransferable)
-    .then((tokens) => convertToRoutes({ tokens, toToken }))
+    .then((tokens) => convertToRoutes({ tokens, toToken, toAmount: amountBN, fromAddress, toAddress }))
     .then((routes) => addExchangeRoutes({ blockchain, routes, amount, fromAddress, toAddress }))
     .then((routes) => filterNotRoutable({ routes, token }))
     .then((routes) => addBalances({ routes, fromAddress }))
     .then((routes) => filterInsufficientBalance({ routes, token, amountBN }))
-    .then(addApprovalStatus)
+    .then((routes) => addApprovalStatus({ routes, blockchain }))
     .then((routes) => sortPaymentRoutes({ routes, token }))
+    .then(addTransactions)
 
   return paymentRoutes
 }
@@ -53,12 +59,15 @@ let filterTransferable = async (tokens) => {
   )
 }
 
-let convertToRoutes = ({ tokens, toToken }) => {
+let convertToRoutes = ({ tokens, toToken, toAmount, fromAddress, toAddress }) => {
   return tokens.map((token) => {
     return new PaymentRoute({
       blockchain: toToken.blockchain,
       fromToken: token,
-      toToken: toToken,
+      toToken,
+      toAmount,
+      fromAddress,
+      toAddress
     })
   })
 }
@@ -86,7 +95,8 @@ let addExchangeRoutes = async ({ blockchain, routes, amount, fromAddress, toAddr
 let filterNotRoutable = ({ routes, token }) => {
   return routes.filter((route) => {
     return (
-      route.exchangeRoutes.length != 0 || route.fromToken.address == token // direct transfer always possible
+      route.exchangeRoutes.length != 0 ||
+      route.fromToken.address == token // direct transfer always possible
     )
   })
 }
@@ -101,8 +111,10 @@ let filterInsufficientBalance = ({ routes, token, amountBN }) => {
   })
 }
 
-let addApprovalStatus = (routes) => {
-  return Promise.all(routes.map((route) => route.fromToken.allowance(DePayRouterV1))).then(
+let addApprovalStatus = ({ routes, blockchain }) => {
+  return Promise.all(routes.map(
+    (route) => route.fromToken.allowance(routers[blockchain].address)
+  )).then(
     (allowances) => {
       routes.forEach((route, index) => {
         routes[index].approvalRequired = route.fromBalance.lt(allowances[index])
@@ -156,6 +168,13 @@ let sortPaymentRoutes = ({ routes, token }) => {
     }
 
     return equal
+  })
+}
+
+let addTransactions = (routes) => {
+  return routes.map((route)=>{
+    route.transaction = routeToTransaction({ paymentRoute: route })
+    return route
   })
 }
 

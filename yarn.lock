@@ -2261,10 +2261,10 @@ depay-web3-constants@^2.0.0:
   resolved "https://registry.yarnpkg.com/depay-web3-constants/-/depay-web3-constants-2.0.0.tgz#4688642fa40a7287deeddb360d615ba63188f690"
   integrity sha512-0uOxx/zk2cPWZ5HXcCmuFQJrBuJe3mbmqKL9qQ4DPfbdvKd7I3KuKP24siWXyiYH6IYHUFAMFqMWRi8L0HjUUw==
 
-depay-web3-exchanges@^2.0.3:
-  version "2.0.3"
-  resolved "https://registry.yarnpkg.com/depay-web3-exchanges/-/depay-web3-exchanges-2.0.3.tgz#be7a18fc07558d0f191a2f40285a0655ae1f3070"
-  integrity sha512-ClYQBbauZGRUeUQTYenKz6Nga36KOWSQb9rykY8uutvtqeVfZHBS65ncYI0+4yM+6uCNqMds7U4J2oM8/B8WWQ==
+depay-web3-exchanges@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/depay-web3-exchanges/-/depay-web3-exchanges-2.1.0.tgz#5996f7c5aab1edd2dce6683df7bdb2f6a78d6339"
+  integrity sha512-2hoBS1G0cGcrk/Z3kA+ewEaPwMKSFOrSR+UP8K+35mL8U+kVz2aYzykk5s7HE+Su/AfuPuX/29u4kdzNGo2lPQ==
   dependencies:
     depay-web3-client "^3.0.3"
     depay-web3-constants "^2.0.0"
