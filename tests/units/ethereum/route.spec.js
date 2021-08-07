@@ -8,7 +8,7 @@ import { mockAssets } from 'tests/mocks/DePayPRO'
 import { mockDecimals, mockBalance, mockNotTransferable, mockAllowance } from 'tests/mocks/tokens'
 import { mockPair, mockAmounts } from 'tests/mocks/UniswapV2'
 import { resetCache } from 'depay-web3-client'
-import { route, setApiKey } from 'src'
+import { route } from 'src'
 import { Token } from 'depay-web3-tokens'
 
 describe('route', ()=> {
@@ -19,6 +19,7 @@ describe('route', ()=> {
   afterEach(resetMocks)
 
   let blockchain = 'ethereum'
+  let apiKey = 'Test123'
   let DAI = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
   let DEPAY = "0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb"
   let WETH = CONSTANTS[blockchain].WRAPPED
@@ -51,7 +52,6 @@ describe('route', ()=> {
   })
 
   beforeEach(()=>{
-    setApiKey('Test123')
     mock(blockchain)
     mockAssets(blockchain, [
       {
@@ -98,7 +98,8 @@ describe('route', ()=> {
       toAddress,
       blockchain,
       token: toToken,
-      amount: tokenAmountOut
+      amount: tokenAmountOut,
+      apiKey
     })
 
     // DEPAY (direct transfer)
@@ -162,7 +163,8 @@ describe('route', ()=> {
       toAddress,
       blockchain,
       token: toToken,
-      amount: tokenAmountOut
+      amount: tokenAmountOut,
+      apiKey
     })
 
     expect(routes.map((route)=>route.fromToken.address)).toEqual([DEPAY, ETH])
@@ -176,7 +178,8 @@ describe('route', ()=> {
       toAddress,
       blockchain,
       token: toToken,
-      amount: tokenAmountOut
+      amount: tokenAmountOut,
+      apiKey
     })
 
     expect(routes.map((route)=>route.fromToken.address)).toEqual([DEPAY, ETH])
@@ -190,7 +193,8 @@ describe('route', ()=> {
       toAddress,
       blockchain,
       token: toToken,
-      amount: tokenAmountOut
+      amount: tokenAmountOut,
+      apiKey
     })
 
     expect(routes.map((route)=>route.fromToken.address)).toEqual([DEPAY, ETH])    
@@ -204,7 +208,8 @@ describe('route', ()=> {
       toAddress,
       blockchain,
       token: toToken,
-      amount: tokenAmountOut
+      amount: tokenAmountOut,
+      apiKey
     })
 
     expect(routes.map((route)=>route.fromToken.address)).toEqual([DEPAY, DAI])
@@ -216,7 +221,8 @@ describe('route', ()=> {
       toAddress,
       blockchain,
       token: toToken,
-      amount: tokenAmountOut
+      amount: tokenAmountOut,
+      apiKey
     })
 
     expect(routes.map((route)=>route.fromToken.address)).toEqual([DEPAY, ETH, DAI])
@@ -265,7 +271,8 @@ describe('route', ()=> {
       toAddress,
       blockchain,
       token: toToken,
-      amount: tokenAmountOut
+      amount: tokenAmountOut,
+      apiKey
     })
 
     expect(routes.map((route)=>route.fromToken.address)).toEqual([DEPAY, ETH, USDC, DAI])
@@ -298,7 +305,8 @@ describe('route', ()=> {
         toAddress,
         blockchain,
         token: toToken,
-        amount: tokenAmountOut
+        amount: tokenAmountOut,
+        apiKey
       })
 
       await routes[0].transaction.submit()
@@ -332,7 +340,8 @@ describe('route', ()=> {
         toAddress,
         blockchain,
         token: toToken,
-        amount: tokenAmountOut
+        amount: tokenAmountOut,
+        apiKey
       })
 
       await routes[0].transaction.submit()
@@ -373,7 +382,8 @@ describe('route', ()=> {
         toAddress,
         blockchain,
         token: toToken,
-        amount: tokenAmountOut
+        amount: tokenAmountOut,
+        apiKey
       })
 
       await routes[0].transaction.submit()
@@ -419,7 +429,8 @@ describe('route', ()=> {
           toAddress,
           blockchain,
           token: toToken,
-          amount: tokenAmountOut
+          amount: tokenAmountOut,
+          apiKey
         })
 
         await routes[0].transaction.submit()
@@ -461,7 +472,8 @@ describe('route', ()=> {
           toAddress,
           blockchain,
           token: toToken,
-          amount: tokenAmountOut
+          amount: tokenAmountOut,
+          apiKey
         })
 
         await routes[0].transaction.submit()

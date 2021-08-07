@@ -11,16 +11,17 @@ npm install --save depay-web3-payments
 ```
 
 ```javascript
-import { route, setApiKey } from 'depay-web3-payments'
+import { route } from 'depay-web3-payments'
 
-setApiKey('YOUR-PERSONAL-API-KEY')
+This requires you to have a [DePay PRO apiKey](https://depay.fi/documentation/api#introduction).
 
 let paymentRoutes = route({
   blockchain: 'ethereum',
   token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
   amount: 20,
   fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
-  toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
+  toAddress: '0xb0252f13850a4823706607524de0b146820F2240',
+  apiKey: 'YOUR-API-KEY'
 })
 
 ///
@@ -33,16 +34,15 @@ let paymentRoutes = route({
 Routes payment and returns payment routes:
 
 ```javascript
-import { route, setApiKey } from 'depay-web3-payments'
-
-setApiKey('YOUR-PERSONAL-API-KEY')
+import { route } from 'depay-web3-payments'
 
 let paymentRoutes = route({
   blockchain: 'ethereum',
   token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
   amount: 20,
   fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
-  toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
+  toAddress: '0xb0252f13850a4823706607524de0b146820F2240',
+  apiKey: 'YOUR-API-KEY'
 })
 ```
 

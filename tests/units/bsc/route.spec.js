@@ -8,7 +8,7 @@ import { mockAssets } from 'tests/mocks/DePayPRO'
 import { mockDecimals, mockBalance, mockNotTransferable, mockAllowance } from 'tests/mocks/tokens'
 import { mockPair, mockAmounts } from 'tests/mocks/Pancakeswap'
 import { resetCache } from 'depay-web3-client'
-import { route, setApiKey } from 'src'
+import { route } from 'src'
 import { Token } from 'depay-web3-tokens'
 
 describe('route', ()=> {
@@ -19,6 +19,7 @@ describe('route', ()=> {
   afterEach(resetMocks)
 
   let blockchain = 'bsc'
+  let apiKey = 'Test123'
   let CAKE = "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82"
   let BUSD = "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56"
   let WBNB = CONSTANTS[blockchain].WRAPPED
@@ -51,7 +52,6 @@ describe('route', ()=> {
   })
 
   beforeEach(()=>{
-    setApiKey('Test123')
     mock(blockchain)
     mockAssets(blockchain, [
       {
@@ -98,7 +98,8 @@ describe('route', ()=> {
       toAddress,
       blockchain,
       token: toToken,
-      amount: tokenAmountOut
+      amount: tokenAmountOut,
+      apiKey
     })
 
     // BUSD (direct transfer)
@@ -162,7 +163,8 @@ describe('route', ()=> {
       toAddress,
       blockchain,
       token: toToken,
-      amount: tokenAmountOut
+      amount: tokenAmountOut,
+      apiKey
     })
 
     expect(routes.map((route)=>route.fromToken.address)).toEqual([BUSD, BNB])
@@ -176,7 +178,8 @@ describe('route', ()=> {
       toAddress,
       blockchain,
       token: toToken,
-      amount: tokenAmountOut
+      amount: tokenAmountOut,
+      apiKey
     })
 
     expect(routes.map((route)=>route.fromToken.address)).toEqual([BUSD, BNB])
@@ -190,7 +193,8 @@ describe('route', ()=> {
       toAddress,
       blockchain,
       token: toToken,
-      amount: tokenAmountOut
+      amount: tokenAmountOut,
+      apiKey
     })
 
     expect(routes.map((route)=>route.fromToken.address)).toEqual([BUSD, BNB])    
@@ -204,7 +208,8 @@ describe('route', ()=> {
       toAddress,
       blockchain,
       token: toToken,
-      amount: tokenAmountOut
+      amount: tokenAmountOut,
+      apiKey
     })
 
     expect(routes.map((route)=>route.fromToken.address)).toEqual([BUSD, CAKE])
@@ -216,7 +221,8 @@ describe('route', ()=> {
       toAddress,
       blockchain,
       token: toToken,
-      amount: tokenAmountOut
+      amount: tokenAmountOut,
+      apiKey
     })
 
     expect(routes.map((route)=>route.fromToken.address)).toEqual([BUSD, BNB, CAKE])
@@ -265,7 +271,8 @@ describe('route', ()=> {
       toAddress,
       blockchain,
       token: toToken,
-      amount: tokenAmountOut
+      amount: tokenAmountOut,
+      apiKey
     })
 
     expect(routes.map((route)=>route.fromToken.address)).toEqual([BUSD, BNB, USDC, CAKE])
@@ -298,7 +305,8 @@ describe('route', ()=> {
         toAddress,
         blockchain,
         token: toToken,
-        amount: tokenAmountOut
+        amount: tokenAmountOut,
+        apiKey
       })
 
       await routes[0].transaction.submit()
@@ -332,7 +340,8 @@ describe('route', ()=> {
         toAddress,
         blockchain,
         token: toToken,
-        amount: tokenAmountOut
+        amount: tokenAmountOut,
+        apiKey
       })
 
       await routes[0].transaction.submit()
@@ -373,7 +382,8 @@ describe('route', ()=> {
         toAddress,
         blockchain,
         token: toToken,
-        amount: tokenAmountOut
+        amount: tokenAmountOut,
+        apiKey
       })
 
       await routes[0].transaction.submit()
@@ -419,7 +429,8 @@ describe('route', ()=> {
           toAddress,
           blockchain,
           token: toToken,
-          amount: tokenAmountOut
+          amount: tokenAmountOut,
+          apiKey
         })
 
         await routes[0].transaction.submit()
@@ -461,7 +472,8 @@ describe('route', ()=> {
           toAddress,
           blockchain,
           token: toToken,
-          amount: tokenAmountOut
+          amount: tokenAmountOut,
+          apiKey
         })
 
         await routes[0].transaction.submit()

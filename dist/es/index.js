@@ -1,5 +1,5 @@
 import { CONSTANTS } from 'depay-web3-constants';
-import { setApiKey as setApiKey$1, getWallet } from 'depay-web3-wallets';
+import { getWallet } from 'depay-web3-wallets';
 import { route as route$1 } from 'depay-web3-exchanges';
 import { Transaction } from 'depay-web3-transaction';
 import { Token } from 'depay-web3-tokens';
@@ -14,13 +14,6 @@ var routers = {
     api: [{"inputs":[{"internalType":"address","name":"_configuration","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"ETH","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"configuration","outputs":[{"internalType":"contract DePayRouterV1Configuration","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"pluginAddress","type":"address"}],"name":"isApproved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"uint256[]","name":"amounts","type":"uint256[]"},{"internalType":"address[]","name":"addresses","type":"address[]"},{"internalType":"address[]","name":"plugins","type":"address[]"},{"internalType":"string[]","name":"data","type":"string[]"}],"name":"route","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdraw","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}]
   }
 };
-
-let apiKey = undefined;
-
-function setApiKey(key) {
-  apiKey = key;
-  setApiKey$1(apiKey);
-}
 
 var plugins = {
   ethereum: {
@@ -110,12 +103,12 @@ class PaymentRoute {
   }
 }
 
-async function route({ blockchain, fromAddress, toAddress, token, amount }) {
+async function route({ blockchain, fromAddress, toAddress, token, amount, apiKey }) {
   let wallet = getWallet();
   let toToken = new Token({ blockchain, address: token });
   let amountBN = await toToken.BigNumber(amount);
   let paymentRoutes = await wallet
-    .assets(blockchain)
+    .assets({ blockchain, apiKey })
     .then(assetsToTokens)
     .then(filterTransferable)
     .then((tokens) => convertToRoutes({ tokens, toToken, toAmount: amountBN, fromAddress, toAddress }))
@@ -251,4 +244,4 @@ let addTransactions = (routes) => {
   })
 };
 
-export { route, setApiKey };
+export { route };

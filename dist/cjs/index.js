@@ -19,13 +19,6 @@ var routers = {
   }
 };
 
-let apiKey = undefined;
-
-function setApiKey(key) {
-  apiKey = key;
-  depayWeb3Wallets.setApiKey(apiKey);
-}
-
 var plugins = {
   ethereum: {
     payment: '0x99F3F4685a7178F26EB4F4Ca8B75a1724F1577B9',
@@ -114,12 +107,12 @@ class PaymentRoute {
   }
 }
 
-async function route({ blockchain, fromAddress, toAddress, token, amount }) {
+async function route({ blockchain, fromAddress, toAddress, token, amount, apiKey }) {
   let wallet = depayWeb3Wallets.getWallet();
   let toToken = new depayWeb3Tokens.Token({ blockchain, address: token });
   let amountBN = await toToken.BigNumber(amount);
   let paymentRoutes = await wallet
-    .assets(blockchain)
+    .assets({ blockchain, apiKey })
     .then(assetsToTokens)
     .then(filterTransferable)
     .then((tokens) => convertToRoutes({ tokens, toToken, toAmount: amountBN, fromAddress, toAddress }))
@@ -256,4 +249,3 @@ let addTransactions = (routes) => {
 };
 
 exports.route = route;
-exports.setApiKey = setApiKey;
