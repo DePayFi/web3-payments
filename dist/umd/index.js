@@ -175,10 +175,10 @@
         })
       }),
     ).then((exchangeRoutes) => {
-      routes.map((route, index) => {
+      return routes.map((route, index) => {
         route.exchangeRoutes = exchangeRoutes[index];
-      });
-      return routes
+        return route
+      })
     })
   };
 

@@ -85,10 +85,10 @@ let addExchangeRoutes = async ({ blockchain, routes, amount, fromAddress, toAddr
       })
     }),
   ).then((exchangeRoutes) => {
-    routes.map((route, index) => {
+    return routes.map((route, index) => {
       route.exchangeRoutes = exchangeRoutes[index]
+      return route
     })
-    return routes
   })
 }
 
