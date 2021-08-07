@@ -244,7 +244,9 @@
     })
   };
 
+  exports.plugins = plugins;
   exports.route = route;
+  exports.routers = routers;
 
   Object.defineProperty(exports, '__esModule', { value: true });
 

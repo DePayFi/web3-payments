@@ -248,4 +248,6 @@ let addTransactions = (routes) => {
   })
 };
 
+exports.plugins = plugins;
 exports.route = route;
+exports.routers = routers;

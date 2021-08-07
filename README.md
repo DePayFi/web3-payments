@@ -46,6 +46,26 @@ let paymentRoutes = route({
 })
 ```
 
+### routers
+
+Exports basic router information (address and api):
+
+```javascript
+import { routers } from 'depay-web3-payments'
+
+routers.ethereum.address // 0xae60aC8e69414C2Dc362D0e6a03af643d1D85b92
+```
+
+### plugins
+
+Exports plugin addresses:
+
+```javascript
+import { plugins } from 'depay-web3-payments'
+
+plugins.ethereum.payment // 0x99F3F4685a7178F26EB4F4Ca8B75a1724F1577B9
+```
+
 ## Data Structures
 
 ### PaymentRoute

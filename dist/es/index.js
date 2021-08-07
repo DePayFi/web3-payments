@@ -244,4 +244,4 @@ let addTransactions = (routes) => {
   })
 };
 
-export { route };
+export { plugins, route, routers };
