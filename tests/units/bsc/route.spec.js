@@ -228,7 +228,7 @@ describe('route', ()=> {
     expect(routes.map((route)=>route.fromToken.address)).toEqual([BUSD, BNB, CAKE])
   })
   
-  it('it sorts tokens that do not require approval before the once that do', async ()=>{
+  it('sorts tokens that do not require approval before the once that do and provides approvalRequired status', async ()=>{
 
     let USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
     let USDCAmountInBN = ethers.BigNumber.from('300000000000000000')
@@ -276,6 +276,7 @@ describe('route', ()=> {
     })
 
     expect(routes.map((route)=>route.fromToken.address)).toEqual([BUSD, BNB, USDC, CAKE])
+    expect(routes.map((route)=>route.approvalRequired)).toEqual([false, false, false, true])
   })
 
   describe('transaction', ()=> {

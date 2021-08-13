@@ -200,7 +200,11 @@
     )).then(
       (allowances) => {
         routes.forEach((route, index) => {
-          routes[index].approvalRequired = route.fromBalance.lt(allowances[index]);
+          if(route.fromToken == depayWeb3Constants.CONSTANTS[blockchain].NATIVE) {
+            routes[index].approvalRequired = false;
+          } else {
+            routes[index].approvalRequired = route.fromBalance.gte(allowances[index]);
+          }
         });
         return routes
       },
@@ -220,10 +224,10 @@
       }
 
       if (a.approvalRequired && !b.approvalRequired) {
-        return aWins
+        return bWins
       }
       if (b.approvalRequired && !a.approvalRequired) {
-        return bWins
+        return aWins
       }
 
       if (a.fromToken.address == depayWeb3Constants.CONSTANTS[a.blockchain].NATIVE) {
