@@ -16,6 +16,8 @@ class PaymentRoute {
     this.toAddress = toAddress
     this.exchangeRoutes = []
     this.transaction = undefined
+    this.approvalRequired = undefined
+    this.directTransfer = undefined
   }
 }
 
@@ -33,6 +35,7 @@ async function route({ blockchain, fromAddress, toAddress, token, amount, apiKey
     .then((routes) => addBalances({ routes, fromAddress }))
     .then((routes) => filterInsufficientBalance({ routes, token, amountBN }))
     .then((routes) => addApprovalStatus({ routes, blockchain }))
+    .then((routes) => addDirectTransferStatus({ routes, blockchain, token }))
     .then((routes) => sortPaymentRoutes({ routes, token }))
     .then(addTransactions)
 
@@ -125,6 +128,13 @@ let addApprovalStatus = ({ routes, blockchain }) => {
       return routes
     },
   )
+}
+
+let addDirectTransferStatus = ({ routes, blockchain, token }) => {
+  return routes.map((route)=>{
+    route.directTransfer = route.blockchain == blockchain && route.fromToken.address.toLowerCase() == token.toLowerCase()
+    return route
+  })
 }
 
 let sortPaymentRoutes = ({ routes, token }) => {

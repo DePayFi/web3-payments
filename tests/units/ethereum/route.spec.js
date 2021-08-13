@@ -228,7 +228,7 @@ describe('route', ()=> {
     expect(routes.map((route)=>route.fromToken.address)).toEqual([DEPAY, ETH, DAI])
   })
   
-  it('sorts tokens that do not require approval before the once that do and provides approvalRequired status', async ()=>{
+  it('sorts tokens that do not require approval before the once that do and provides approvalRequired and directTransfer status', async ()=>{
 
     let USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
     let USDCAmountInBN = ethers.BigNumber.from('300000000000000000')
@@ -277,6 +277,7 @@ describe('route', ()=> {
 
     expect(routes.map((route)=>route.fromToken.address)).toEqual([DEPAY, ETH, USDC, DAI])
     expect(routes.map((route)=>route.approvalRequired)).toEqual([false, false, false, true])
+    expect(routes.map((route)=>route.directTransfer)).toEqual([true, false, false, false])
   })
 
   describe('transaction', ()=> {

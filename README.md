@@ -83,8 +83,14 @@ Payment routes are provided in the following structure:
   toAddress: String (e.g. '0x65aBbdEd9B937E38480A50eca85A8E4D2c8350E4')
   exchangeRoutes: Array (list of exchange routes offering to convert )
   transaction: depay-web3-transaction (transaction to submit the payment)
+  approvalRequired: Boolean (e.g. true)
+  directTransfer: Boolean (e.g. true)
 }
 ```
+
+`approvalRequires`: indicates if a upfront token approval is required in order to perform the payment.
+
+`directTransfer`: indicates if the payment does not require any swapping/exchanging.
 
 See https://github.com/DePayFi/depay-web3-transaction for detailed transaction features.
 
