@@ -26,12 +26,60 @@ var routers = {
 
 var plugins = {
   ethereum: {
-    payment: '0x99F3F4685a7178F26EB4F4Ca8B75a1724F1577B9',
-    uniswap_v2: '0xe04b08Dfc6CaA0F4Ec523a3Ae283Ece7efE00019'
+    payment: {
+      address: '0x99F3F4685a7178F26EB4F4Ca8B75a1724F1577B9'
+    },
+    uniswap_v2: {
+      address: '0xe04b08Dfc6CaA0F4Ec523a3Ae283Ece7efE00019',
+      prepareTransaction: (transaction)=> {
+        transaction.params.path = transaction.params.path.filter((token, index, path)=>{
+          if(
+            index == 0 &&
+            token == depayWeb3Constants.CONSTANTS[transaction.blockchain].NATIVE &&
+            path[1] == depayWeb3Constants.CONSTANTS[transaction.blockchain].WRAPPED
+          ) { 
+            return false
+          } else if (
+            index == path.length-1 &&
+            token == depayWeb3Constants.CONSTANTS[transaction.blockchain].NATIVE &&
+            path[path.length-2] == depayWeb3Constants.CONSTANTS[transaction.blockchain].WRAPPED
+          ) {
+            return false
+          } else {
+            return true
+          }
+        });
+        return transaction
+      }
+    },
   },
   bsc: {
-    payment: '0x8B127D169D232D5F3ebE1C3D06CE343FD7C1AA11',
-    pancakeswap: '0xAC3Ec4e420DD78bA86d932501E1f3867dbbfb77B'
+    payment: {
+      address: '0x8B127D169D232D5F3ebE1C3D06CE343FD7C1AA11',
+    },
+    pancakeswap: {
+      address: '0xAC3Ec4e420DD78bA86d932501E1f3867dbbfb77B',
+      prepareTransaction: (transaction)=> {
+        transaction.params.path = transaction.params.path.filter((token, index, path)=>{
+          if(
+            index == 0 &&
+            token == depayWeb3Constants.CONSTANTS[transaction.blockchain].NATIVE &&
+            path[1] == depayWeb3Constants.CONSTANTS[transaction.blockchain].WRAPPED
+          ) { 
+            return false
+          } else if (
+            index == path.length-1 &&
+            token == depayWeb3Constants.CONSTANTS[transaction.blockchain].NATIVE &&
+            path[path.length-2] == depayWeb3Constants.CONSTANTS[transaction.blockchain].WRAPPED
+          ) {
+            return false
+          } else {
+            return true
+          }
+        });
+        return transaction
+      }
+    }
   } 
 };
 
@@ -4164,8 +4212,10 @@ function throwFault(fault, operation, value) {
 }
 
 let routeToTransaction = ({ paymentRoute })=> {
+  let exchangePlugin;
   let exchangeRoute = paymentRoute.exchangeRoutes[0];
-  return new depayWeb3Transaction.Transaction({
+  if(exchangeRoute) { exchangePlugin = plugins[paymentRoute.blockchain][exchangeRoute.exchange.name]; }
+  let transaction = new depayWeb3Transaction.Transaction({
     blockchain: paymentRoute.blockchain,
     address: routers[paymentRoute.blockchain].address,
     api: routers[paymentRoute.blockchain].api,
@@ -4178,7 +4228,11 @@ let routeToTransaction = ({ paymentRoute })=> {
       data: []
     },
     value: transactionValue({ paymentRoute, exchangeRoute })
-  })
+  });
+  if(exchangeRoute && exchangePlugin) {
+    transaction = exchangePlugin.prepareTransaction(transaction);
+  }
+  return transaction
 };
 
 let transactionPath = ({ paymentRoute, exchangeRoute })=> {
@@ -4208,12 +4262,12 @@ let transactionAddresses = ({ paymentRoute })=> {
 let transactionPlugins = ({ paymentRoute, exchangeRoute })=> {
   if(exchangeRoute) {
     return [
-      plugins[paymentRoute.blockchain][exchangeRoute.exchange.name],
-      plugins[paymentRoute.blockchain].payment
+      plugins[paymentRoute.blockchain][exchangeRoute.exchange.name].address,
+      plugins[paymentRoute.blockchain].payment.address
     ]
   } else {
     return [
-      plugins[paymentRoute.blockchain].payment
+      plugins[paymentRoute.blockchain].payment.address
     ]
   }
 };

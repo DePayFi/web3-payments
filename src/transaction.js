@@ -5,8 +5,10 @@ import { ethers } from 'ethers'
 import { Transaction } from 'depay-web3-transaction'
 
 let routeToTransaction = ({ paymentRoute })=> {
+  let exchangePlugin
   let exchangeRoute = paymentRoute.exchangeRoutes[0]
-  return new Transaction({
+  if(exchangeRoute) { exchangePlugin = plugins[paymentRoute.blockchain][exchangeRoute.exchange.name] }
+  let transaction = new Transaction({
     blockchain: paymentRoute.blockchain,
     address: routers[paymentRoute.blockchain].address,
     api: routers[paymentRoute.blockchain].api,
@@ -20,6 +22,10 @@ let routeToTransaction = ({ paymentRoute })=> {
     },
     value: transactionValue({ paymentRoute, exchangeRoute })
   })
+  if(exchangeRoute && exchangePlugin) {
+    transaction = exchangePlugin.prepareTransaction(transaction)
+  }
+  return transaction
 }
 
 let transactionPath = ({ paymentRoute, exchangeRoute })=> {
@@ -49,12 +55,12 @@ let transactionAddresses = ({ paymentRoute })=> {
 let transactionPlugins = ({ paymentRoute, exchangeRoute })=> {
   if(exchangeRoute) {
     return [
-      plugins[paymentRoute.blockchain][exchangeRoute.exchange.name],
-      plugins[paymentRoute.blockchain].payment
+      plugins[paymentRoute.blockchain][exchangeRoute.exchange.name].address,
+      plugins[paymentRoute.blockchain].payment.address
     ]
   } else {
     return [
-      plugins[paymentRoute.blockchain].payment
+      plugins[paymentRoute.blockchain].payment.address
     ]
   }
 }

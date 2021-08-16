@@ -297,7 +297,7 @@ describe('route', ()=> {
             path: [DEPAY],
             amounts: [tokenAmountOutBN],
             addresses: [fromAddress, toAddress],
-            plugins: [plugins[blockchain].payment],
+            plugins: [plugins[blockchain].payment.address],
             data: []  
           },
           value: 0
@@ -329,10 +329,10 @@ describe('route', ()=> {
           api: routers[blockchain].api,
           method: 'route',
           params: {
-            path: [CONSTANTS[blockchain].NATIVE, CONSTANTS[blockchain].WRAPPED, DEPAY],
+            path: [CONSTANTS[blockchain].WRAPPED, DEPAY],
             amounts: [WETHAmountInBN, tokenAmountOutBN, anything],
             addresses: [fromAddress, toAddress],
-            plugins: [plugins[blockchain].uniswap_v2, plugins[blockchain].payment],
+            plugins: [plugins[blockchain].uniswap_v2.address, plugins[blockchain].payment.address],
             data: []  
           },
           value: 0
@@ -374,7 +374,7 @@ describe('route', ()=> {
             path: [DAI, CONSTANTS[blockchain].WRAPPED, DEPAY],
             amounts: [DAIAmountInBN, tokenAmountOutBN, anything],
             addresses: [fromAddress, toAddress],
-            plugins: [plugins[blockchain].uniswap_v2, plugins[blockchain].payment],
+            plugins: [plugins[blockchain].uniswap_v2.address, plugins[blockchain].payment.address],
             data: []  
           },
           value: 0
@@ -421,7 +421,7 @@ describe('route', ()=> {
               path: [CONSTANTS[blockchain].NATIVE],
               amounts: [tokenAmountOutBN],
               addresses: [fromAddress, toAddress],
-              plugins: [plugins[blockchain].payment],
+              plugins: [plugins[blockchain].payment.address],
               data: []  
             },
             value: tokenAmountOutBN
@@ -461,10 +461,10 @@ describe('route', ()=> {
             api: routers[blockchain].api,
             method: 'route',
             params: {
-              path: [DAI, CONSTANTS[blockchain].WRAPPED, CONSTANTS[blockchain].NATIVE],
+              path: [DAI, CONSTANTS[blockchain].WRAPPED],
               amounts: [DAIAmountInBN, tokenAmountOutBN, anything],
               addresses: [fromAddress, toAddress],
-              plugins: [plugins[blockchain].uniswap_v2, plugins[blockchain].payment],
+              plugins: [plugins[blockchain].uniswap_v2.address, plugins[blockchain].payment.address],
               data: []  
             },
             value: 0

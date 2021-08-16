@@ -297,7 +297,7 @@ describe('route', ()=> {
             path: [BUSD],
             amounts: [tokenAmountOutBN],
             addresses: [fromAddress, toAddress],
-            plugins: [plugins[blockchain].payment],
+            plugins: [plugins[blockchain].payment.address],
             data: []  
           },
           value: 0
@@ -329,10 +329,10 @@ describe('route', ()=> {
           api: routers[blockchain].api,
           method: 'route',
           params: {
-            path: [CONSTANTS[blockchain].NATIVE, CONSTANTS[blockchain].WRAPPED, BUSD],
+            path: [CONSTANTS[blockchain].WRAPPED, BUSD],
             amounts: [WBNBAmountInBN, tokenAmountOutBN, anything],
             addresses: [fromAddress, toAddress],
-            plugins: [plugins[blockchain].pancakeswap, plugins[blockchain].payment],
+            plugins: [plugins[blockchain].pancakeswap.address, plugins[blockchain].payment.address],
             data: []  
           },
           value: 0
@@ -374,7 +374,7 @@ describe('route', ()=> {
             path: [CAKE, CONSTANTS[blockchain].WRAPPED, BUSD],
             amounts: [CAKEAmountInBN, tokenAmountOutBN, anything],
             addresses: [fromAddress, toAddress],
-            plugins: [plugins[blockchain].pancakeswap, plugins[blockchain].payment],
+            plugins: [plugins[blockchain].pancakeswap.address, plugins[blockchain].payment.address],
             data: []  
           },
           value: 0
@@ -421,7 +421,7 @@ describe('route', ()=> {
               path: [CONSTANTS[blockchain].NATIVE],
               amounts: [tokenAmountOutBN],
               addresses: [fromAddress, toAddress],
-              plugins: [plugins[blockchain].payment],
+              plugins: [plugins[blockchain].payment.address],
               data: []  
             },
             value: tokenAmountOutBN
@@ -461,10 +461,10 @@ describe('route', ()=> {
             api: routers[blockchain].api,
             method: 'route',
             params: {
-              path: [CAKE, CONSTANTS[blockchain].WRAPPED, CONSTANTS[blockchain].NATIVE],
+              path: [CAKE, CONSTANTS[blockchain].WRAPPED],
               amounts: [CAKEAmountInBN, tokenAmountOutBN, anything],
               addresses: [fromAddress, toAddress],
-              plugins: [plugins[blockchain].pancakeswap, plugins[blockchain].payment],
+              plugins: [plugins[blockchain].pancakeswap.address, plugins[blockchain].payment.address],
               data: []  
             },
             value: 0
