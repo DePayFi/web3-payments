@@ -329,7 +329,7 @@ describe('route', ()=> {
           api: routers[blockchain].api,
           method: 'route',
           params: {
-            path: [CONSTANTS[blockchain].WRAPPED, BUSD],
+            path: [CONSTANTS[blockchain].NATIVE, BUSD],
             amounts: [WBNBAmountInBN, tokenAmountOutBN, anything],
             addresses: [fromAddress, toAddress],
             plugins: [plugins[blockchain].pancakeswap.address, plugins[blockchain].payment.address],
@@ -461,7 +461,7 @@ describe('route', ()=> {
             api: routers[blockchain].api,
             method: 'route',
             params: {
-              path: [CAKE, CONSTANTS[blockchain].WRAPPED],
+              path: [CAKE, CONSTANTS[blockchain].NATIVE],
               amounts: [CAKEAmountInBN, tokenAmountOutBN, anything],
               addresses: [fromAddress, toAddress],
               plugins: [plugins[blockchain].pancakeswap.address, plugins[blockchain].payment.address],

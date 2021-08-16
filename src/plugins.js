@@ -10,15 +10,15 @@ export default {
       prepareTransaction: (transaction)=> {
         transaction.params.path = transaction.params.path.filter((token, index, path)=>{
           if(
-            index == 0 &&
-            token == CONSTANTS[transaction.blockchain].NATIVE &&
-            path[1] == CONSTANTS[transaction.blockchain].WRAPPED
+            index == 1 &&
+            token == CONSTANTS[transaction.blockchain].WRAPPED &&
+            path[0] == CONSTANTS[transaction.blockchain].NATIVE
           ) { 
             return false
           } else if (
-            index == path.length-1 &&
-            token == CONSTANTS[transaction.blockchain].NATIVE &&
-            path[path.length-2] == CONSTANTS[transaction.blockchain].WRAPPED
+            index == path.length-2 &&
+            token == CONSTANTS[transaction.blockchain].WRAPPED &&
+            path[path.length-1] == CONSTANTS[transaction.blockchain].NATIVE
           ) {
             return false
           } else {
@@ -38,15 +38,15 @@ export default {
       prepareTransaction: (transaction)=> {
         transaction.params.path = transaction.params.path.filter((token, index, path)=>{
           if(
-            index == 0 &&
-            token == CONSTANTS[transaction.blockchain].NATIVE &&
-            path[1] == CONSTANTS[transaction.blockchain].WRAPPED
+            index == 1 &&
+            token == CONSTANTS[transaction.blockchain].WRAPPED &&
+            path[0] == CONSTANTS[transaction.blockchain].NATIVE
           ) { 
             return false
           } else if (
-            index == path.length-1 &&
-            token == CONSTANTS[transaction.blockchain].NATIVE &&
-            path[path.length-2] == CONSTANTS[transaction.blockchain].WRAPPED
+            index == path.length-2 &&
+            token == CONSTANTS[transaction.blockchain].WRAPPED &&
+            path[path.length-1] == CONSTANTS[transaction.blockchain].NATIVE
           ) {
             return false
           } else {

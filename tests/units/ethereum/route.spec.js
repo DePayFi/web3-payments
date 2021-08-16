@@ -329,7 +329,7 @@ describe('route', ()=> {
           api: routers[blockchain].api,
           method: 'route',
           params: {
-            path: [CONSTANTS[blockchain].WRAPPED, DEPAY],
+            path: [CONSTANTS[blockchain].NATIVE, DEPAY],
             amounts: [WETHAmountInBN, tokenAmountOutBN, anything],
             addresses: [fromAddress, toAddress],
             plugins: [plugins[blockchain].uniswap_v2.address, plugins[blockchain].payment.address],
@@ -461,7 +461,7 @@ describe('route', ()=> {
             api: routers[blockchain].api,
             method: 'route',
             params: {
-              path: [DAI, CONSTANTS[blockchain].WRAPPED],
+              path: [DAI, CONSTANTS[blockchain].NATIVE],
               amounts: [DAIAmountInBN, tokenAmountOutBN, anything],
               addresses: [fromAddress, toAddress],
               plugins: [plugins[blockchain].uniswap_v2.address, plugins[blockchain].payment.address],
