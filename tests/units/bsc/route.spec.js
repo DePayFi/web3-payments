@@ -111,6 +111,7 @@ describe('route', ()=> {
     expect(routes[0].toAddress).toEqual(toAddress)
     expect(routes[0].fromBalance).toEqual(BUSDBalanceBN)
     expect(routes[0].exchangeRoutes).toEqual([])
+    expect(routes[0].transaction.value).toEqual(ethers.BigNumber.from('0'))
 
     // BNB/WBNB
     expect(routes[1].blockchain).toEqual(blockchain)
@@ -132,6 +133,7 @@ describe('route', ()=> {
     expect(routes[1].exchangeRoutes[0].transaction.params.amountOutMin).toEqual(tokenAmountOutBN)
     expect(routes[1].exchangeRoutes[0].transaction.params.path).toEqual([WBNB, BUSD])
     expect(routes[1].exchangeRoutes[0].transaction.value).toEqual(WBNBAmountInBN)
+    expect(routes[1].transaction.value).toEqual(WBNBAmountInBN)
 
     // CAKE
     expect(routes[2].blockchain).toEqual(blockchain)
@@ -152,7 +154,7 @@ describe('route', ()=> {
     expect(routes[2].exchangeRoutes[0].transaction.method).toEqual('swapExactTokensForTokens')
     expect(routes[2].exchangeRoutes[0].transaction.params.amountOutMin).toEqual(tokenAmountOutBN)
     expect(routes[2].exchangeRoutes[0].transaction.params.path).toEqual([CAKE, WBNB, BUSD])
-
+    expect(routes[2].transaction.value).toEqual(ethers.BigNumber.from('0'))
   });
 
   it('filters routes with tokens that are not transferable', async ()=>{

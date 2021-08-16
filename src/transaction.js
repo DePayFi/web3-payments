@@ -1,6 +1,7 @@
 import plugins from './plugins'
 import routers from './routers'
 import { CONSTANTS } from 'depay-web3-constants'
+import { ethers } from 'ethers'
 import { Transaction } from 'depay-web3-transaction'
 
 let routeToTransaction = ({ paymentRoute })=> {
@@ -59,10 +60,14 @@ let transactionPlugins = ({ paymentRoute, exchangeRoute })=> {
 }
 
 let transactionValue = ({ paymentRoute, exchangeRoute })=> {
-  if(exchangeRoute) {
-    return exchangeRoute.amountIn
+  if(paymentRoute.fromToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
+    if(exchangeRoute) {
+      return exchangeRoute.amountIn
+    } else { // direct payment
+      return paymentRoute.toAmount
+    }
   } else {
-    return paymentRoute.toAmount
+    return ethers.BigNumber.from('0')
   }
 }
 
