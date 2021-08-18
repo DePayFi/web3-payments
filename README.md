@@ -84,11 +84,12 @@ Payment routes are provided in the following structure:
   exchangeRoutes: Array (list of exchange routes offering to convert )
   transaction: depay-web3-transaction (transaction to submit the payment)
   approvalRequired: Boolean (e.g. true)
+  approve: function (to approve the fromToken being used from the payment route to perform the payment)
   directTransfer: Boolean (e.g. true)
 }
 ```
 
-`approvalRequires`: indicates if a upfront token approval is required in order to perform the payment.
+`approvalRequired`: indicates if a upfront token approval is required in order to perform the payment, make sure you execute `approve` before executing the payment transaction itself.
 
 `directTransfer`: indicates if the payment does not require any swapping/exchanging.
 

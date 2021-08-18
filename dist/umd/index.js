@@ -4291,6 +4291,7 @@
       this.exchangeRoutes = [];
       this.transaction = undefined;
       this.approvalRequired = undefined;
+      this.approve = undefined;
       this.directTransfer = undefined;
     }
   }
@@ -4308,7 +4309,7 @@
       .then((routes) => filterNotRoutable({ routes, token }))
       .then((routes) => addBalances({ routes, fromAddress }))
       .then((routes) => filterInsufficientBalance({ routes, token, amountBN }))
-      .then((routes) => addApprovalStatus({ routes, blockchain }))
+      .then((routes) => addApproval({ routes, blockchain }))
       .then((routes) => addDirectTransferStatus({ routes, blockchain, token }))
       .then((routes) => sortPaymentRoutes({ routes, token }))
       .then(addTransactions);
@@ -4387,7 +4388,7 @@
     })
   };
 
-  let addApprovalStatus = ({ routes, blockchain }) => {
+  let addApproval = ({ routes, blockchain }) => {
     return Promise.all(routes.map(
       (route) => route.fromToken.allowance(routers[blockchain].address)
     )).then(
@@ -4397,6 +4398,19 @@
             routes[index].approvalRequired = false;
           } else {
             routes[index].approvalRequired = route.fromBalance.gte(allowances[index]);
+            if(routes[index].approvalRequired) {
+              routes[index].approve = (options)=>{
+                options = options || {};
+                let approvalTransaction = new depayWeb3Transaction.Transaction({
+                  blockchain,
+                  address: routes[index].fromToken.address,
+                  api: depayWeb3Tokens.Token[blockchain].DEFAULT,
+                  method: 'approve',
+                  params: [routers[blockchain].address, depayWeb3Constants.CONSTANTS[blockchain].MAXINT]
+                });
+                return approvalTransaction.submit(options)
+              };
+            }
           }
         });
         return routes
