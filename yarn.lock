@@ -2360,14 +2360,14 @@ depay-web3-constants@^3.0.0:
   resolved "https://registry.yarnpkg.com/depay-web3-constants/-/depay-web3-constants-3.0.0.tgz#4f0d395cb57f7ac8c1da1c8e4d3a0275b3229725"
   integrity sha512-0KPou+Qhs/oWGqm9FU8NfOIWYt8bZDXdOa4a5Kk/M5jsYKI4Aty5ps+GKoa8DgGLFh2MiHR7qVYGbXImSAvfqg==
 
-depay-web3-exchanges@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/depay-web3-exchanges/-/depay-web3-exchanges-3.0.0.tgz#b4d0118fef98d1e5238f7b2ec69b3042a76e7af3"
-  integrity sha512-AHBZmXm80wt/vVrcxBunZ94/5XFG4oMZwGr31y1cyPxN0/Etr/yJnxZPIPBcH2Ybxc4cLWY5EMNrXi+jB3hc1w==
+depay-web3-exchanges@^3.0.1:
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/depay-web3-exchanges/-/depay-web3-exchanges-3.0.1.tgz#83520b9c248dd59e2165b15695ef8e5f653d90cb"
+  integrity sha512-UYeM88swWmDY4lTCIiReJQNvkYhnnsoJUC0onkBYMAPhZN7h3j79xbfVdLTEmn0oYCRenr2OpuH4ddx8FJN7/Q==
   dependencies:
     depay-web3-client "^4.0.0"
     depay-web3-constants "^2.1.0"
-    depay-web3-tokens "^2.2.1"
+    depay-web3-tokens "^3.0.0"
     depay-web3-transaction "^2.3.0"
 
 depay-web3-mock@^5.5.5:
@@ -2378,17 +2378,7 @@ depay-web3-mock@^5.5.5:
     depay-web3-blockchains "^2.1.0"
     ethers "^5.4.4"
 
-depay-web3-tokens@^2.2.1:
-  version "2.2.1"
-  resolved "https://registry.yarnpkg.com/depay-web3-tokens/-/depay-web3-tokens-2.2.1.tgz#109dd4185fe9ee927c56d7c8bf893e4334570d0a"
-  integrity sha512-ak8CdKcnhF1Yu5TMomgOdry86uWRiTS4WCvHZKzGvZdlkHUjgHVFOOphN0UPoEnVGo+l6UvVN6oK+SWF4plGWA==
-  dependencies:
-    depay-web3-client "^3.0.0"
-    depay-web3-constants "^2.0.0"
-    depay-web3-wallets "^3.0.0"
-    ethers "^5.3.1"
-
-depay-web3-tokens@^2.3.0, depay-web3-tokens@^2.3.1:
+depay-web3-tokens@^2.3.0:
   version "2.3.1"
   resolved "https://registry.yarnpkg.com/depay-web3-tokens/-/depay-web3-tokens-2.3.1.tgz#a9e91f3a7ec5008ae44d5cd56e9d14de625f820e"
   integrity sha512-BEsMKNqxzZuTcjqdVjk+YAdJgiOmT5kd4I7dygA1kO+DaUuCMzcNOetJVoGsUpSZeZXaEyvPI05v5NioBNsvpg==
@@ -2397,6 +2387,16 @@ depay-web3-tokens@^2.3.0, depay-web3-tokens@^2.3.1:
     depay-web3-constants "^3.0.0"
     depay-web3-wallets "^3.0.0"
     ethers "^5.3.1"
+
+depay-web3-tokens@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/depay-web3-tokens/-/depay-web3-tokens-3.0.0.tgz#3882346c1a152ae5c00e8d1cb0520a0533f36037"
+  integrity sha512-xuO9bkEtwK+F1cf+s0hci6x+bxnnZq/tVFReLj1/ZlHN2Lumy+72jkqUIYfzQ6/w+BDftL2kykMIOFvJLnS/YA==
+  dependencies:
+    depay-web3-client "^4.0.0"
+    depay-web3-constants "^3.0.0"
+    depay-web3-wallets "^3.0.0"
+    ethers "^5.4.4"
 
 depay-web3-transaction@^2.3.0:
   version "2.3.0"
