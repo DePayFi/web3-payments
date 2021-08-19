@@ -89,6 +89,7 @@ Payment routes are provided in the following structure:
   fromBalance: BigNumber (e.g. <BigNumber '10000000000000000000'>)
   toToken: Token (see depay-web3-tokens)
   toAmount: BigNumber (e.g. <BigNumber '21000000000000000000'>)
+  fromAmount: BigNumber (e.g. <BigNumber '31000000000000000000'>)
   fromAddress: String (e.g. '0xd8da6bf26964af9d7eed9e03e53415d37aa96045')
   toAddress: String (e.g. '0x65aBbdEd9B937E38480A50eca85A8E4D2c8350E4')
   exchangeRoutes: Array (list of exchange routes offering to convert )

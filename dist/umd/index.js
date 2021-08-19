@@ -4363,7 +4363,8 @@
       .then((routes) => addApproval({ routes, blockchain }))
       .then((routes) => addDirectTransferStatus({ routes, blockchain, token }))
       .then((routes) => sortPaymentRoutes({ routes, token }))
-      .then(addTransactions);
+      .then(addTransactions)
+      .then(addFromAmount);
 
     return paymentRoutes
   }
@@ -4472,6 +4473,21 @@
   let addDirectTransferStatus = ({ routes, blockchain, token }) => {
     return routes.map((route)=>{
       route.directTransfer = route.blockchain == blockchain && route.fromToken.address.toLowerCase() == token.toLowerCase();
+      return route
+    })
+  };
+
+  let addFromAmount = (routes)=> {
+    return routes.map((route)=>{
+      if(route.directTransfer) {
+        if(route.fromToken.address == depayWeb3Constants.CONSTANTS[route.blockchain].NATIVE) {
+          route.fromAmount = route.transaction.value;
+        } else {
+          route.fromAmount = route.transaction.params[1];
+        }
+      } else {
+        route.fromAmount = route.transaction.params.amounts[0];
+      }
       return route
     })
   };
