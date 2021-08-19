@@ -66,6 +66,16 @@ import { plugins } from 'depay-web3-payments'
 plugins.ethereum.payment // 0x99F3F4685a7178F26EB4F4Ca8B75a1724F1577B9
 ```
 
+## Domain Knowledge
+
+### Payment Routing Priorities
+
+1. If user has request token in his wallet, direct token transfer to receiver will be prioritized
+
+2. Any token that can be liquidated on decentralized exchange and has been already been approved for the DePay router will be second priority
+
+3. All other liquefiable tokens that still require token approval will be prioritized last
+
 ## Data Structures
 
 ### PaymentRoute
@@ -77,7 +87,7 @@ Payment routes are provided in the following structure:
   blockchain: String (e.g. ethereum)
   fromToken: String (e.g. '0x6B175474E89094C44Da98b954EedeAC495271d0F')
   fromBalance: BigNumber (e.g. <BigNumber '10000000000000000000'>)
-  toToken: String (e.g. '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb')
+  toToken: Token (see depay-web3-tokens)
   toAmount: BigNumber (e.g. <BigNumber '21000000000000000000'>)
   fromAddress: String (e.g. '0xd8da6bf26964af9d7eed9e03e53415d37aa96045')
   toAddress: String (e.g. '0x65aBbdEd9B937E38480A50eca85A8E4D2c8350E4')

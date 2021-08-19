@@ -111,6 +111,11 @@ describe('route', ()=> {
     expect(routes[0].toAddress).toEqual(toAddress)
     expect(routes[0].fromBalance).toEqual(BUSDBalanceBN)
     expect(routes[0].exchangeRoutes).toEqual([])
+    expect(routes[0].transaction.blockchain).toEqual(blockchain)
+    expect(routes[0].transaction.address).toEqual(BUSD)
+    expect(routes[0].transaction.api).toEqual(Token[blockchain].DEFAULT)
+    expect(routes[0].transaction.method).toEqual('transfer')
+    expect(routes[0].transaction.params).toEqual([toAddress, tokenAmountOutBN])
     expect(routes[0].transaction.value).toEqual(ethers.BigNumber.from('0'))
 
     // BNB/WBNB
@@ -290,17 +295,10 @@ describe('route', ()=> {
         blockchain,
         transaction: {
           from: fromAddress,
-          to: routers[blockchain].address,
-          api: routers[blockchain].api,
-          method: 'route',
-          params: {
-            path: [BUSD],
-            amounts: [tokenAmountOutBN],
-            addresses: [fromAddress, toAddress],
-            plugins: [plugins[blockchain].payment.address],
-            data: []  
-          },
-          value: 0
+          to: BUSD,
+          api: Token[blockchain].DEFAULT,
+          method: 'transfer',
+          params: [toAddress, tokenAmountOutBN]
         }
       })
        
@@ -410,20 +408,11 @@ describe('route', ()=> {
           }
         })
 
-        let routeMock = mock({
+        let transactionMock = mock({
           blockchain,
           transaction: {
             from: fromAddress,
-            to: routers[blockchain].address,
-            api: routers[blockchain].api,
-            method: 'route',
-            params: {
-              path: [CONSTANTS[blockchain].NATIVE],
-              amounts: [tokenAmountOutBN],
-              addresses: [fromAddress, toAddress],
-              plugins: [plugins[blockchain].payment.address],
-              data: []  
-            },
+            to: toAddress,
             value: tokenAmountOutBN
           }
         })
@@ -438,7 +427,7 @@ describe('route', ()=> {
         })
 
         await routes[0].transaction.submit()
-        expect(routeMock).toHaveBeenCalled()
+        expect(transactionMock).toHaveBeenCalled()
       })
 
       it('performs TOKEN to ETH swap payments if it is the best option', async ()=>{

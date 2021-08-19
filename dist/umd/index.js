@@ -1,8 +1,8 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('depay-web3-constants'), require('depay-web3-wallets'), require('depay-web3-exchanges'), require('depay-web3-transaction'), require('buffer'), require('depay-web3-tokens')) :
-  typeof define === 'function' && define.amd ? define(['exports', 'depay-web3-constants', 'depay-web3-wallets', 'depay-web3-exchanges', 'depay-web3-transaction', 'buffer', 'depay-web3-tokens'], factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.Web3Payments = {}, global.Web3Constants, global.Web3Wallets, global.Web3Exchanges, global.Web3Transaction, global.require$$0, global.Web3Tokens));
-}(this, (function (exports, depayWeb3Constants, depayWeb3Wallets, depayWeb3Exchanges, depayWeb3Transaction, require$$0, depayWeb3Tokens) { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('depay-web3-constants'), require('depay-web3-wallets'), require('depay-web3-exchanges'), require('depay-web3-tokens'), require('depay-web3-transaction'), require('buffer')) :
+  typeof define === 'function' && define.amd ? define(['exports', 'depay-web3-constants', 'depay-web3-wallets', 'depay-web3-exchanges', 'depay-web3-tokens', 'depay-web3-transaction', 'buffer'], factory) :
+  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.Web3Payments = {}, global.Web3Constants, global.Web3Wallets, global.Web3Exchanges, global.Web3Tokens, global.Web3Transaction, global.require$$0));
+}(this, (function (exports, depayWeb3Constants, depayWeb3Wallets, depayWeb3Exchanges, depayWeb3Tokens, depayWeb3Transaction, require$$0) { 'use strict';
 
   function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
@@ -4207,27 +4207,78 @@
   }
 
   let routeToTransaction = ({ paymentRoute })=> {
-    let exchangePlugin;
     let exchangeRoute = paymentRoute.exchangeRoutes[0];
-    if(exchangeRoute) { exchangePlugin = plugins[paymentRoute.blockchain][exchangeRoute.exchange.name]; }
+
     let transaction = new depayWeb3Transaction.Transaction({
       blockchain: paymentRoute.blockchain,
-      address: routers[paymentRoute.blockchain].address,
-      api: routers[paymentRoute.blockchain].api,
-      method: 'route',
-      params: {
+      address: transactionAddress({ paymentRoute }),
+      api: transactionApi({ paymentRoute }),
+      method: transactionMethod({ paymentRoute }),
+      params: transactionParams({ paymentRoute, exchangeRoute }),
+      value: transactionValue({ paymentRoute, exchangeRoute })
+    });
+
+    if(exchangeRoute) {
+      let exchangePlugin = plugins[paymentRoute.blockchain][exchangeRoute.exchange.name];
+      if(exchangePlugin) {
+        transaction = exchangePlugin.prepareTransaction(transaction);
+      }
+    }
+    return transaction
+  };
+
+  let transactionAddress = ({ paymentRoute })=> {
+    if(paymentRoute.directTransfer) {
+      if(paymentRoute.toToken.address == depayWeb3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
+        return paymentRoute.toAddress
+      } else {
+        return paymentRoute.toToken.address
+      }
+    } else {
+      return routers[paymentRoute.blockchain].address
+    }
+  };
+
+  let transactionApi = ({ paymentRoute })=> {
+    if(paymentRoute.directTransfer) {
+      if(paymentRoute.toToken.address == depayWeb3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
+        return undefined
+      } else {
+        return depayWeb3Tokens.Token[paymentRoute.blockchain].DEFAULT
+      }
+    } else {
+      return routers[paymentRoute.blockchain].api
+    }
+  };
+
+  let transactionMethod = ({ paymentRoute })=> {
+    if(paymentRoute.directTransfer) {
+      if(paymentRoute.toToken.address == depayWeb3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
+        return undefined
+      } else {
+        return 'transfer'
+      }
+    } else {
+      return 'route'
+    }
+  };
+
+  let transactionParams = ({ paymentRoute, exchangeRoute })=> {
+    if(paymentRoute.directTransfer) {
+      if(paymentRoute.toToken.address == depayWeb3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
+        return undefined
+      } else {
+        return [paymentRoute.toAddress, paymentRoute.toAmount]
+      }
+    } else {
+      return {
         path: transactionPath({ paymentRoute, exchangeRoute }),
         amounts: transactionAmounts({ paymentRoute, exchangeRoute }),
         addresses: transactionAddresses({ paymentRoute }),
         plugins: transactionPlugins({ paymentRoute, exchangeRoute }),
         data: []
-      },
-      value: transactionValue({ paymentRoute, exchangeRoute })
-    });
-    if(exchangeRoute && exchangePlugin) {
-      transaction = exchangePlugin.prepareTransaction(transaction);
+      }
     }
-    return transaction
   };
 
   let transactionPath = ({ paymentRoute, exchangeRoute })=> {
