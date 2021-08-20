@@ -1,3 +1,4 @@
+import plugins from './plugins'
 import routers from './routers'
 import { CONSTANTS } from 'depay-web3-constants'
 import { getAssets } from 'depay-web3-assets'
@@ -31,6 +32,7 @@ async function route({ blockchain, fromAddress, toAddress, token, amount, apiKey
     .then(filterTransferable)
     .then((tokens) => convertToRoutes({ tokens, toToken, toAmount: amountBN, fromAddress, toAddress }))
     .then((routes) => addExchangeRoutes({ blockchain, routes, amount, fromAddress, toAddress }))
+    .then(filterExchangeRoutesWithoutPlugin)
     .then((routes) => filterNotRoutable({ routes, token }))
     .then((routes) => addBalances({ routes, fromAddress }))
     .then((routes) => filterInsufficientBalance({ routes, token, amountBN }))
@@ -92,6 +94,13 @@ let addExchangeRoutes = async ({ blockchain, routes, amount, fromAddress, toAddr
       route.exchangeRoutes = exchangeRoutes[index]
       return route
     })
+  })
+}
+
+let filterExchangeRoutesWithoutPlugin = (routes) => {
+  return routes.filter((route)=>{
+    if(route.exchangeRoutes.length == 0) { return true }
+    return plugins[route.blockchain][route.exchangeRoutes[0].exchange.name] != undefined
   })
 }
 

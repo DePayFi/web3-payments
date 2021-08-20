@@ -180,6 +180,34 @@ describe('route', ()=> {
     expect(routes.map((route)=>route.fromToken.address)).toEqual([BUSD, BNB])
   })
 
+  describe('exchange routes without plugins', ()=> {
+
+    let pancakeswapPlugin
+
+    beforeEach(()=> {
+      pancakeswapPlugin = plugins[blockchain].pancakeswap
+      plugins[blockchain].pancakeswap = undefined
+    })
+
+    afterEach(()=> {
+      plugins[blockchain].pancakeswap = pancakeswapPlugin
+    })
+
+    it('filters routes which need to go through an exchange and that exchange has not a payment plugin yet', async ()=>{
+
+      let routes = await route({
+        fromAddress,
+        toAddress,
+        blockchain,
+        token: toToken,
+        amount: tokenAmountOut,
+        apiKey
+      })
+
+      expect(routes.map((route)=>route.fromToken.address)).toEqual([BUSD])
+    })
+  })
+
   it('filters routes that are not routable on any decentralized exchange', async ()=>{
     mockPair(CONSTANTS[blockchain].ZERO, [CAKE, WBNB])
 
