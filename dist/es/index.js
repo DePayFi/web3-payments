@@ -4428,14 +4428,14 @@ let filterNotRoutable = ({ routes, token }) => {
   return routes.filter((route) => {
     return (
       route.exchangeRoutes.length != 0 ||
-      route.fromToken.address == token // direct transfer always possible
+      route.fromToken.address.toLowerCase() == token.toLowerCase() // direct transfer always possible
     )
   })
 };
 
 let filterInsufficientBalance = ({ routes, token, amountBN }) => {
   return routes.filter((route) => {
-    if (route.fromToken.address == token) {
+    if (route.fromToken.address.toLowerCase() == token.toLowerCase()) {
       return route.fromBalance.gte(amountBN)
     } else {
       return route.fromBalance.gte(route.exchangeRoutes[0].amountInMax)
@@ -4449,7 +4449,7 @@ let addApproval = ({ routes, blockchain }) => {
   )).then(
     (allowances) => {
       routes.forEach((route, index) => {
-        if(route.fromToken == CONSTANTS[blockchain].NATIVE) {
+        if(route.fromToken.address.toLowerCase() == CONSTANTS[blockchain].NATIVE.toLowerCase()) {
           routes[index].approvalRequired = false;
         } else {
           routes[index].approvalRequired = route.fromBalance.gte(allowances[index]);
@@ -4483,7 +4483,7 @@ let addDirectTransferStatus = ({ routes, blockchain, token }) => {
 let addFromAmount = (routes)=> {
   return routes.map((route)=>{
     if(route.directTransfer) {
-      if(route.fromToken.address == CONSTANTS[route.blockchain].NATIVE) {
+      if(route.fromToken.address.toLowerCase() == CONSTANTS[route.blockchain].NATIVE.toLowerCase()) {
         route.fromAmount = route.transaction.value;
       } else {
         route.fromAmount = route.transaction.params[1];
@@ -4500,10 +4500,10 @@ let sortPaymentRoutes = ({ routes, token }) => {
   let bWins = 1;
   let equal = 0;
   return routes.sort((a, b) => {
-    if (a.fromToken.address == token) {
+    if (a.fromToken.address.toLowerCase() == token.toLowerCase()) {
       return aWins
     }
-    if (b.fromToken.address == token) {
+    if (b.fromToken.address.toLowerCase() == token.toLowerCase()) {
       return bWins
     }
 
@@ -4514,10 +4514,10 @@ let sortPaymentRoutes = ({ routes, token }) => {
       return aWins
     }
 
-    if (a.fromToken.address == CONSTANTS[a.blockchain].NATIVE) {
+    if (a.fromToken.address.toLowerCase() == CONSTANTS[a.blockchain].NATIVE.toLowerCase()) {
       return aWins
     }
-    if (b.fromToken.address == CONSTANTS[b.blockchain].NATIVE) {
+    if (b.fromToken.address.toLowerCase() == CONSTANTS[b.blockchain].NATIVE.toLowerCase()) {
       return bWins
     }
 
