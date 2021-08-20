@@ -2431,6 +2431,15 @@ depay-web3-wallets@^4.2.1:
     depay-web3-constants "^3.0.0"
     depay-web3-tokens "^2.3.0"
 
+depay-web3-wallets@^4.2.4:
+  version "4.2.4"
+  resolved "https://registry.yarnpkg.com/depay-web3-wallets/-/depay-web3-wallets-4.2.4.tgz#f65cb51eab54c377f3aa7b5656997a8dbec66dda"
+  integrity sha512-2SLId1TcU7kM3ToNMxPZiEUHrBZWNeMP0SxAzHM0PCgZIL16Gadu7E6/QmaQjbgX+9URSIQtO2/QS13aGgpCYQ==
+  dependencies:
+    depay-web3-blockchains "^2.1.0"
+    depay-web3-client "^4.0.2"
+    depay-web3-constants "^3.0.0"
+
 dir-glob@^3.0.1:
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/dir-glob/-/dir-glob-3.0.1.tgz#56dbf73d992a4a93ba1584f4534063fd2e41717f"
