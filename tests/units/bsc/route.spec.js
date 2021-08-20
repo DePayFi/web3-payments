@@ -215,7 +215,7 @@ describe('route', ()=> {
       fromAddress,
       toAddress,
       blockchain,
-      token: toToken,
+      token: toToken.toLowerCase(),
       amount: tokenAmountOut,
       apiKey
     })
