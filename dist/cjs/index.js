@@ -3,7 +3,7 @@
 Object.defineProperty(exports, '__esModule', { value: true });
 
 var depayWeb3Constants = require('depay-web3-constants');
-var depayWeb3Wallets = require('depay-web3-wallets');
+var depayWeb3Assets = require('depay-web3-assets');
 var depayWeb3Exchanges = require('depay-web3-exchanges');
 var depayWeb3Tokens = require('depay-web3-tokens');
 var depayWeb3Transaction = require('depay-web3-transaction');
@@ -4353,11 +4353,9 @@ class PaymentRoute {
 }
 
 async function route({ blockchain, fromAddress, toAddress, token, amount, apiKey }) {
-  let wallet = depayWeb3Wallets.getWallet();
   let toToken = new depayWeb3Tokens.Token({ blockchain, address: token });
   let amountBN = await toToken.BigNumber(amount);
-  let paymentRoutes = await wallet
-    .assets({ blockchain, apiKey })
+  let paymentRoutes = await depayWeb3Assets.getAssets({ blockchain, apiKey })
     .then(assetsToTokens)
     .then(filterTransferable)
     .then((tokens) => convertToRoutes({ tokens, toToken, toAmount: amountBN, fromAddress, toAddress }))

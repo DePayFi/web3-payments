@@ -1,6 +1,6 @@
 import routers from './routers'
 import { CONSTANTS } from 'depay-web3-constants'
-import { getWallet } from 'depay-web3-wallets'
+import { getAssets } from 'depay-web3-assets'
 import { route as exchangeRoute } from 'depay-web3-exchanges'
 import { routeToTransaction } from './transaction'
 import { Token } from 'depay-web3-tokens'
@@ -24,11 +24,9 @@ class PaymentRoute {
 }
 
 async function route({ blockchain, fromAddress, toAddress, token, amount, apiKey }) {
-  let wallet = getWallet()
   let toToken = new Token({ blockchain, address: token })
   let amountBN = await toToken.BigNumber(amount)
-  let paymentRoutes = await wallet
-    .assets({ blockchain, apiKey })
+  let paymentRoutes = await getAssets({ blockchain, apiKey })
     .then(assetsToTokens)
     .then(filterTransferable)
     .then((tokens) => convertToRoutes({ tokens, toToken, toAmount: amountBN, fromAddress, toAddress }))

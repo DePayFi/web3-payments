@@ -1,8 +1,8 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('depay-web3-constants'), require('depay-web3-wallets'), require('depay-web3-exchanges'), require('depay-web3-tokens'), require('depay-web3-transaction'), require('buffer')) :
-  typeof define === 'function' && define.amd ? define(['exports', 'depay-web3-constants', 'depay-web3-wallets', 'depay-web3-exchanges', 'depay-web3-tokens', 'depay-web3-transaction', 'buffer'], factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.Web3Payments = {}, global.Web3Constants, global.Web3Wallets, global.Web3Exchanges, global.Web3Tokens, global.Web3Transaction, global.require$$0));
-}(this, (function (exports, depayWeb3Constants, depayWeb3Wallets, depayWeb3Exchanges, depayWeb3Tokens, depayWeb3Transaction, require$$0) { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('depay-web3-constants'), require('depay-web3-assets'), require('depay-web3-exchanges'), require('depay-web3-tokens'), require('depay-web3-transaction'), require('buffer')) :
+  typeof define === 'function' && define.amd ? define(['exports', 'depay-web3-constants', 'depay-web3-assets', 'depay-web3-exchanges', 'depay-web3-tokens', 'depay-web3-transaction', 'buffer'], factory) :
+  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.Web3Payments = {}, global.Web3Constants, global.Web3Assets, global.Web3Exchanges, global.Web3Tokens, global.Web3Transaction, global.require$$0));
+}(this, (function (exports, depayWeb3Constants, depayWeb3Assets, depayWeb3Exchanges, depayWeb3Tokens, depayWeb3Transaction, require$$0) { 'use strict';
 
   function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
@@ -4348,11 +4348,9 @@
   }
 
   async function route({ blockchain, fromAddress, toAddress, token, amount, apiKey }) {
-    let wallet = depayWeb3Wallets.getWallet();
     let toToken = new depayWeb3Tokens.Token({ blockchain, address: token });
     let amountBN = await toToken.BigNumber(amount);
-    let paymentRoutes = await wallet
-      .assets({ blockchain, apiKey })
+    let paymentRoutes = await depayWeb3Assets.getAssets({ blockchain, apiKey })
       .then(assetsToTokens)
       .then(filterTransferable)
       .then((tokens) => convertToRoutes({ tokens, toToken, toAmount: amountBN, fromAddress, toAddress }))
