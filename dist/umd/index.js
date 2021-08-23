@@ -3926,7 +3926,7 @@
       return logger$1.throwArgumentError("invalid hexlify value", "value", value);
   }
 
-  const version = "bignumber/5.4.0";
+  const version = "bignumber/5.4.1";
 
   var BN = bn.BN;
   const logger = new Logger(version);
