@@ -13,7 +13,6 @@ npm install --save depay-web3-payments
 ```javascript
 import { route } from 'depay-web3-payments'
 
-This requires you to have a [DePay PRO apiKey](https://depay.fi/documentation/api#introduction).
 
 let paymentRoutes = route({
   blockchain: 'ethereum',
@@ -23,9 +22,9 @@ let paymentRoutes = route({
   toAddress: '0xb0252f13850a4823706607524de0b146820F2240',
   apiKey: 'YOUR-API-KEY'
 })
-
-///
 ```
+
+This requires you to have a [DePay PRO apiKey](https://depay.fi/documentation/api#introduction).
 
 ## Functionalities
 
