@@ -53,7 +53,7 @@ describe('route', ()=> {
 
   beforeEach(()=>{
     mock(blockchain)
-    mockAssets(blockchain, [
+    mockAssets({ blockchain, account: fromAddress, assets: [
       {
         "name": "Ether",
         "symbol": "ETH",
@@ -70,7 +70,7 @@ describe('route', ()=> {
         "address": DEPAY,
         "type": "ERC20"
       }
-    ])
+    ]})
     mockDecimals({ blockchain, api: Token[blockchain].ERC20, token: DEPAY, decimals: 18 })
     mockDecimals({ blockchain, api: Token[blockchain].ERC20, token: DAI, decimals: 18 })
 
@@ -285,7 +285,7 @@ describe('route', ()=> {
     let USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
     let USDCAmountInBN = ethers.BigNumber.from('300000000000000000')
     
-    mockAssets(blockchain, [
+    mockAssets({ blockchain, account: fromAddress, assets: [
       {
         "name": "Ether",
         "symbol": "ETH",
@@ -307,7 +307,7 @@ describe('route', ()=> {
         "address": USDC,
         "type": "ERC20"
       }
-    ])
+    ]})
 
     mockDecimals({ blockchain, api: Token[blockchain].ERC20, token: USDC, decimals: 18 })
     mockPair('0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc', [USDC, WETH])

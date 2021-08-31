@@ -4344,19 +4344,24 @@ class PaymentRoute {
   }
 }
 
-function getAllAssets({ accept, apiKey }) {
+async function getAllAssets({ accept, apiKey }) {
   let routes = [
     ...new Set(
       accept.map(
-        (configuration)=>({ blockchain: configuration.blockchain, fromAddress: configuration.fromAddress })
+        (configuration)=>(JSON.stringify({ blockchain: configuration.blockchain, fromAddress: configuration.fromAddress }))
       )
     )
   ];
-  return Promise.all(
+  return await Promise.all(
     routes.map(
-      (route)=>(getAssets({ blockchain: route.blockchain, account: route.fromAddress, apiKey }))
+      async (route)=> {
+        route = JSON.parse(route);
+        return await getAssets({ blockchain: route.blockchain, account: route.fromAddress, apiKey })
+      }
     )
-  ).then((assets)=>assets.flat())
+  ).then((assets)=>{
+    return assets.flat()
+  })
 }
 
 function convertToRoutes({ tokens, accept }) {
@@ -4391,16 +4396,17 @@ async function route({ accept, apiKey }) {
     .then(filterTransferableTokens)
     .then((tokens) => convertToRoutes({ tokens, accept }))
     .then(convertToAmounts)
+    .then(addDirectTransferStatus)
     .then(addExchangeRoutes)
     .then(filterExchangeRoutesWithoutPlugin)
     .then(filterNotRoutable)
     .then(addBalances)
     .then(filterInsufficientBalance)
     .then(addApproval)
-    .then(addDirectTransferStatus)
     .then(sortPaymentRoutes)
     .then(addTransactions)
-    .then(addFromAmount);
+    .then(addFromAmount)
+    .then(filterDuplicateFromTokens);
 
   return paymentRoutes
 }
@@ -4427,6 +4433,7 @@ let filterTransferableTokens = async (tokens) => {
 let addExchangeRoutes = async (routes) => {
   return await Promise.all(
     routes.map((route) => {
+      if(route.directTransfer) { return [] }
       return route$1({
         blockchain: route.blockchain,
         tokenIn: route.fromToken.address,
@@ -4485,7 +4492,7 @@ let addApproval = (routes) => {
               options = options || {};
               let approvalTransaction = new Transaction({
                 blockchain: route.blockchain,
-                address: routes[index].fromToken.address,
+                address: route.fromToken.address,
                 api: Token[route.blockchain].DEFAULT,
                 method: 'approve',
                 params: [routers[route.blockchain].address, CONSTANTS[route.blockchain].MAXINT]
@@ -4522,11 +4529,42 @@ let addFromAmount = (routes)=> {
   })
 };
 
+let filterDuplicateFromTokens = (routes) => {
+  return routes.filter((routeA, indexA)=>{
+    let otherMoreEfficientRoute = routes.find((routeB, indexB)=>{
+      if(routeA.fromToken.address != routeB.fromToken.address) { return false }
+      if(routeA.fromToken.blockchain != routeB.fromToken.blockchain) { return false }
+      if(routeB.fromAmount.lt(routeA.fromAmount)) { return true }
+      if(routeB.fromAmount.eq(routeA.fromAmount) && indexB < indexA) { return true }
+    });
+
+    return otherMoreEfficientRoute == undefined
+  })
+};
+
+let scoreBlockchainCost = (blockchain) => {
+  switch(blockchain) {
+    case 'bsc':
+      return 1
+    case 'ethereum':
+      return 2
+    default:
+      return 100
+  }
+};
+
 let sortPaymentRoutes = (routes) => {
   let aWins = -1;
   let bWins = 1;
   let equal = 0;
   return routes.sort((a, b) => {
+    if (scoreBlockchainCost(a.fromToken.blockchain) < scoreBlockchainCost(b.fromToken.blockchain)) {
+      return aWins
+    }
+    if (scoreBlockchainCost(b.fromToken.blockchain) < scoreBlockchainCost(a.fromToken.blockchain)) {
+      return bWins
+    }
+
     if (a.fromToken.address.toLowerCase() == a.toToken.address.toLowerCase()) {
       return aWins
     }

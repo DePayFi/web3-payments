@@ -2349,10 +2349,10 @@ del@^5.1.0:
     rimraf "^3.0.0"
     slash "^3.0.0"
 
-depay-web3-assets@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/depay-web3-assets/-/depay-web3-assets-1.1.0.tgz#9da71a93f6c5aea8656cc90a06227eb16e133ed7"
-  integrity sha512-T8BE+XhdJLYRVNqvbfcdbMcZP0Xx+Ux5xXHCqn2EO+NBz24Q7SySb+MZNS4jR+ChP/eDYHD+mnEQf5axkynVfg==
+depay-web3-assets@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/depay-web3-assets/-/depay-web3-assets-1.1.1.tgz#f02044cb5a94b547757f21bded3a28affa16078c"
+  integrity sha512-5XHg/Y0SW+C+N4P0UlLO2MLt2alI8eWhwNWb8+Q4YDXJ9N6U9eNrmSCWYkl9RKpmZ+wXw1HUf+GOTyv/7havhQ==
   dependencies:
     depay-web3-blockchains "^2.1.0"
     depay-web3-client "^4.0.2"
@@ -2410,12 +2410,12 @@ depay-web3-exchanges@^4.1.0:
     depay-web3-tokens "^3.0.3"
     depay-web3-transaction "^3.2.0"
 
-depay-web3-mock@^5.5.5:
-  version "5.5.5"
-  resolved "https://registry.yarnpkg.com/depay-web3-mock/-/depay-web3-mock-5.5.5.tgz#1dcf2a0e43c9b400cced7004c21d78dfd829a597"
-  integrity sha512-QOg2e8qsD25gUojz12AUaXMFAFtbs8HpGBSrITEVRzgnQrBPJwKFEmRK6COCng4eIuKwIKHCij5o6O74v0wVgQ==
+depay-web3-mock@^5.9.0:
+  version "5.9.0"
+  resolved "https://registry.yarnpkg.com/depay-web3-mock/-/depay-web3-mock-5.9.0.tgz#9f2b4fab47424a04804cc74b41cc0c6fe2b3e040"
+  integrity sha512-YbeFaZQjx10QoSBaQv2kqhUWm4MxeMnnA6w/Auctntck3t3DGWFlYMYGBSgnz4aVh/HNrqlWoRRnZmTSYLfyNw==
   dependencies:
-    depay-web3-blockchains "^2.1.0"
+    depay-web3-blockchains "^2.4.0"
     ethers "^5.4.4"
 
 depay-web3-tokens@^2.3.0:
