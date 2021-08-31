@@ -94,11 +94,13 @@ describe('route', ()=> {
   it('provides all possible payment routes based on wallet assets and decentralized exchange routes', async ()=>{
 
     let routes = await route({
-      fromAddress,
-      toAddress,
-      blockchain,
-      token: toToken,
-      amount: tokenAmountOut,
+      accept: [{
+        fromAddress,
+        toAddress,
+        blockchain,
+        token: toToken,
+        amount: tokenAmountOut
+      }],
       apiKey
     })
 
@@ -169,11 +171,13 @@ describe('route', ()=> {
     mockNotTransferable({ blockchain, api: Token[blockchain].ERC20, token: DAI })
     
     let routes = await route({
-      fromAddress,
-      toAddress,
-      blockchain,
-      token: toToken,
-      amount: tokenAmountOut,
+      accept: [{
+        fromAddress,
+        toAddress,
+        blockchain,
+        token: toToken,
+        amount: tokenAmountOut
+      }],
       apiKey
     })
 
@@ -196,11 +200,13 @@ describe('route', ()=> {
     it('filters routes which need to go through an exchange and that exchange has not a payment plugin yet', async ()=>{
 
       let routes = await route({
-        fromAddress,
-        toAddress,
-        blockchain,
-        token: toToken,
-        amount: tokenAmountOut,
+        accept: [{
+          fromAddress,
+          toAddress,
+          blockchain,
+          token: toToken,
+          amount: tokenAmountOut,
+        }],
         apiKey
       })
 
@@ -212,11 +218,13 @@ describe('route', ()=> {
     mockPair(CONSTANTS[blockchain].ZERO, [DAI, WETH])
 
     let routes = await route({
-      fromAddress,
-      toAddress,
-      blockchain,
-      token: toToken.toLowerCase(),
-      amount: tokenAmountOut,
+      accept: [{
+        fromAddress,
+        toAddress,
+        blockchain,
+        token: toToken.toLowerCase(),
+        amount: tokenAmountOut,
+      }],
       apiKey
     })
 
@@ -227,11 +235,13 @@ describe('route', ()=> {
     mockBalance({ blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, balance: ethers.BigNumber.from('290000000000000000') })
 
     let routes = await route({
-      fromAddress,
-      toAddress,
-      blockchain,
-      token: toToken,
-      amount: tokenAmountOut,
+      accept: [{
+        fromAddress,
+        toAddress,
+        blockchain,
+        token: toToken,
+        amount: tokenAmountOut,
+      }],
       apiKey
     })
 
@@ -242,11 +252,13 @@ describe('route', ()=> {
     mock({ blockchain, balance: { for: fromAddress, return: ethers.BigNumber.from('10000000000000000000') } })
 
     let routes = await route({
-      fromAddress,
-      toAddress,
-      blockchain,
-      token: toToken,
-      amount: tokenAmountOut,
+      accept: [{
+        fromAddress,
+        toAddress,
+        blockchain,
+        token: toToken,
+        amount: tokenAmountOut,
+      }],
       apiKey
     })
 
@@ -255,11 +267,13 @@ describe('route', ()=> {
 
   it('it first uses the direct token transfer, then native token and last other tokens', async ()=>{
     let routes = await route({
-      fromAddress,
-      toAddress,
-      blockchain,
-      token: toToken,
-      amount: tokenAmountOut,
+      accept: [{
+        fromAddress,
+        toAddress,
+        blockchain,
+        token: toToken,
+        amount: tokenAmountOut,
+      }],
       apiKey
     })
 
@@ -305,11 +319,13 @@ describe('route', ()=> {
     mockAllowance({ blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, spender: routers[blockchain].address, allowance: ethers.BigNumber.from('0') })
 
     let routes = await route({
-      fromAddress,
-      toAddress,
-      blockchain,
-      token: toToken,
-      amount: tokenAmountOut,
+      accept: [{
+        fromAddress,
+        toAddress,
+        blockchain,
+        token: toToken,
+        amount: tokenAmountOut,
+      }],
       apiKey
     })
 
@@ -334,11 +350,13 @@ describe('route', ()=> {
       })
        
       let routes = await route({
-        fromAddress,
-        toAddress,
-        blockchain,
-        token: toToken,
-        amount: tokenAmountOut,
+        accept: [{
+          fromAddress,
+          toAddress,
+          blockchain,
+          token: toToken,
+          amount: tokenAmountOut,
+        }],
         apiKey
       })
 
@@ -369,11 +387,13 @@ describe('route', ()=> {
       })
 
       let routes = await route({
-        fromAddress,
-        toAddress,
-        blockchain,
-        token: toToken,
-        amount: tokenAmountOut,
+        accept: [{
+          fromAddress,
+          toAddress,
+          blockchain,
+          token: toToken,
+          amount: tokenAmountOut,
+        }],
         apiKey
       })
 
@@ -411,11 +431,13 @@ describe('route', ()=> {
       })
 
       let routes = await route({
-        fromAddress,
-        toAddress,
-        blockchain,
-        token: toToken,
-        amount: tokenAmountOut,
+        accept: [{
+          fromAddress,
+          toAddress,
+          blockchain,
+          token: toToken,
+          amount: tokenAmountOut,
+        }],
         apiKey
       })
 
@@ -449,11 +471,13 @@ describe('route', ()=> {
         })
 
         let routes = await route({
-          fromAddress,
-          toAddress,
-          blockchain,
-          token: toToken,
-          amount: tokenAmountOut,
+          accept: [{
+            fromAddress,
+            toAddress,
+            blockchain,
+            token: toToken,
+            amount: tokenAmountOut,
+          }],
           apiKey
         })
 
@@ -492,11 +516,13 @@ describe('route', ()=> {
         })
 
         let routes = await route({
-          fromAddress,
-          toAddress,
-          blockchain,
-          token: toToken,
-          amount: tokenAmountOut,
+          accept: [{
+            fromAddress,
+            toAddress,
+            blockchain,
+            token: toToken,
+            amount: tokenAmountOut,
+          }],
           apiKey
         })
 

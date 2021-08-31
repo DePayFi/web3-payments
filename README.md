@@ -13,13 +13,14 @@ npm install --save depay-web3-payments
 ```javascript
 import { route } from 'depay-web3-payments'
 
-
 let paymentRoutes = route({
-  blockchain: 'ethereum',
-  token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
-  amount: 20,
-  fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
-  toAddress: '0xb0252f13850a4823706607524de0b146820F2240',
+  accept: [{
+    blockchain: 'ethereum',
+    token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
+    amount: 20,
+    fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
+    toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
+  }],
   apiKey: 'YOUR-API-KEY'
 })
 ```
@@ -36,11 +37,38 @@ Routes payment and returns payment routes:
 import { route } from 'depay-web3-payments'
 
 let paymentRoutes = route({
-  blockchain: 'ethereum',
-  token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
-  amount: 20,
-  fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
-  toAddress: '0xb0252f13850a4823706607524de0b146820F2240',
+  accept: [{
+    blockchain: 'ethereum',
+    token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
+    amount: 20,
+    fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
+    toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
+  }],
+  apiKey: 'YOUR-API-KEY'
+})
+```
+
+Also allows to pass in multiple accepted means of payment: 
+
+```javascript
+import { route } from 'depay-web3-payments'
+
+let paymentRoutes = route({
+  accept: [
+    {
+      blockchain: 'ethereum',
+      token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
+      amount: 20,
+      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
+      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
+    },{
+      blockchain: 'bsc',
+      token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
+      amount: 20,
+      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
+      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
+    }
+  ],
   apiKey: 'YOUR-API-KEY'
 })
 ```
@@ -84,7 +112,7 @@ Payment routes are provided in the following structure:
 ```
 {
   blockchain: String (e.g. ethereum)
-  fromToken: String (e.g. '0x6B175474E89094C44Da98b954EedeAC495271d0F')
+  fromToken: Token (see depay-web3-tokens)
   fromBalance: BigNumber (e.g. <BigNumber '10000000000000000000'>)
   toToken: Token (see depay-web3-tokens)
   toAmount: BigNumber (e.g. <BigNumber '21000000000000000000'>)

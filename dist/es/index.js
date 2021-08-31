@@ -4344,29 +4344,69 @@ class PaymentRoute {
   }
 }
 
-async function route({ blockchain, fromAddress, toAddress, token, amount, apiKey }) {
-  let toToken = new Token({ blockchain, address: token });
-  let amountBN = await toToken.BigNumber(amount);
-  let paymentRoutes = await getAssets({ blockchain, apiKey })
+function getAllAssets({ accept, apiKey }) {
+  let routes = [
+    ...new Set(
+      accept.map(
+        (configuration)=>({ blockchain: configuration.blockchain, fromAddress: configuration.fromAddress })
+      )
+    )
+  ];
+  return Promise.all(
+    routes.map(
+      (route)=>(getAssets({ blockchain: route.blockchain, account: route.fromAddress, apiKey }))
+    )
+  ).then((assets)=>assets.flat())
+}
+
+function convertToRoutes({ tokens, accept }) {
+
+  return tokens.map((fromToken)=>{
+    let relevantConfigurations = accept.filter((configuration)=>(configuration.blockchain == fromToken.blockchain));
+    return relevantConfigurations.map((configuration)=>{
+      let blockchain = configuration.blockchain;
+      let toToken = new Token({ blockchain, address: configuration.token });
+      return new PaymentRoute({
+        blockchain,
+        fromToken: fromToken,
+        toToken: toToken,
+        toAmount: configuration.amount,
+        fromAddress: configuration.fromAddress,
+        toAddress: configuration.toAddress
+      })
+    })
+  }).flat()
+}
+
+async function convertToAmounts(routes) {
+  return await Promise.all(routes.map(async (route)=>{
+    route.toAmount = await route.toToken.BigNumber(route.toAmount);
+    return route
+  }))
+}
+
+async function route({ accept, apiKey }) {
+  let paymentRoutes = getAllAssets({ accept, apiKey })
     .then(assetsToTokens)
-    .then(filterTransferable)
-    .then((tokens) => convertToRoutes({ tokens, toToken, toAmount: amountBN, fromAddress, toAddress }))
-    .then((routes) => addExchangeRoutes({ blockchain, routes, amount, fromAddress, toAddress }))
+    .then(filterTransferableTokens)
+    .then((tokens) => convertToRoutes({ tokens, accept }))
+    .then(convertToAmounts)
+    .then(addExchangeRoutes)
     .then(filterExchangeRoutesWithoutPlugin)
-    .then((routes) => filterNotRoutable({ routes, token }))
-    .then((routes) => addBalances({ routes, fromAddress }))
-    .then((routes) => filterInsufficientBalance({ routes, token, amountBN }))
-    .then((routes) => addApproval({ routes, blockchain }))
-    .then((routes) => addDirectTransferStatus({ routes, blockchain, token }))
-    .then((routes) => sortPaymentRoutes({ routes, token }))
+    .then(filterNotRoutable)
+    .then(addBalances)
+    .then(filterInsufficientBalance)
+    .then(addApproval)
+    .then(addDirectTransferStatus)
+    .then(sortPaymentRoutes)
     .then(addTransactions)
     .then(addFromAmount);
 
   return paymentRoutes
 }
 
-let addBalances = async ({ routes, fromAddress }) => {
-  return Promise.all(routes.map((route) => route.fromToken.balance(fromAddress))).then((balances) => {
+let addBalances = async (routes) => {
+  return Promise.all(routes.map((route) => route.fromToken.balance(route.fromAddress))).then((balances) => {
     balances.forEach((balance, index) => {
       routes[index].fromBalance = balance;
     });
@@ -4378,35 +4418,22 @@ let assetsToTokens = async (assets) => {
   return assets.map((asset) => new Token({ blockchain: asset.blockchain, address: asset.address }))
 };
 
-let filterTransferable = async (tokens) => {
+let filterTransferableTokens = async (tokens) => {
   return await Promise.all(tokens.map((token) => token.transferable())).then((transferables) =>
     tokens.filter((token, index) => transferables[index]),
   )
 };
 
-let convertToRoutes = ({ tokens, toToken, toAmount, fromAddress, toAddress }) => {
-  return tokens.map((token) => {
-    return new PaymentRoute({
-      blockchain: toToken.blockchain,
-      fromToken: token,
-      toToken,
-      toAmount,
-      fromAddress,
-      toAddress
-    })
-  })
-};
-
-let addExchangeRoutes = async ({ blockchain, routes, amount, fromAddress, toAddress }) => {
+let addExchangeRoutes = async (routes) => {
   return await Promise.all(
     routes.map((route) => {
       return route$1({
-        blockchain,
+        blockchain: route.blockchain,
         tokenIn: route.fromToken.address,
         tokenOut: route.toToken.address,
-        amountOutMin: amount,
-        fromAddress,
-        toAddress,
+        amountOutMin: route.toAmount,
+        fromAddress: route.fromAddress,
+        toAddress: route.toAddress
       })
     }),
   ).then((exchangeRoutes) => {
@@ -4424,32 +4451,32 @@ let filterExchangeRoutesWithoutPlugin = (routes) => {
   })
 };
 
-let filterNotRoutable = ({ routes, token }) => {
+let filterNotRoutable = (routes) => {
   return routes.filter((route) => {
     return (
       route.exchangeRoutes.length != 0 ||
-      route.fromToken.address.toLowerCase() == token.toLowerCase() // direct transfer always possible
+      route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() // direct transfer always possible
     )
   })
 };
 
-let filterInsufficientBalance = ({ routes, token, amountBN }) => {
+let filterInsufficientBalance = (routes) => {
   return routes.filter((route) => {
-    if (route.fromToken.address.toLowerCase() == token.toLowerCase()) {
-      return route.fromBalance.gte(amountBN)
+    if (route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase()) {
+      return route.fromBalance.gte(route.toAmount)
     } else {
       return route.fromBalance.gte(route.exchangeRoutes[0].amountInMax)
     }
   })
 };
 
-let addApproval = ({ routes, blockchain }) => {
+let addApproval = (routes) => {
   return Promise.all(routes.map(
-    (route) => route.fromToken.allowance(routers[blockchain].address)
+    (route) => route.fromToken.allowance(routers[route.blockchain].address)
   )).then(
     (allowances) => {
       routes.forEach((route, index) => {
-        if(route.fromToken.address.toLowerCase() == CONSTANTS[blockchain].NATIVE.toLowerCase()) {
+        if(route.fromToken.address.toLowerCase() == CONSTANTS[route.blockchain].NATIVE.toLowerCase()) {
           routes[index].approvalRequired = false;
         } else {
           routes[index].approvalRequired = route.fromBalance.gte(allowances[index]);
@@ -4457,11 +4484,11 @@ let addApproval = ({ routes, blockchain }) => {
             routes[index].approve = (options)=>{
               options = options || {};
               let approvalTransaction = new Transaction({
-                blockchain,
+                blockchain: route.blockchain,
                 address: routes[index].fromToken.address,
-                api: Token[blockchain].DEFAULT,
+                api: Token[route.blockchain].DEFAULT,
                 method: 'approve',
-                params: [routers[blockchain].address, CONSTANTS[blockchain].MAXINT]
+                params: [routers[route.blockchain].address, CONSTANTS[route.blockchain].MAXINT]
               });
               return approvalTransaction.submit(options)
             };
@@ -4473,9 +4500,9 @@ let addApproval = ({ routes, blockchain }) => {
   )
 };
 
-let addDirectTransferStatus = ({ routes, blockchain, token }) => {
+let addDirectTransferStatus = (routes) => {
   return routes.map((route)=>{
-    route.directTransfer = route.blockchain == blockchain && route.fromToken.address.toLowerCase() == token.toLowerCase();
+    route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase();
     return route
   })
 };
@@ -4495,15 +4522,15 @@ let addFromAmount = (routes)=> {
   })
 };
 
-let sortPaymentRoutes = ({ routes, token }) => {
+let sortPaymentRoutes = (routes) => {
   let aWins = -1;
   let bWins = 1;
   let equal = 0;
   return routes.sort((a, b) => {
-    if (a.fromToken.address.toLowerCase() == token.toLowerCase()) {
+    if (a.fromToken.address.toLowerCase() == a.toToken.address.toLowerCase()) {
       return aWins
     }
-    if (b.fromToken.address.toLowerCase() == token.toLowerCase()) {
+    if (b.fromToken.address.toLowerCase() == b.toToken.address.toLowerCase()) {
       return bWins
     }
 

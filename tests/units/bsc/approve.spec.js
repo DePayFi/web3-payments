@@ -105,11 +105,13 @@ describe('route', ()=> {
     })
 
     let routes = await route({
-      fromAddress,
-      toAddress,
-      blockchain,
-      token: toToken,
-      amount: tokenAmountOut,
+      accept: [{
+        fromAddress,
+        toAddress,
+        blockchain,
+        token: toToken,
+        amount: tokenAmountOut,
+      }],
       apiKey
     })
 
