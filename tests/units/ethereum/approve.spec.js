@@ -53,7 +53,7 @@ describe('route', ()=> {
 
   beforeEach(()=>{
     mock(blockchain)
-    mockAssets(blockchain, [
+    mockAssets({ blockchain, account: fromAddress, assets: [
       {
         "name": "Ether",
         "symbol": "ETH",
@@ -70,7 +70,7 @@ describe('route', ()=> {
         "address": DEPAY,
         "type": "ERC20"
       }
-    ])
+    ]})
     mockDecimals({ blockchain, api: Token[blockchain].ERC20, token: DEPAY, decimals: 18 })
     mockDecimals({ blockchain, api: Token[blockchain].ERC20, token: DAI, decimals: 18 })
 
@@ -92,7 +92,7 @@ describe('route', ()=> {
 
   })
 
-  it('provides all possible payment routes based on wallet assets and decentralized exchange routes', async ()=>{
+  it('provides an approve function together with the payment routing', async ()=>{
 
     mock({
       blockchain: 'ethereum',
@@ -106,11 +106,13 @@ describe('route', ()=> {
     })
 
     let routes = await route({
-      fromAddress,
-      toAddress,
-      blockchain,
-      token: toToken,
-      amount: tokenAmountOut,
+      accept: [{
+        fromAddress,
+        toAddress,
+        blockchain,
+        token: toToken,
+        amount: tokenAmountOut
+      }],
       apiKey
     })
 

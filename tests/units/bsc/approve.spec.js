@@ -53,7 +53,7 @@ describe('route', ()=> {
 
   beforeEach(()=>{
     mock(blockchain)
-    mockAssets(blockchain, [
+    mockAssets({ blockchain, account: fromAddress, assets: [
       {
         "name": "Binance Coin",
         "symbol": "BNB",
@@ -70,7 +70,7 @@ describe('route', ()=> {
         "address": BUSD,
         "type": "BEP20"
       }
-    ])
+    ]})
     mockDecimals({ blockchain, api: Token[blockchain].BEP20, token: BUSD, decimals: 18 })
     mockDecimals({ blockchain, api: Token[blockchain].BEP20, token: CAKE, decimals: 18 })
 
@@ -91,7 +91,7 @@ describe('route', ()=> {
     mock({ blockchain, balance: { for: fromAddress, return: bnbBalanceBN } })
   })
 
-  it('provides all possible payment routes based on wallet assets and decentralized exchange routes', async ()=>{
+  it('provides an approve function together with the payment routing', async ()=>{
 
     mock({
       blockchain: 'bsc',
@@ -105,11 +105,13 @@ describe('route', ()=> {
     })
 
     let routes = await route({
-      fromAddress,
-      toAddress,
-      blockchain,
-      token: toToken,
-      amount: tokenAmountOut,
+      accept: [{
+        fromAddress,
+        toAddress,
+        blockchain,
+        token: toToken,
+        amount: tokenAmountOut,
+      }],
       apiKey
     })
 
