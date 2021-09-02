@@ -3536,7 +3536,7 @@ var bn = createCommonjsModule(function (module) {
 })(module, commonjsGlobal);
 });
 
-const version$2 = "logger/5.4.0";
+const version$2 = "logger/5.4.1";
 
 let _permanentCensorErrors = false;
 let _censorErrors = false;
@@ -3653,6 +3653,7 @@ var ErrorCode;
     //   - receipt: the receipt of the replacement
     ErrorCode["TRANSACTION_REPLACED"] = "TRANSACTION_REPLACED";
 })(ErrorCode || (ErrorCode = {}));
+const HEX = "0123456789abcdef";
 class Logger {
     constructor(version) {
         Object.defineProperty(this, "version", {
@@ -3693,8 +3694,19 @@ class Logger {
         }
         const messageDetails = [];
         Object.keys(params).forEach((key) => {
+            const value = params[key];
             try {
-                messageDetails.push(key + "=" + JSON.stringify(params[key]));
+                if (value instanceof Uint8Array) {
+                    let hex = "";
+                    for (let i = 0; i < value.length; i++) {
+                        hex += HEX[value[i] >> 4];
+                        hex += HEX[value[i] & 0x0f];
+                    }
+                    messageDetails.push(key + "=Uint8Array(0x" + hex + ")");
+                }
+                else {
+                    messageDetails.push(key + "=" + JSON.stringify(value));
+                }
             }
             catch (error) {
                 messageDetails.push(key + "=" + JSON.stringify(params[key].toString()));
