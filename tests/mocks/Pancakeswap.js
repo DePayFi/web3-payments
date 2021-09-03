@@ -1,8 +1,9 @@
 import { PancakeswapFactory, PancakeswapRouter } from '../apis'
 import { mock } from 'depay-web3-mock'
 
-let mockPair = (pair, params)=>{
+let mockPair = (provider, pair, params)=>{
   mock({
+    provider,
     blockchain: 'bsc',
     call: {
       to: '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73',
@@ -14,8 +15,9 @@ let mockPair = (pair, params)=>{
   })
 }
 
-let mockAmounts = ({ method, params, amounts })=>{
+let mockAmounts = ({ provider, method, params, amounts })=>{
   mock({
+    provider,
     blockchain: 'bsc',
     call: {
       to: '0x10ED43C718714eb63d5aA57B78B54704E256024E',

@@ -3,12 +3,12 @@ import plugins from 'src/plugins'
 import routers from 'src/routers'
 import { CONSTANTS } from 'depay-web3-constants'
 import { ethers } from 'ethers'
-import { mock, resetMocks, mockJsonRpcProvider } from 'depay-web3-mock'
+import { mock, connect, resetMocks, mockJsonRpcProvider } from 'depay-web3-mock'
 import { mockAssets } from 'tests/mocks/DePayPRO'
 import { mockDecimals, mockBalance, mockNotTransferable, mockAllowance } from 'tests/mocks/tokens'
 import { mockPair as mockPancakeSwapPair, mockAmounts as mockPancakeSwapAmounts } from 'tests/mocks/Pancakeswap'
 import { mockPair as mockUniswapPair, mockAmounts as mockUniswapAmounts } from 'tests/mocks/UniswapV2'
-import { resetCache } from 'depay-web3-client'
+import { resetCache, provider } from 'depay-web3-client'
 import { route } from 'src'
 import { Token } from 'depay-web3-tokens'
 
@@ -17,7 +17,6 @@ describe('route', ()=> {
   beforeEach(resetMocks)
   beforeEach(resetCache)
   beforeEach(()=>fetchMock.reset())
-  afterEach(resetMocks)
 
   let fromAddress = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045'
   let toAddress = '0x65aBbdEd9B937E38480A50eca85A8E4D2c8350E4'
@@ -47,6 +46,8 @@ describe('route', ()=> {
 
   it('provides payment routes for multiple means of payments on multiple blockchains', async ()=>{
 
+    mock('ethereum')
+
     mockAssets({ blockchain: 'ethereum', account: fromAddress, assets: [
       {
         "name": "Ether",
@@ -60,21 +61,21 @@ describe('route', ()=> {
         "type": "ERC20"
       }
     ]})
-    mockDecimals({ blockchain: 'ethereum', api: Token.ethereum.ERC20, token: USDT_ethereum, decimals: 6 })
-    mockDecimals({ blockchain: 'ethereum', api: Token.ethereum.ERC20, token: DAI_ethereum, decimals: 18 })
-    mockUniswapPair('0x0d4a11d5EEaaC28EC3F61d100daF4d40471f1852', [WETH, USDT_ethereum])
-    mockUniswapPair('0x0d4a11d5EEaaC28EC3F61d100daF4d40471f1852', [USDT_ethereum, WETH])
-    mockUniswapPair('0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11', [WETH, DAI_ethereum])
-    mockUniswapPair('0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11', [DAI_ethereum, WETH])
-    mockUniswapPair(CONSTANTS.ethereum.ZERO, [DAI_ethereum, USDT_ethereum])
-    mock({ blockchain: 'ethereum', balance: { for: fromAddress, return: ETH_balance } })
-    mockBalance({ blockchain: 'ethereum', api: Token.ethereum.ERC20, token: DAI_ethereum, account: fromAddress, balance: DAI_ethereum_balance })
-    mockUniswapAmounts({ method: 'getAmountsIn', params: [USDT_ethereum_amount, [WETH, USDT_ethereum]], amounts: [WETH_USDT_ethereum_amountIn, USDT_ethereum_amount] })
-    mockUniswapAmounts({ method: 'getAmountsIn', params: [DAI_ethereum_amount, [WETH, DAI_ethereum]], amounts: [WETH_DAI_ethereum_amountIn, DAI_ethereum_amount] })
-    mockUniswapAmounts({ method: 'getAmountsIn', params: [USDT_ethereum_amount, [DAI_ethereum, WETH, USDT_ethereum]], amounts: [DAI_ethereum_amountIn, WETH_DAI_ethereum_amountIn, USDT_ethereum_amount] })
-    mockAllowance({ blockchain: 'ethereum', api: Token.ethereum.ERC20, token: DAI_ethereum, account: fromAddress, spender: routers.ethereum.address, allowance: CONSTANTS.ethereum.MAXINT })
+    mockDecimals({ provider: provider('ethereum'), blockchain: 'ethereum', api: Token.ethereum.ERC20, token: USDT_ethereum, decimals: 6 })
+    mockDecimals({ provider: provider('ethereum'), blockchain: 'ethereum', api: Token.ethereum.ERC20, token: DAI_ethereum, decimals: 18 })
+    mockUniswapPair(provider('ethereum'), '0x0d4a11d5EEaaC28EC3F61d100daF4d40471f1852', [WETH, USDT_ethereum])
+    mockUniswapPair(provider('ethereum'), '0x0d4a11d5EEaaC28EC3F61d100daF4d40471f1852', [USDT_ethereum, WETH])
+    mockUniswapPair(provider('ethereum'), '0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11', [WETH, DAI_ethereum])
+    mockUniswapPair(provider('ethereum'), '0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11', [DAI_ethereum, WETH])
+    mockUniswapPair(provider('ethereum'), CONSTANTS.ethereum.ZERO, [DAI_ethereum, USDT_ethereum])
+    mock({ provider: provider('ethereum'), blockchain: 'ethereum', balance: { for: fromAddress, return: ETH_balance } })
+    mockBalance({ provider: provider('ethereum'), blockchain: 'ethereum', api: Token.ethereum.ERC20, token: DAI_ethereum, account: fromAddress, balance: DAI_ethereum_balance })
+    mockUniswapAmounts({ provider: provider('ethereum'), method: 'getAmountsIn', params: [USDT_ethereum_amount, [WETH, USDT_ethereum]], amounts: [WETH_USDT_ethereum_amountIn, USDT_ethereum_amount] })
+    mockUniswapAmounts({ provider: provider('ethereum'), method: 'getAmountsIn', params: [DAI_ethereum_amount, [WETH, DAI_ethereum]], amounts: [WETH_DAI_ethereum_amountIn, DAI_ethereum_amount] })
+    mockUniswapAmounts({ provider: provider('ethereum'), method: 'getAmountsIn', params: [USDT_ethereum_amount, [DAI_ethereum, WETH, USDT_ethereum]], amounts: [DAI_ethereum_amountIn, WETH_DAI_ethereum_amountIn, USDT_ethereum_amount] })
+    mockAllowance({ provider: provider('ethereum'), blockchain: 'ethereum', api: Token.ethereum.ERC20, token: DAI_ethereum, account: fromAddress, spender: routers.ethereum.address, allowance: CONSTANTS.ethereum.MAXINT })
 
-    mockAssets({ blockchain: 'bsc', account: fromAddress, assets: [
+    mockAssets({ provider: provider('ethereum'), blockchain: 'bsc', account: fromAddress, assets: [
       {
         "name": "Binance Coin",
         "symbol": "BNB",
@@ -87,29 +88,25 @@ describe('route', ()=> {
         "type": "BEP20"
       }
     ]})
-    mockDecimals({ blockchain: 'bsc', api: Token.bsc.BEP20, token: USDT_bsc, decimals: 18 })
-    mockDecimals({ blockchain: 'bsc', api: Token.bsc.BEP20, token: DAI_bsc, decimals: 18 })
-    mockDecimals({ blockchain: 'bsc', api: Token.bsc.BEP20, token: BUSD, decimals: 18 })
-    mockPancakeSwapPair('0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE', [WBNB, USDT_bsc])
-    mockPancakeSwapPair('0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE', [USDT_bsc, WBNB])
-    mockPancakeSwapPair('0xc7c3cCCE4FA25700fD5574DA7E200ae28BBd36A3', [WBNB, DAI_bsc])
-    mockPancakeSwapPair('0xc7c3cCCE4FA25700fD5574DA7E200ae28BBd36A3', [DAI_bsc, WBNB])
-    mockPancakeSwapPair(CONSTANTS.bsc.ZERO, [BUSD, USDT_bsc])
-    mockPancakeSwapPair(CONSTANTS.bsc.ZERO, [BUSD, DAI_bsc])
-    mockPancakeSwapPair('0x66FDB2eCCfB58cF098eaa419e5EfDe841368e489', [BUSD, WBNB])
-    mockPancakeSwapAmounts({ method: 'getAmountsIn', params: [USDT_bsc_amount ,[WBNB, USDT_bsc]], amounts: [WBNB_USDT_bsc_amountIn, USDT_bsc_amount] })
-    mockPancakeSwapAmounts({ method: 'getAmountsIn', params: [DAI_bsc_amount ,[WBNB, DAI_bsc]], amounts: [WBNB_DAI_bsc_amountIn, DAI_bsc_amount] })
-    mockPancakeSwapAmounts({ method: 'getAmountsIn', params: [USDT_bsc_amount ,[BUSD, WBNB, USDT_bsc]], amounts: [BUSD_bsc_amountIn, WBNB_USDT_bsc_amountIn, USDT_bsc_amount] })
-    mockPancakeSwapAmounts({ method: 'getAmountsIn', params: [DAI_bsc_amount ,[BUSD, WBNB, DAI_bsc]], amounts: [BUSD_bsc_amountIn, WBNB_DAI_bsc_amountIn, DAI_bsc_amount] })
-    mock({ blockchain: 'bsc', balance: { for: fromAddress, return: BNB_balance } })
-    mockBalance({ blockchain: 'bsc', api: Token.bsc.BEP20, token: BUSD, account: fromAddress, balance: BUSD_balance })
-    mockAllowance({ blockchain: 'bsc', api: Token.bsc.BEP20, token: BUSD, account: fromAddress, spender: routers.bsc.address, allowance: CONSTANTS.bsc.MAXINT })
+    mockDecimals({ provider: provider('bsc'), blockchain: 'bsc', api: Token.bsc.BEP20, token: USDT_bsc, decimals: 18 })
+    mockDecimals({ provider: provider('bsc'), blockchain: 'bsc', api: Token.bsc.BEP20, token: DAI_bsc, decimals: 18 })
+    mockDecimals({ provider: provider('bsc'), blockchain: 'bsc', api: Token.bsc.BEP20, token: BUSD, decimals: 18 })
+    mockPancakeSwapPair(provider('bsc'), '0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE', [WBNB, USDT_bsc])
+    mockPancakeSwapPair(provider('bsc'), '0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE', [USDT_bsc, WBNB])
+    mockPancakeSwapPair(provider('bsc'), '0xc7c3cCCE4FA25700fD5574DA7E200ae28BBd36A3', [WBNB, DAI_bsc])
+    mockPancakeSwapPair(provider('bsc'), '0xc7c3cCCE4FA25700fD5574DA7E200ae28BBd36A3', [DAI_bsc, WBNB])
+    mockPancakeSwapPair(provider('bsc'), CONSTANTS.bsc.ZERO, [BUSD, USDT_bsc])
+    mockPancakeSwapPair(provider('bsc'), CONSTANTS.bsc.ZERO, [BUSD, DAI_bsc])
+    mockPancakeSwapPair(provider('bsc'), '0x66FDB2eCCfB58cF098eaa419e5EfDe841368e489', [BUSD, WBNB])
+    mockPancakeSwapAmounts({ provider: provider('bsc'), method: 'getAmountsIn', params: [USDT_bsc_amount ,[WBNB, USDT_bsc]], amounts: [WBNB_USDT_bsc_amountIn, USDT_bsc_amount] })
+    mockPancakeSwapAmounts({ provider: provider('bsc'), method: 'getAmountsIn', params: [DAI_bsc_amount ,[WBNB, DAI_bsc]], amounts: [WBNB_DAI_bsc_amountIn, DAI_bsc_amount] })
+    mockPancakeSwapAmounts({ provider: provider('bsc'), method: 'getAmountsIn', params: [USDT_bsc_amount ,[BUSD, WBNB, USDT_bsc]], amounts: [BUSD_bsc_amountIn, WBNB_USDT_bsc_amountIn, USDT_bsc_amount] })
+    mockPancakeSwapAmounts({ provider: provider('bsc'), method: 'getAmountsIn', params: [DAI_bsc_amount ,[BUSD, WBNB, DAI_bsc]], amounts: [BUSD_bsc_amountIn, WBNB_DAI_bsc_amountIn, DAI_bsc_amount] })
+    mock({ provider: provider('bsc'), blockchain: 'bsc', balance: { for: fromAddress, return: BNB_balance } })
+    mockBalance({ provider: provider('bsc'), blockchain: 'bsc', api: Token.bsc.BEP20, token: BUSD, account: fromAddress, balance: BUSD_balance })
+    mockAllowance({ provider: provider('bsc'), blockchain: 'bsc', api: Token.bsc.BEP20, token: BUSD, account: fromAddress, spender: routers.bsc.address, allowance: CONSTANTS.bsc.MAXINT })
 
-    // connect wallet to ethereum
-    mock('ethereum')
-
-    // mock bsc via rpc
-    mockJsonRpcProvider({ blockchain: 'bsc', window: global })
+    connect('ethereum')
 
     let routes = await route({
       accept: [

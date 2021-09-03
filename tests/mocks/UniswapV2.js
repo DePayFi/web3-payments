@@ -1,8 +1,9 @@
 import { UniswapV2Factory, UniswapV2Router } from '../apis'
 import { mock } from 'depay-web3-mock'
 
-let mockPair = (pair, params)=>{
+let mockPair = (provider, pair, params)=>{
   mock({
+    provider,
     blockchain: 'ethereum',
     call: {
       to: '0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f',
@@ -14,8 +15,9 @@ let mockPair = (pair, params)=>{
   })
 }
 
-let mockAmounts = ({ method, params, amounts })=>{
+let mockAmounts = ({ provider, method, params, amounts })=>{
   mock({
+    provider,
     blockchain: 'ethereum',
     call: {
       to: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',

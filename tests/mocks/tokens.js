@@ -1,8 +1,9 @@
 import { Token } from 'depay-web3-tokens'
 import { mock } from 'depay-web3-mock'
 
-let mockDecimals = ({ blockchain, api, token, decimals })=>{
+let mockDecimals = ({ provider, blockchain, api, token, decimals })=>{
   return mock({
+    provider,
     blockchain,
     call: {
       to: token,
@@ -13,8 +14,9 @@ let mockDecimals = ({ blockchain, api, token, decimals })=>{
   })
 }
 
-let mockBalance = ({ blockchain, api, token, account, balance })=>{
+let mockBalance = ({ provider, blockchain, api, token, account, balance })=>{
   mock({
+    provider,
     blockchain,
     call: {
       to: token,
@@ -38,8 +40,9 @@ let mockNotTransferable = ({ blockchain, api, token })=>{
   })
 }
 
-let mockAllowance = ({ blockchain, api, token, account, spender, allowance })=>{
+let mockAllowance = ({ provider, blockchain, api, token, account, spender, allowance })=>{
   mock({
+    provider,
     blockchain,
     call: {
       to: token,

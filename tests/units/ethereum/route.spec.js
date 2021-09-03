@@ -7,7 +7,7 @@ import { mock, resetMocks, anything } from 'depay-web3-mock'
 import { mockAssets } from 'tests/mocks/DePayPRO'
 import { mockDecimals, mockBalance, mockNotTransferable, mockAllowance } from 'tests/mocks/tokens'
 import { mockPair, mockAmounts } from 'tests/mocks/UniswapV2'
-import { resetCache } from 'depay-web3-client'
+import { resetCache, provider } from 'depay-web3-client'
 import { route } from 'src'
 import { Token } from 'depay-web3-tokens'
 
@@ -16,7 +16,6 @@ describe('route', ()=> {
   beforeEach(resetMocks)
   beforeEach(resetCache)
   beforeEach(()=>fetchMock.reset())
-  afterEach(resetMocks)
 
   let blockchain = 'ethereum'
   let apiKey = 'Test123'
@@ -71,24 +70,24 @@ describe('route', ()=> {
         "type": "ERC20"
       }
     ]})
-    mockDecimals({ blockchain, api: Token[blockchain].ERC20, token: DEPAY, decimals: 18 })
-    mockDecimals({ blockchain, api: Token[blockchain].ERC20, token: DAI, decimals: 18 })
+    mockDecimals({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: DEPAY, decimals: 18 })
+    mockDecimals({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: DAI, decimals: 18 })
 
-    mockPair('0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d', [WETH, DEPAY])
-    mockPair('0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d', [DEPAY, WETH])
-    mockPair('0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11', [DAI, WETH])
-    mockPair(CONSTANTS[blockchain].ZERO, [DAI, DEPAY])
+    mockPair(provider(blockchain), '0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d', [WETH, DEPAY])
+    mockPair(provider(blockchain), '0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d', [DEPAY, WETH])
+    mockPair(provider(blockchain), '0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11', [DAI, WETH])
+    mockPair(provider(blockchain), CONSTANTS[blockchain].ZERO, [DAI, DEPAY])
 
-    mockAmounts({ method: 'getAmountsIn', params: [tokenAmountOutBN, [WETH, DEPAY]], amounts: [WETHAmountInBN, tokenAmountOutBN] })
-    mockAmounts({ method: 'getAmountsIn', params: [tokenAmountOutBN, [DAI, WETH, DEPAY]], amounts: [DAIAmountInBN, WETHAmountInBN, tokenAmountOutBN] })
+    mockAmounts({ provider: provider(blockchain), method: 'getAmountsIn', params: [tokenAmountOutBN, [WETH, DEPAY]], amounts: [WETHAmountInBN, tokenAmountOutBN] })
+    mockAmounts({ provider: provider(blockchain), method: 'getAmountsIn', params: [tokenAmountOutBN, [DAI, WETH, DEPAY]], amounts: [DAIAmountInBN, WETHAmountInBN, tokenAmountOutBN] })
 
-    mockBalance({ blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, balance: DAIBalanceBN })
-    mockBalance({ blockchain, api: Token[blockchain].ERC20, token: DEPAY, account: fromAddress, balance: DEPAYBalanceBN })
+    mockBalance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, balance: DAIBalanceBN })
+    mockBalance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: DEPAY, account: fromAddress, balance: DEPAYBalanceBN })
 
-    mockAllowance({ blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
-    mockAllowance({ blockchain, api: Token[blockchain].ERC20, token: DEPAY, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
+    mockAllowance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
+    mockAllowance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: DEPAY, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
 
-    mock({ blockchain, balance: { for: fromAddress, return: etherBalanceBN } })
+    mock({ provider: provider(blockchain), blockchain, balance: { for: fromAddress, return: etherBalanceBN } })
   })
 
   it('provides all possible payment routes based on wallet assets and decentralized exchange routes', async ()=>{
@@ -215,7 +214,7 @@ describe('route', ()=> {
   })
 
   it('filters routes that are not routable on any decentralized exchange', async ()=>{
-    mockPair(CONSTANTS[blockchain].ZERO, [DAI, WETH])
+    mockPair(provider(blockchain), CONSTANTS[blockchain].ZERO, [DAI, WETH])
 
     let routes = await route({
       accept: [{
@@ -232,7 +231,7 @@ describe('route', ()=> {
   })
 
   it('filters routes with insufficient balance', async ()=>{
-    mockBalance({ blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, balance: ethers.BigNumber.from('290000000000000000') })
+    mockBalance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, balance: ethers.BigNumber.from('290000000000000000') })
 
     let routes = await route({
       accept: [{
@@ -309,14 +308,14 @@ describe('route', ()=> {
       }
     ]})
 
-    mockDecimals({ blockchain, api: Token[blockchain].ERC20, token: USDC, decimals: 18 })
-    mockPair('0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc', [USDC, WETH])
-    mockPair(CONSTANTS[blockchain].ZERO, [USDC, DEPAY])
-    mockAmounts({ method: 'getAmountsIn', params: [tokenAmountOutBN, [USDC, WETH, DEPAY]], amounts: [USDCAmountInBN, WETHAmountInBN, tokenAmountOutBN] })
-    mockBalance({ blockchain, api: Token[blockchain].ERC20, token: USDC, account: fromAddress, balance: ethers.BigNumber.from('310000000000000000')})
+    mockDecimals({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: USDC, decimals: 18 })
+    mockPair(provider(blockchain), '0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc', [USDC, WETH])
+    mockPair(provider(blockchain), CONSTANTS[blockchain].ZERO, [USDC, DEPAY])
+    mockAmounts({ provider: provider(blockchain), method: 'getAmountsIn', params: [tokenAmountOutBN, [USDC, WETH, DEPAY]], amounts: [USDCAmountInBN, WETHAmountInBN, tokenAmountOutBN] })
+    mockBalance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: USDC, account: fromAddress, balance: ethers.BigNumber.from('310000000000000000')})
 
-    mockAllowance({ blockchain, api: Token[blockchain].ERC20, token: USDC, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
-    mockAllowance({ blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, spender: routers[blockchain].address, allowance: ethers.BigNumber.from('0') })
+    mockAllowance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: USDC, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
+    mockAllowance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, spender: routers[blockchain].address, allowance: ethers.BigNumber.from('0') })
 
     let routes = await route({
       accept: [{
@@ -366,7 +365,7 @@ describe('route', ()=> {
 
     it('performs ETH to TOKEN swap payments if it is the best option', async ()=>{
 
-      mockBalance({ blockchain, api: Token[blockchain].ERC20, token: DEPAY, account: fromAddress, balance: ethers.BigNumber.from('0') })
+      mockBalance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: DEPAY, account: fromAddress, balance: ethers.BigNumber.from('0') })
 
       let routeMock = mock({
         blockchain,
@@ -403,7 +402,7 @@ describe('route', ()=> {
 
     it('performs TOKEN_A to TOKEN_B swap payments if it is the best option', async ()=>{
 
-      mockBalance({ blockchain, api: Token[blockchain].ERC20, token: DEPAY, account: fromAddress, balance: ethers.BigNumber.from('0') })
+      mockBalance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: DEPAY, account: fromAddress, balance: ethers.BigNumber.from('0') })
       mock({
         blockchain,
         balance: {
@@ -495,7 +494,7 @@ describe('route', ()=> {
           }
         })
 
-        mockAmounts({ method: 'getAmountsIn', params: [tokenAmountOutBN, [DAI, WETH]], amounts: [DAIAmountInBN, tokenAmountOutBN] })
+        mockAmounts({ provider: provider(blockchain), method: 'getAmountsIn', params: [tokenAmountOutBN, [DAI, WETH]], amounts: [DAIAmountInBN, tokenAmountOutBN] })
 
         let routeMock = mock({
           blockchain,
