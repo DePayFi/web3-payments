@@ -73,6 +73,39 @@ let paymentRoutes = route({
 })
 ```
 
+#### event
+
+Allows to emit events as part of the payment transaction.
+
+[DePayRouterV1PaymentEvent02](https://github.com/DePayFi/depay-evm-router#depayrouterv1paymentevent02)
+
+Possible values:
+
+`ifSwapped`: Only emits an event if payment requires swap, otherwise no dedicated payment event is emited. Use classic transfer event in this case.
+
+```javascript
+let paymentRoutes = route({
+  accept: [
+    {
+      blockchain: 'ethereum',
+      token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
+      amount: 20,
+      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
+      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
+    },{
+      blockchain: 'bsc',
+      token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
+      amount: 20,
+      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
+      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
+    }
+  ],
+  apiKey: 'YOUR-API-KEY',
+  event: 'ifSwapped'
+})
+
+```
+
 ### routers
 
 Exports basic router information (address and api):

@@ -28,6 +28,9 @@ export default {
         return transaction
       }
     },
+    event: {
+      address: '0x6A12C2Cc8AF31f125484EB685F7c0bfcE280B919'
+    }
   },
   bsc: {
     payment: {
@@ -55,6 +58,9 @@ export default {
         })
         return transaction
       }
+    },
+    event: {
+      address: '0xf83f63ccf66dfd9ef285e58217352835c470c56c'
     }
   } 
 }

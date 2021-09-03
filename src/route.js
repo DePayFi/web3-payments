@@ -21,6 +21,7 @@ class PaymentRoute {
     this.approvalRequired = undefined
     this.approve = undefined
     this.directTransfer = undefined
+    this.event = undefined
   }
 }
 
@@ -70,7 +71,7 @@ async function convertToAmounts(routes) {
   }))
 }
 
-async function route({ accept, apiKey }) {
+async function route({ accept, apiKey, event }) {
   let paymentRoutes = getAllAssets({ accept, apiKey })
     .then(assetsToTokens)
     .then(filterTransferableTokens)
@@ -84,7 +85,7 @@ async function route({ accept, apiKey }) {
     .then(filterInsufficientBalance)
     .then(addApproval)
     .then(sortPaymentRoutes)
-    .then(addTransactions)
+    .then((routes)=>addTransactions({ routes, event }))
     .then(addFromAmount)
     .then(filterDuplicateFromTokens)
 
@@ -272,9 +273,10 @@ let sortPaymentRoutes = (routes) => {
   })
 }
 
-let addTransactions = (routes) => {
+let addTransactions = ({ routes, event }) => {
   return routes.map((route)=>{
-    route.transaction = routeToTransaction({ paymentRoute: route })
+    route.transaction = routeToTransaction({ paymentRoute: route, event })
+    route.event = !route.directTransfer
     return route
   })
 }

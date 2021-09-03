@@ -5,7 +5,7 @@ import { ethers } from 'ethers'
 import { Token } from 'depay-web3-tokens'
 import { Transaction } from 'depay-web3-transaction'
 
-let routeToTransaction = ({ paymentRoute })=> {
+let routeToTransaction = ({ paymentRoute, event })=> {
   let exchangeRoute = paymentRoute.exchangeRoutes[0]
 
   let transaction = new Transaction({
@@ -23,6 +23,11 @@ let routeToTransaction = ({ paymentRoute })=> {
       transaction = exchangePlugin.prepareTransaction(transaction)
     }
   }
+
+  if(event == 'ifSwapped' && !paymentRoute.directTransfer) {
+    transaction.params.plugins.push(plugins[paymentRoute.blockchain].event.address)
+  }
+
   return transaction
 }
 

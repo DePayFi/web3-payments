@@ -36,6 +36,9 @@
           return transaction
         }
       },
+      event: {
+        address: '0x6A12C2Cc8AF31f125484EB685F7c0bfcE280B919'
+      }
     },
     bsc: {
       payment: {
@@ -63,6 +66,9 @@
           });
           return transaction
         }
+      },
+      event: {
+        address: '0xf83f63ccf66dfd9ef285e58217352835c470c56c'
       }
     } 
   };
@@ -4218,7 +4224,7 @@
       return logger.throwError(fault, Logger.errors.NUMERIC_FAULT, params);
   }
 
-  let routeToTransaction = ({ paymentRoute })=> {
+  let routeToTransaction = ({ paymentRoute, event })=> {
     let exchangeRoute = paymentRoute.exchangeRoutes[0];
 
     let transaction = new depayWeb3Transaction.Transaction({
@@ -4236,6 +4242,11 @@
         transaction = exchangePlugin.prepareTransaction(transaction);
       }
     }
+
+    if(event == 'ifSwapped' && !paymentRoute.directTransfer) {
+      transaction.params.plugins.push(plugins[paymentRoute.blockchain].event.address);
+    }
+
     return transaction
   };
 
@@ -4356,6 +4367,7 @@
       this.approvalRequired = undefined;
       this.approve = undefined;
       this.directTransfer = undefined;
+      this.event = undefined;
     }
   }
 
@@ -4405,7 +4417,7 @@
     }))
   }
 
-  async function route({ accept, apiKey }) {
+  async function route({ accept, apiKey, event }) {
     let paymentRoutes = getAllAssets({ accept, apiKey })
       .then(assetsToTokens)
       .then(filterTransferableTokens)
@@ -4419,7 +4431,7 @@
       .then(filterInsufficientBalance)
       .then(addApproval)
       .then(sortPaymentRoutes)
-      .then(addTransactions)
+      .then((routes)=>addTransactions({ routes, event }))
       .then(addFromAmount)
       .then(filterDuplicateFromTokens);
 
@@ -4605,9 +4617,10 @@
     })
   };
 
-  let addTransactions = (routes) => {
+  let addTransactions = ({ routes, event }) => {
     return routes.map((route)=>{
-      route.transaction = routeToTransaction({ paymentRoute: route });
+      route.transaction = routeToTransaction({ paymentRoute: route, event });
+      route.event = !route.directTransfer;
       return route
     })
   };
