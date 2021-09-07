@@ -4414,9 +4414,10 @@ async function convertToAmounts(routes) {
   }))
 }
 
-async function route({ accept, apiKey, event }) {
+async function route({ accept, whitelist, apiKey, event }) {
   let paymentRoutes = getAllAssets({ accept, apiKey })
     .then(assetsToTokens)
+    .then((tokens)=>filterWhitelistedTokens({ tokens, whitelist }))
     .then(filterTransferableTokens)
     .then((tokens) => convertToRoutes({ tokens, accept }))
     .then(convertToAmounts)
@@ -4446,6 +4447,22 @@ let addBalances = async (routes) => {
 
 let assetsToTokens = async (assets) => {
   return assets.map((asset) => new Token({ blockchain: asset.blockchain, address: asset.address }))
+};
+
+let filterWhitelistedTokens = ({ tokens, whitelist }) => {
+  if(whitelist == undefined) {
+    return tokens
+  } else {
+    return tokens.filter((token)=> {
+      if(whitelist[token.blockchain] == undefined) {
+        return true
+      } else {
+        return whitelist[token.blockchain].find((whiteListedTokenAddress)=>{
+          return whiteListedTokenAddress.toLowerCase() == token.address.toLowerCase()
+        })
+      }
+    })
+  }
 };
 
 let filterTransferableTokens = async (tokens) => {
