@@ -86,7 +86,7 @@ let paymentRoutes = route({
       '0x6b175474e89094c44da98b954eedeac495271d0f'  // DAI
     ],
     bsc: [
-      '0xe9e7cea3dedca5984780bafc599bd69add087d56', // BNB
+      '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // BNB
       '0xe9e7cea3dedca5984780bafc599bd69add087d56', // BUSD
       '0x55d398326f99059ff775485246999027b3197955'  // BSC-USD
     ]
