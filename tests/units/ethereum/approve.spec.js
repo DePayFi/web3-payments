@@ -97,7 +97,7 @@ describe('route', ()=> {
       blockchain: 'ethereum',
       transaction: {
         from: fromAddress,
-        to: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+        to: DAI,
         api: Token[blockchain].DEFAULT,
         method: 'approve',
         params: ['0xae60aC8e69414C2Dc362D0e6a03af643d1D85b92', '115792089237316195423570985008687907853269984665640564039457584007913129639935']
@@ -115,8 +115,28 @@ describe('route', ()=> {
       apiKey
     })
 
+    expect(routes.map((route)=>{ return route.fromToken.address })).toEqual([DEPAY, ETH, DAI])
     expect(routes.map((route)=>{ return typeof route.approve })).toEqual(['undefined', 'undefined', 'function'])
 
     await routes[2].approve()
+  })
+
+  it('does not require approval for direct transfers', async ()=>{
+
+    let routes = await route({
+      accept: [{
+        fromAddress,
+        toAddress,
+        blockchain,
+        token: toToken,
+        amount: tokenAmountOut
+      }],
+      apiKey
+    })
+
+    expect(routes[0].fromToken.address).toEqual(DEPAY)
+    expect(routes[0].directTransfer).toEqual(true)
+    expect(routes[0].approvalRequired).toEqual(false)
+    expect(routes[0].approve).toEqual(undefined)
   })
 })

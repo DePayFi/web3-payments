@@ -84,8 +84,8 @@ describe('route', ()=> {
     mockBalance({ provider: provider(blockchain), blockchain, api: Token[blockchain].BEP20, token: CAKE, account: fromAddress, balance: CAKEBalanceBN })
     mockBalance({ provider: provider(blockchain), blockchain, api: Token[blockchain].BEP20, token: BUSD, account: fromAddress, balance: BUSDBalanceBN })
 
+    mockAllowance({ provider: provider(blockchain), blockchain, api: Token[blockchain].BEP20, token: BUSD, account: fromAddress, spender: routers[blockchain].address, allowance: ethers.BigNumber.from('0') })
     mockAllowance({ provider: provider(blockchain), blockchain, api: Token[blockchain].BEP20, token: CAKE, account: fromAddress, spender: routers[blockchain].address, allowance: ethers.BigNumber.from('0') })
-    mockAllowance({ provider: provider(blockchain), blockchain, api: Token[blockchain].BEP20, token: BUSD, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
 
     mock({ provider: provider(blockchain), blockchain, balance: { for: fromAddress, return: bnbBalanceBN } })
   })
@@ -114,8 +114,28 @@ describe('route', ()=> {
       apiKey
     })
 
+    expect(routes.map((route)=>{ return route.fromToken.address })).toEqual([BUSD, BNB, CAKE])
     expect(routes.map((route)=>{ return typeof route.approve })).toEqual(['undefined', 'undefined', 'function'])
 
     await routes[2].approve()
+  })
+
+  it('does not require approval for direct transfers', async ()=>{
+
+    let routes = await route({
+      accept: [{
+        fromAddress,
+        toAddress,
+        blockchain,
+        token: toToken,
+        amount: tokenAmountOut
+      }],
+      apiKey
+    })
+
+    expect(routes[0].fromToken.address).toEqual(BUSD)
+    expect(routes[0].directTransfer).toEqual(true)
+    expect(routes[0].approvalRequired).toEqual(false)
+    expect(routes[0].approve).toEqual(undefined)
   })
 })

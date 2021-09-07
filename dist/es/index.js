@@ -4524,7 +4524,10 @@ let addApproval = (routes) => {
   )).then(
     (allowances) => {
       routes.forEach((route, index) => {
-        if(route.fromToken.address.toLowerCase() == CONSTANTS[route.blockchain].NATIVE.toLowerCase()) {
+        if(
+          route.directTransfer ||
+          route.fromToken.address.toLowerCase() == CONSTANTS[route.blockchain].NATIVE.toLowerCase()
+        ) {
           routes[index].approvalRequired = false;
         } else {
           routes[index].approvalRequired = route.fromBalance.gte(allowances[index]);
