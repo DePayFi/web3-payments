@@ -1,10 +1,8 @@
-import fetchMock from 'fetch-mock'
 import plugins from 'src/plugins'
 import routers from 'src/routers'
 import { CONSTANTS } from 'depay-web3-constants'
 import { ethers } from 'ethers'
 import { mock, connect, resetMocks, mockJsonRpcProvider } from 'depay-web3-mock'
-import { mockAssets } from 'tests/mocks/DePayPRO'
 import { mockDecimals, mockBalance, mockNotTransferable, mockAllowance } from 'tests/mocks/tokens'
 import { mockPair as mockPancakeSwapPair, mockAmounts as mockPancakeSwapAmounts } from 'tests/mocks/Pancakeswap'
 import { mockPair as mockUniswapPair, mockAmounts as mockUniswapAmounts } from 'tests/mocks/UniswapV2'
@@ -16,7 +14,6 @@ describe('route', ()=> {
 
   beforeEach(resetMocks)
   beforeEach(resetCache)
-  beforeEach(()=>fetchMock.reset())
 
   let fromAddress = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045'
   let toAddress = '0x65aBbdEd9B937E38480A50eca85A8E4D2c8350E4'
@@ -48,24 +45,6 @@ describe('route', ()=> {
 
     mock('ethereum')
 
-    mockAssets({ blockchain: 'ethereum', account: fromAddress, assets: [
-      {
-        "name": "Ether",
-        "symbol": "ETH",
-        "address": CONSTANTS.ethereum.NATIVE,
-        "type": "NATIVE"
-      }, {
-        "name": "Dai Stablecoin",
-        "symbol": "DAI",
-        "address": DAI_ethereum,
-        "type": "ERC20"
-      }, {
-        "name": "DePay",
-        "symbol": "DEPAY",
-        "address": "0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb",
-        "type": "ERC20"
-      }
-    ]})
     mockDecimals({ provider: provider('ethereum'), blockchain: 'ethereum', api: Token.ethereum.ERC20, token: USDT_ethereum, decimals: 6 })
     mockDecimals({ provider: provider('ethereum'), blockchain: 'ethereum', api: Token.ethereum.ERC20, token: DAI_ethereum, decimals: 18 })
     mockUniswapPair(provider('ethereum'), '0x0d4a11d5EEaaC28EC3F61d100daF4d40471f1852', [WETH, USDT_ethereum])
@@ -80,24 +59,6 @@ describe('route', ()=> {
     mockUniswapAmounts({ provider: provider('ethereum'), method: 'getAmountsIn', params: [USDT_ethereum_amount, [DAI_ethereum, WETH, USDT_ethereum]], amounts: [DAI_ethereum_amountIn, WETH_DAI_ethereum_amountIn, USDT_ethereum_amount] })
     mockAllowance({ provider: provider('ethereum'), blockchain: 'ethereum', api: Token.ethereum.ERC20, token: DAI_ethereum, account: fromAddress, spender: routers.ethereum.address, allowance: CONSTANTS.ethereum.MAXINT })
 
-    mockAssets({ provider: provider('ethereum'), blockchain: 'bsc', account: fromAddress, assets: [
-      {
-        "name": "Binance Coin",
-        "symbol": "BNB",
-        "address": CONSTANTS.bsc.NATIVE,
-        "type": "NATIVE"
-      }, {
-        "name": "BUSD",
-        "symbol": "BUSD",
-        "address": BUSD,
-        "type": "BEP20"
-      }, {
-        "name": "DePay",
-        "symbol": "DEPAY",
-        "address": "0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb",
-        "type": "BEP20"
-      }
-    ]})
     mockDecimals({ provider: provider('bsc'), blockchain: 'bsc', api: Token.bsc.BEP20, token: USDT_bsc, decimals: 18 })
     mockDecimals({ provider: provider('bsc'), blockchain: 'bsc', api: Token.bsc.BEP20, token: DAI_bsc, decimals: 18 })
     mockDecimals({ provider: provider('bsc'), blockchain: 'bsc', api: Token.bsc.BEP20, token: BUSD, decimals: 18 })

@@ -4376,7 +4376,8 @@ class PaymentRoute {
   }
 }
 
-async function getAllAssets({ accept, apiKey }) {
+async function getAllAssetsFromAggregator({ accept, apiKey, whitelist }) {
+
   let routes = [
     ...new Set(
       accept.map(
@@ -4384,6 +4385,7 @@ async function getAllAssets({ accept, apiKey }) {
       )
     )
   ];
+
   return await Promise.all(
     routes.map(
       async (route)=> {
@@ -4394,6 +4396,28 @@ async function getAllAssets({ accept, apiKey }) {
   ).then((assets)=>{
     return assets.flat()
   })
+}
+
+async function onlyGetWhitelistedAssets({ whitelist }) {
+  let assets = [];
+
+  Object.entries(whitelist).forEach((entry)=>{
+    let blockchain = entry[0];
+    entry[1].forEach((address)=>{
+      assets.push({ blockchain, address });
+    });
+  });
+
+  return assets
+}
+
+async function getAllAssets({ accept, apiKey, whitelist }) {
+
+  if(whitelist == undefined) {
+    return getAllAssetsFromAggregator({ accept, apiKey })
+  } else {
+    return onlyGetWhitelistedAssets({ whitelist })
+  }
 }
 
 function convertToRoutes({ tokens, accept }) {
@@ -4423,7 +4447,7 @@ async function convertToAmounts(routes) {
 }
 
 async function route({ accept, whitelist, apiKey, event }) {
-  let paymentRoutes = getAllAssets({ accept, apiKey })
+  let paymentRoutes = getAllAssets({ accept, whitelist, apiKey })
     .then(assetsToTokens)
     .then((tokens)=>filterWhitelistedTokens({ tokens, whitelist }))
     .then(filterTransferableTokens)
