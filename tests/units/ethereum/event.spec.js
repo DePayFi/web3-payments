@@ -110,12 +110,14 @@ describe('event', ()=> {
 
     // swapped, event
     expect(routes[1].transaction.method).toEqual('route')
-    expect(routes[1].transaction.params.plugins).toContain(plugins[blockchain].event.address)
+    expect(routes[1].transaction.params.plugins).toContain(plugins[blockchain].paymentWithEvent.address)
+    expect(routes[1].transaction.params.plugins).not.toContain(plugins[blockchain].payment.address)
     expect(routes[1].event).toEqual(true)
 
     // swapped, event
     expect(routes[2].transaction.method).toEqual('route')
-    expect(routes[2].transaction.params.plugins).toContain(plugins[blockchain].event.address)
+    expect(routes[2].transaction.params.plugins).toContain(plugins[blockchain].paymentWithEvent.address)
+    expect(routes[1].transaction.params.plugins).not.toContain(plugins[blockchain].payment.address)
     expect(routes[2].event).toEqual(true)
 
   });
