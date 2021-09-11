@@ -79,6 +79,7 @@ Allows only fromTokens (from the sender) that are part of the whitelist:
 
 ```javacript
 let paymentRoutes = route({
+
   whitelist: {
     ethereum: [
       '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // ETH
@@ -90,8 +91,26 @@ let paymentRoutes = route({
       '0xe9e7cea3dedca5984780bafc599bd69add087d56', // BUSD
       '0x55d398326f99059ff775485246999027b3197955'  // BSC-USD
     ]
-  },
-  accept: [...]
+  }
+})
+
+```
+
+#### blacklist
+
+Filters fromTokens to not be used for payment routing:
+
+```javacript
+let paymentRoutes = route({
+
+  blacklist: {
+    ethereum: [
+      '0x6b175474e89094c44da98b954eedeac495271d0f'  // DAI
+    ],
+    bsc: [
+      '0x55d398326f99059ff775485246999027b3197955'  // BSC-USD
+    ]
+  }
 })
 
 ```
