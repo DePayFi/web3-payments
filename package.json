@@ -1,7 +1,7 @@
 {
   "name": "depay-web3-payments",
   "moduleName": "Web3Payments",
-  "version": "5.3.1",
+  "version": "5.4.0",
   "description": "JavaScript library to scan crypto wallets for liquefiable assets and calculate most cost-effective payment routing.",
   "main": "dist/cjs/index.js",
   "module": "dist/es/index.js",

@@ -25,7 +25,7 @@ class PaymentRoute {
   }
 }
 
-async function getAllAssetsFromAggregator({ accept, apiKey, whitelist }) {
+async function getAllAssetsFromAggregator({ accept, apiKey }) {
 
   let routes = [
     ...new Set(
@@ -95,10 +95,10 @@ async function convertToAmounts(routes) {
   }))
 }
 
-async function route({ accept, whitelist, apiKey, event }) {
+async function route({ accept, whitelist, blacklist, apiKey, event }) {
   let paymentRoutes = getAllAssets({ accept, whitelist, apiKey })
+    .then((assets)=>filterBlacklistedAssets({ assets, blacklist }))
     .then(assetsToTokens)
-    .then((tokens)=>filterWhitelistedTokens({ tokens, whitelist }))
     .then(filterTransferableTokens)
     .then((tokens) => convertToRoutes({ tokens, accept }))
     .then(convertToAmounts)
@@ -130,16 +130,16 @@ let assetsToTokens = async (assets) => {
   return assets.map((asset) => new Token({ blockchain: asset.blockchain, address: asset.address }))
 }
 
-let filterWhitelistedTokens = ({ tokens, whitelist }) => {
-  if(whitelist == undefined) {
-    return tokens
+let filterBlacklistedAssets = ({ assets, blacklist }) => {
+  if(blacklist == undefined) {
+    return assets
   } else {
-    return tokens.filter((token)=> {
-      if(whitelist[token.blockchain] == undefined) {
+    return assets.filter((asset)=> {
+      if(blacklist[asset.blockchain] == undefined) {
         return true
       } else {
-        return whitelist[token.blockchain].find((whiteListedTokenAddress)=>{
-          return whiteListedTokenAddress.toLowerCase() == token.address.toLowerCase()
+        return !blacklist[asset.blockchain].find((blacklistedAddress)=>{
+          return blacklistedAddress.toLowerCase() == asset.address.toLowerCase()
         })
       }
     })
