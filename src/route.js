@@ -217,7 +217,7 @@ let addApproval = (routes) => {
               options = options || {}
               let approvalTransaction = new Transaction({
                 blockchain: route.blockchain,
-                address: route.fromToken.address,
+                to: route.fromToken.address,
                 api: Token[route.blockchain].DEFAULT,
                 method: 'approve',
                 params: [routers[route.blockchain].address, CONSTANTS[route.blockchain].MAXINT]

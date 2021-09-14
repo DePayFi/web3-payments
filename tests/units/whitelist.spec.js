@@ -12,7 +12,10 @@ import { Token } from 'depay-web3-tokens'
 
 describe('route', ()=> {
 
+  const blockchain = 'ethereum'
+  const accounts = ['0xd8da6bf26964af9d7eed9e03e53415d37aa96045']
   beforeEach(resetMocks)
+  beforeEach(()=>mock({ blockchain, accounts: { return: accounts } }))
   beforeEach(resetCache)
 
   let fromAddress = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045'
@@ -105,7 +108,7 @@ describe('route', ()=> {
     expect(routes[0].toToken.address).toEqual(USDT_bsc)
     expect(routes[0].toAmount.toString()).toEqual(USDT_bsc_amount.toString())
     expect(routes[0].transaction.blockchain).toEqual('bsc')
-    expect(routes[0].transaction.address).toEqual(routers.bsc.address)
+    expect(routes[0].transaction.to).toEqual(routers.bsc.address)
     expect(routes[0].transaction.method).toEqual('route')
     expect(routes[0].transaction.params.path).toEqual([CONSTANTS.bsc.NATIVE, USDT_bsc])
     expect(routes[0].transaction.params.amounts[0].toString()).toEqual(WBNB_USDT_bsc_amountIn.toString())
@@ -125,7 +128,7 @@ describe('route', ()=> {
     expect(routes[1].toToken.address).toEqual(USDT_bsc)
     expect(routes[1].toAmount.toString()).toEqual(USDT_bsc_amount.toString())
     expect(routes[1].transaction.blockchain).toEqual('bsc')
-    expect(routes[1].transaction.address).toEqual(routers.bsc.address)
+    expect(routes[1].transaction.to).toEqual(routers.bsc.address)
     expect(routes[1].transaction.method).toEqual('route')
     expect(routes[1].transaction.params.path).toEqual([BUSD, WBNB, USDT_bsc])
     expect(routes[1].transaction.params.amounts[0].toString()).toEqual(BUSD_bsc_amountIn.toString())
@@ -145,7 +148,7 @@ describe('route', ()=> {
     expect(routes[2].toToken.address).toEqual(DAI_ethereum)
     expect(routes[2].toAmount.toString()).toEqual(USDT_bsc_amount.toString())
     expect(routes[2].transaction.blockchain).toEqual('ethereum')
-    expect(routes[2].transaction.address).toEqual(DAI_ethereum)
+    expect(routes[2].transaction.to).toEqual(DAI_ethereum)
     expect(routes[2].transaction.method).toEqual('transfer')
     expect(routes[2].transaction.params).toEqual([toAddress, DAI_ethereum_amount])
     expect(routes[2].transaction.value).toEqual(ethers.BigNumber.from('0'))
@@ -160,7 +163,7 @@ describe('route', ()=> {
     expect(routes[3].toToken.address).toEqual(DAI_ethereum)
     expect(routes[3].toAmount.toString()).toEqual(DAI_ethereum_amount.toString())
     expect(routes[3].transaction.blockchain).toEqual('ethereum')
-    expect(routes[3].transaction.address).toEqual(routers.ethereum.address)
+    expect(routes[3].transaction.to).toEqual(routers.ethereum.address)
     expect(routes[3].transaction.method).toEqual('route')
     expect(routes[3].transaction.params.path).toEqual([CONSTANTS.ethereum.NATIVE, DAI_ethereum])
     expect(routes[3].transaction.params.amounts[0].toString()).toEqual(WETH_DAI_ethereum_amountIn.toString())

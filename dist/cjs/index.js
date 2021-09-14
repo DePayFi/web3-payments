@@ -4234,7 +4234,7 @@ let routeToTransaction = ({ paymentRoute, event })=> {
 
   let transaction = new depayWeb3Transaction.Transaction({
     blockchain: paymentRoute.blockchain,
-    address: transactionAddress({ paymentRoute }),
+    to: transactionAddress({ paymentRoute }),
     api: transactionApi({ paymentRoute }),
     method: transactionMethod({ paymentRoute }),
     params: transactionParams({ paymentRoute, exchangeRoute, event }),
@@ -4567,7 +4567,7 @@ let addApproval = (routes) => {
               options = options || {};
               let approvalTransaction = new depayWeb3Transaction.Transaction({
                 blockchain: route.blockchain,
-                address: route.fromToken.address,
+                to: route.fromToken.address,
                 api: depayWeb3Tokens.Token[route.blockchain].DEFAULT,
                 method: 'approve',
                 params: [routers[route.blockchain].address, depayWeb3Constants.CONSTANTS[route.blockchain].MAXINT]

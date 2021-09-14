@@ -13,11 +13,13 @@ import { Token } from 'depay-web3-tokens'
 
 describe('route', ()=> {
 
+  const blockchain = 'bsc'
+  const accounts = ['0xd8da6bf26964af9d7eed9e03e53415d37aa96045']
   beforeEach(resetMocks)
+  beforeEach(()=>mock({ blockchain, accounts: { return: accounts } }))
   beforeEach(resetCache)
   beforeEach(()=>fetchMock.reset())
 
-  let blockchain = 'bsc'
   let apiKey = 'Test123'
   let CAKE = "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82"
   let BUSD = "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56"

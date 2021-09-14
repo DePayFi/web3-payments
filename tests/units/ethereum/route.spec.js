@@ -13,11 +13,13 @@ import { Token } from 'depay-web3-tokens'
 
 describe('route', ()=> {
 
+  const blockchain = 'ethereum'
+  const accounts = ['0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045']
   beforeEach(resetMocks)
+  beforeEach(()=>mock({ blockchain, accounts: { return: accounts } }))
   beforeEach(resetCache)
   beforeEach(()=>fetchMock.reset())
 
-  let blockchain = 'ethereum'
   let apiKey = 'Test123'
   let DAI = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
   let DEPAY = "0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb"
@@ -114,7 +116,7 @@ describe('route', ()=> {
     expect(routes[0].fromAmount).toEqual(tokenAmountOutBN)
     expect(routes[0].exchangeRoutes).toEqual([])
     expect(routes[0].transaction.blockchain).toEqual(blockchain)
-    expect(routes[0].transaction.address).toEqual(DEPAY)
+    expect(routes[0].transaction.to).toEqual(DEPAY)
     expect(routes[0].transaction.api).toEqual(Token[blockchain].DEFAULT)
     expect(routes[0].transaction.method).toEqual('transfer')
     expect(routes[0].transaction.params).toEqual([toAddress, tokenAmountOutBN])
@@ -136,7 +138,7 @@ describe('route', ()=> {
     expect(routes[1].exchangeRoutes[0].amountOutMin).toEqual(tokenAmountOutBN)
     expect(routes[1].exchangeRoutes[0].fromAddress).toEqual(fromAddress)
     expect(routes[1].exchangeRoutes[0].toAddress).toEqual(toAddress)
-    expect(routes[1].exchangeRoutes[0].transaction.address).toEqual('0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D')
+    expect(routes[1].exchangeRoutes[0].transaction.to).toEqual('0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D')
     expect(routes[1].exchangeRoutes[0].transaction.method).toEqual('swapExactETHForTokens')
     expect(routes[1].exchangeRoutes[0].transaction.params.amountOutMin).toEqual(tokenAmountOutBN)
     expect(routes[1].exchangeRoutes[0].transaction.params.path).toEqual([WETH, DEPAY])
@@ -159,7 +161,7 @@ describe('route', ()=> {
     expect(routes[2].exchangeRoutes[0].amountOutMin).toEqual(tokenAmountOutBN)
     expect(routes[2].exchangeRoutes[0].fromAddress).toEqual(fromAddress)
     expect(routes[2].exchangeRoutes[0].toAddress).toEqual(toAddress)
-    expect(routes[2].exchangeRoutes[0].transaction.address).toEqual('0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D')
+    expect(routes[2].exchangeRoutes[0].transaction.to).toEqual('0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D')
     expect(routes[2].exchangeRoutes[0].transaction.method).toEqual('swapExactTokensForTokens')
     expect(routes[2].exchangeRoutes[0].transaction.params.amountOutMin).toEqual(tokenAmountOutBN)
     expect(routes[2].exchangeRoutes[0].transaction.params.path).toEqual([DAI, WETH, DEPAY])
@@ -360,6 +362,7 @@ describe('route', ()=> {
       })
 
       await routes[0].transaction.submit()
+      expect(routes[0].transaction.from).toEqual(accounts[0])
       expect(routeMock).toHaveBeenCalled()
     })
 
@@ -397,6 +400,7 @@ describe('route', ()=> {
       })
 
       await routes[0].transaction.submit()
+      expect(routes[0].transaction.from).toEqual(accounts[0])
       expect(routeMock).toHaveBeenCalled()
     })
 
@@ -441,6 +445,7 @@ describe('route', ()=> {
       })
 
       await routes[0].transaction.submit()
+      expect(routes[0].transaction.from).toEqual(accounts[0])
       expect(routeMock).toHaveBeenCalled()
     })
 
@@ -481,6 +486,7 @@ describe('route', ()=> {
         })
 
         await routes[0].transaction.submit()
+        expect(routes[0].transaction.from).toEqual(accounts[0])
         expect(transactionMock).toHaveBeenCalled()
       })
 
@@ -526,6 +532,7 @@ describe('route', ()=> {
         })
 
         await routes[0].transaction.submit()
+        expect(routes[0].transaction.from).toEqual(accounts[0])
         expect(routeMock).toHaveBeenCalled()
       })
     })

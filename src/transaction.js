@@ -10,7 +10,7 @@ let routeToTransaction = ({ paymentRoute, event })=> {
 
   let transaction = new Transaction({
     blockchain: paymentRoute.blockchain,
-    address: transactionAddress({ paymentRoute }),
+    to: transactionAddress({ paymentRoute }),
     api: transactionApi({ paymentRoute }),
     method: transactionMethod({ paymentRoute }),
     params: transactionParams({ paymentRoute, exchangeRoute, event }),

@@ -13,11 +13,13 @@ import { Token } from 'depay-web3-tokens'
 
 describe('route', ()=> {
 
+  const blockchain = 'ethereum'
+  const accounts = ['0xd8da6bf26964af9d7eed9e03e53415d37aa96045']
   beforeEach(resetMocks)
+  beforeEach(()=>mock({ blockchain, accounts: { return: accounts } }))
   beforeEach(resetCache)
   beforeEach(()=>fetchMock.reset())
 
-  let blockchain = 'ethereum'
   let apiKey = 'Test123'
   let DAI = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
   let DEPAY = "0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb"
