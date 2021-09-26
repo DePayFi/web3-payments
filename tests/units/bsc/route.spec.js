@@ -3,6 +3,7 @@ import plugins from 'src/plugins'
 import routers from 'src/routers'
 import { CONSTANTS } from 'depay-web3-constants'
 import { ethers } from 'ethers'
+import { getWallet } from 'depay-web3-wallets'
 import { mock, resetMocks, anything } from 'depay-web3-mock'
 import { mockAssets } from 'tests/mocks/DePayPRO'
 import { mockDecimals, mockBalance, mockNotTransferable, mockAllowance } from 'tests/mocks/tokens'
@@ -361,8 +362,9 @@ describe('route', ()=> {
         apiKey
       })
 
-      await routes[0].transaction.submit()
-      expect(routes[0].transaction.from).toEqual(accounts[0])
+      let wallet = getWallet()
+      let sentTransaction = await wallet.sendTransaction(routes[0].transaction)
+      expect(sentTransaction.from).toEqual(accounts[0])
       expect(routeMock).toHaveBeenCalled()
     })
 
@@ -399,8 +401,9 @@ describe('route', ()=> {
         apiKey
       })
 
-      await routes[0].transaction.submit()
-      expect(routes[0].transaction.from).toEqual(accounts[0])
+      let wallet = getWallet()
+      let sentTransaction = await wallet.sendTransaction(routes[0].transaction)
+      expect(sentTransaction.from).toEqual(accounts[0])
       expect(routeMock).toHaveBeenCalled()
     })
 
@@ -444,8 +447,9 @@ describe('route', ()=> {
         apiKey
       })
 
-      await routes[0].transaction.submit()
-      expect(routes[0].transaction.from).toEqual(accounts[0])
+      let wallet = getWallet()
+      let sentTransaction = await wallet.sendTransaction(routes[0].transaction)
+      expect(sentTransaction.from).toEqual(accounts[0])
       expect(routeMock).toHaveBeenCalled()
     })
 
@@ -485,8 +489,9 @@ describe('route', ()=> {
           apiKey
         })
 
-        await routes[0].transaction.submit()
-        expect(routes[0].transaction.from).toEqual(accounts[0])
+        let wallet = getWallet()
+        let sentTransaction = await wallet.sendTransaction(routes[0].transaction)
+        expect(sentTransaction.from).toEqual(accounts[0])
         expect(transactionMock).toHaveBeenCalled()
       })
 
@@ -531,8 +536,9 @@ describe('route', ()=> {
           apiKey
         })
 
-        await routes[0].transaction.submit()
-        expect(routes[0].transaction.from).toEqual(accounts[0])
+        let wallet = getWallet()
+        let sentTransaction = await wallet.sendTransaction(routes[0].transaction)
+        expect(sentTransaction.from).toEqual(accounts[0])
         expect(routeMock).toHaveBeenCalled()
       })
     })

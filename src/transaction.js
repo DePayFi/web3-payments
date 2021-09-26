@@ -3,19 +3,18 @@ import routers from './routers'
 import { CONSTANTS } from 'depay-web3-constants'
 import { ethers } from 'ethers'
 import { Token } from 'depay-web3-tokens'
-import { Transaction } from 'depay-web3-transaction'
 
 let routeToTransaction = ({ paymentRoute, event })=> {
   let exchangeRoute = paymentRoute.exchangeRoutes[0]
 
-  let transaction = new Transaction({
+  let transaction = {
     blockchain: paymentRoute.blockchain,
     to: transactionAddress({ paymentRoute }),
     api: transactionApi({ paymentRoute }),
     method: transactionMethod({ paymentRoute }),
     params: transactionParams({ paymentRoute, exchangeRoute, event }),
     value: transactionValue({ paymentRoute, exchangeRoute })
-  })
+  }
 
   if(exchangeRoute) {
     let exchangePlugin = plugins[paymentRoute.blockchain][exchangeRoute.exchange.name]

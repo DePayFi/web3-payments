@@ -195,9 +195,9 @@ Payment routes are provided in the following structure:
   fromAddress: String (e.g. '0xd8da6bf26964af9d7eed9e03e53415d37aa96045')
   toAddress: String (e.g. '0x65aBbdEd9B937E38480A50eca85A8E4D2c8350E4')
   exchangeRoutes: Array (list of exchange routes offering to convert )
-  transaction: depay-web3-transaction (transaction to submit the payment)
+  transaction: Transaction (see depay-web3-wallets for details)
   approvalRequired: Boolean (e.g. true)
-  approve: function (to approve the fromToken being used from the payment route to perform the payment)
+  approvalTransaction: Transaction (to approve the fromToken being used from the payment router to perform the payment)
   directTransfer: Boolean (e.g. true)
 }
 ```
@@ -206,7 +206,7 @@ Payment routes are provided in the following structure:
 
 `directTransfer`: indicates if the payment does not require any swapping/exchanging.
 
-See https://github.com/DePayFi/depay-web3-transaction for detailed transaction features.
+See [depay-web3-wallets](https://github.com/DePayFi/depay-web3-wallets#sendtransaction) for details about the transaction format.
 
 ## Support
 

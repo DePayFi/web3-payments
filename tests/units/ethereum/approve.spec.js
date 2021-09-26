@@ -3,6 +3,7 @@ import plugins from 'src/plugins'
 import routers from 'src/routers'
 import { CONSTANTS } from 'depay-web3-constants'
 import { ethers } from 'ethers'
+import { getWallet } from 'depay-web3-wallets'
 import { mock, resetMocks, anything } from 'depay-web3-mock'
 import { mockAssets } from 'tests/mocks/DePayPRO'
 import { mockDecimals, mockBalance, mockNotTransferable, mockAllowance } from 'tests/mocks/tokens'
@@ -118,9 +119,10 @@ describe('route', ()=> {
     })
 
     expect(routes.map((route)=>{ return route.fromToken.address })).toEqual([DEPAY, ETH, DAI])
-    expect(routes.map((route)=>{ return typeof route.approve })).toEqual(['undefined', 'undefined', 'function'])
+    expect(routes.map((route)=>{ return typeof route.approvalTransaction })).toEqual(['undefined', 'undefined', 'object'])
 
-    await routes[2].approve()
+    let wallet = getWallet()
+    await wallet.sendTransaction(routes[2].approvalTransaction)
   })
 
   it('does not require approval for direct transfers', async ()=>{
@@ -139,6 +141,6 @@ describe('route', ()=> {
     expect(routes[0].fromToken.address).toEqual(DEPAY)
     expect(routes[0].directTransfer).toEqual(true)
     expect(routes[0].approvalRequired).toEqual(false)
-    expect(routes[0].approve).toEqual(undefined)
+    expect(routes[0].approvalTransaction).toEqual(undefined)
   })
 })

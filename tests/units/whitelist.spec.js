@@ -118,7 +118,7 @@ describe('route', ()=> {
     expect(routes[0].transaction.params.plugins[0]).toEqual(plugins.bsc.pancakeswap.address)
     expect(routes[0].transaction.params.plugins[1]).toEqual(plugins.bsc.payment.address)
     expect(routes[0].approvalRequired).toEqual(false)
-    expect(routes[0].approve).toEqual(undefined)
+    expect(routes[0].approvalTransaction).toEqual(undefined)
     expect(routes[0].directTransfer).toEqual(false)
     expect(routes[0].fromAmount.toString()).toEqual(WBNB_USDT_bsc_amountIn.toString())
 
@@ -138,7 +138,7 @@ describe('route', ()=> {
     expect(routes[1].transaction.params.plugins[0]).toEqual(plugins.bsc.pancakeswap.address)
     expect(routes[1].transaction.params.plugins[1]).toEqual(plugins.bsc.payment.address)
     expect(routes[1].approvalRequired).toEqual(false)
-    expect(routes[1].approve).toEqual(undefined)
+    expect(routes[1].approvalTransaction).toEqual(undefined)
     expect(routes[1].directTransfer).toEqual(false)
     expect(routes[1].fromAmount.toString()).toEqual(BUSD_bsc_amountIn.toString())
 
@@ -153,7 +153,7 @@ describe('route', ()=> {
     expect(routes[2].transaction.params).toEqual([toAddress, DAI_ethereum_amount])
     expect(routes[2].transaction.value).toEqual(ethers.BigNumber.from('0'))
     expect(routes[2].approvalRequired).toEqual(false)
-    expect(routes[2].approve).toEqual(undefined)
+    expect(routes[2].approvalTransaction).toEqual(undefined)
     expect(routes[2].directTransfer).toEqual(true)
     expect(routes[2].fromAmount.toString()).toEqual(DAI_ethereum_amount.toString())
 
@@ -173,7 +173,7 @@ describe('route', ()=> {
     expect(routes[3].transaction.params.plugins[0]).toEqual(plugins.ethereum.uniswap_v2.address)
     expect(routes[3].transaction.params.plugins[1]).toEqual(plugins.ethereum.payment.address)
     expect(routes[3].approvalRequired).toEqual(false)
-    expect(routes[3].approve).toEqual(undefined)
+    expect(routes[3].approvalTransaction).toEqual(undefined)
     expect(routes[3].directTransfer).toEqual(false)
     expect(routes[3].fromAmount.toString()).toEqual(WETH_DAI_ethereum_amountIn.toString())
   })

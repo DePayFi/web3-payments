@@ -2,7 +2,6 @@ import { CONSTANTS } from 'depay-web3-constants';
 import { getAssets } from 'depay-web3-assets';
 import { route as route$1 } from 'depay-web3-exchanges';
 import { Token } from 'depay-web3-tokens';
-import { Transaction } from 'depay-web3-transaction';
 import require$$0 from 'buffer';
 
 var plugins = {
@@ -4224,14 +4223,14 @@ function throwFault(fault, operation, value) {
 let routeToTransaction = ({ paymentRoute, event })=> {
   let exchangeRoute = paymentRoute.exchangeRoutes[0];
 
-  let transaction = new Transaction({
+  let transaction = {
     blockchain: paymentRoute.blockchain,
     to: transactionAddress({ paymentRoute }),
     api: transactionApi({ paymentRoute }),
     method: transactionMethod({ paymentRoute }),
     params: transactionParams({ paymentRoute, exchangeRoute, event }),
     value: transactionValue({ paymentRoute, exchangeRoute })
-  });
+  };
 
   if(exchangeRoute) {
     let exchangePlugin = plugins[paymentRoute.blockchain][exchangeRoute.exchange.name];
@@ -4361,7 +4360,7 @@ class PaymentRoute {
     this.exchangeRoutes = [];
     this.transaction = undefined;
     this.approvalRequired = undefined;
-    this.approve = undefined;
+    this.approvalTransaction = undefined;
     this.directTransfer = undefined;
     this.event = undefined;
   }
@@ -4555,16 +4554,12 @@ let addApproval = (routes) => {
         } else {
           routes[index].approvalRequired = route.fromBalance.gte(allowances[index]);
           if(routes[index].approvalRequired) {
-            routes[index].approve = (options)=>{
-              options = options || {};
-              let approvalTransaction = new Transaction({
-                blockchain: route.blockchain,
-                to: route.fromToken.address,
-                api: Token[route.blockchain].DEFAULT,
-                method: 'approve',
-                params: [routers[route.blockchain].address, CONSTANTS[route.blockchain].MAXINT]
-              });
-              return approvalTransaction.submit(options)
+            routes[index].approvalTransaction = {
+              blockchain: route.blockchain,
+              to: route.fromToken.address,
+              api: Token[route.blockchain].DEFAULT,
+              method: 'approve',
+              params: [routers[route.blockchain].address, CONSTANTS[route.blockchain].MAXINT]
             };
           }
         }

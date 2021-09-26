@@ -1,8 +1,8 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('depay-web3-constants'), require('depay-web3-assets'), require('depay-web3-exchanges'), require('depay-web3-tokens'), require('depay-web3-transaction'), require('buffer')) :
-  typeof define === 'function' && define.amd ? define(['exports', 'depay-web3-constants', 'depay-web3-assets', 'depay-web3-exchanges', 'depay-web3-tokens', 'depay-web3-transaction', 'buffer'], factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.Web3Payments = {}, global.Web3Constants, global.Web3Assets, global.Web3Exchanges, global.Web3Tokens, global.Web3Transaction, global.require$$0));
-}(this, (function (exports, depayWeb3Constants, depayWeb3Assets, depayWeb3Exchanges, depayWeb3Tokens, depayWeb3Transaction, require$$0) { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('depay-web3-constants'), require('depay-web3-assets'), require('depay-web3-exchanges'), require('depay-web3-tokens'), require('buffer')) :
+  typeof define === 'function' && define.amd ? define(['exports', 'depay-web3-constants', 'depay-web3-assets', 'depay-web3-exchanges', 'depay-web3-tokens', 'buffer'], factory) :
+  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.Web3Payments = {}, global.Web3Constants, global.Web3Assets, global.Web3Exchanges, global.Web3Tokens, global.require$$0));
+}(this, (function (exports, depayWeb3Constants, depayWeb3Assets, depayWeb3Exchanges, depayWeb3Tokens, require$$0) { 'use strict';
 
   function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
@@ -4227,14 +4227,14 @@
   let routeToTransaction = ({ paymentRoute, event })=> {
     let exchangeRoute = paymentRoute.exchangeRoutes[0];
 
-    let transaction = new depayWeb3Transaction.Transaction({
+    let transaction = {
       blockchain: paymentRoute.blockchain,
       to: transactionAddress({ paymentRoute }),
       api: transactionApi({ paymentRoute }),
       method: transactionMethod({ paymentRoute }),
       params: transactionParams({ paymentRoute, exchangeRoute, event }),
       value: transactionValue({ paymentRoute, exchangeRoute })
-    });
+    };
 
     if(exchangeRoute) {
       let exchangePlugin = plugins[paymentRoute.blockchain][exchangeRoute.exchange.name];
@@ -4364,7 +4364,7 @@
       this.exchangeRoutes = [];
       this.transaction = undefined;
       this.approvalRequired = undefined;
-      this.approve = undefined;
+      this.approvalTransaction = undefined;
       this.directTransfer = undefined;
       this.event = undefined;
     }
@@ -4558,16 +4558,12 @@
           } else {
             routes[index].approvalRequired = route.fromBalance.gte(allowances[index]);
             if(routes[index].approvalRequired) {
-              routes[index].approve = (options)=>{
-                options = options || {};
-                let approvalTransaction = new depayWeb3Transaction.Transaction({
-                  blockchain: route.blockchain,
-                  to: route.fromToken.address,
-                  api: depayWeb3Tokens.Token[route.blockchain].DEFAULT,
-                  method: 'approve',
-                  params: [routers[route.blockchain].address, depayWeb3Constants.CONSTANTS[route.blockchain].MAXINT]
-                });
-                return approvalTransaction.submit(options)
+              routes[index].approvalTransaction = {
+                blockchain: route.blockchain,
+                to: route.fromToken.address,
+                api: depayWeb3Tokens.Token[route.blockchain].DEFAULT,
+                method: 'approve',
+                params: [routers[route.blockchain].address, depayWeb3Constants.CONSTANTS[route.blockchain].MAXINT]
               };
             }
           }

@@ -5,7 +5,6 @@ import { getAssets } from 'depay-web3-assets'
 import { route as exchangeRoute } from 'depay-web3-exchanges'
 import { routeToTransaction } from './transaction'
 import { Token } from 'depay-web3-tokens'
-import { Transaction } from 'depay-web3-transaction'
 
 class PaymentRoute {
   constructor({ blockchain, fromToken, toToken, toAmount, fromAddress, toAddress }) {
@@ -19,7 +18,7 @@ class PaymentRoute {
     this.exchangeRoutes = []
     this.transaction = undefined
     this.approvalRequired = undefined
-    this.approve = undefined
+    this.approvalTransaction = undefined
     this.directTransfer = undefined
     this.event = undefined
   }
@@ -213,16 +212,12 @@ let addApproval = (routes) => {
         } else {
           routes[index].approvalRequired = route.fromBalance.gte(allowances[index])
           if(routes[index].approvalRequired) {
-            routes[index].approve = (options)=>{
-              options = options || {}
-              let approvalTransaction = new Transaction({
-                blockchain: route.blockchain,
-                to: route.fromToken.address,
-                api: Token[route.blockchain].DEFAULT,
-                method: 'approve',
-                params: [routers[route.blockchain].address, CONSTANTS[route.blockchain].MAXINT]
-              })
-              return approvalTransaction.submit(options)
+            routes[index].approvalTransaction = {
+              blockchain: route.blockchain,
+              to: route.fromToken.address,
+              api: Token[route.blockchain].DEFAULT,
+              method: 'approve',
+              params: [routers[route.blockchain].address, CONSTANTS[route.blockchain].MAXINT]
             }
           }
         }

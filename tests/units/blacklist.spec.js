@@ -151,7 +151,7 @@ describe('route', ()=> {
     expect(routes[0].transaction.params.plugins[0]).toEqual(plugins.bsc.pancakeswap.address)
     expect(routes[0].transaction.params.plugins[1]).toEqual(plugins.bsc.payment.address)
     expect(routes[0].approvalRequired).toEqual(false)
-    expect(routes[0].approve).toEqual(undefined)
+    expect(routes[0].approvalTransaction).toEqual(undefined)
     expect(routes[0].directTransfer).toEqual(false)
     expect(routes[0].fromAmount.toString()).toEqual(WBNB_USDT_bsc_amountIn.toString())
 
@@ -171,7 +171,7 @@ describe('route', ()=> {
     expect(routes[1].transaction.params.plugins[0]).toEqual(plugins.ethereum.uniswap_v2.address)
     expect(routes[1].transaction.params.plugins[1]).toEqual(plugins.ethereum.payment.address)
     expect(routes[1].approvalRequired).toEqual(false)
-    expect(routes[1].approve).toEqual(undefined)
+    expect(routes[1].approvalTransaction).toEqual(undefined)
     expect(routes[1].directTransfer).toEqual(false)
     expect(routes[1].fromAmount.toString()).toEqual(WETH_DAI_ethereum_amountIn.toString())
   })
