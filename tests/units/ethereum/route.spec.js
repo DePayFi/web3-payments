@@ -6,7 +6,7 @@ import { ethers } from 'ethers'
 import { getWallet } from 'depay-web3-wallets'
 import { mock, resetMocks, anything } from 'depay-web3-mock'
 import { mockAssets } from 'tests/mocks/DePayPRO'
-import { mockDecimals, mockBalance, mockNotTransferable, mockAllowance } from 'tests/mocks/tokens'
+import { mockDecimals, mockBalance, mockAllowance } from 'tests/mocks/tokens'
 import { mockPair, mockAmounts } from 'tests/mocks/UniswapV2'
 import { resetCache, provider } from 'depay-web3-client'
 import { route } from 'src'
@@ -168,23 +168,6 @@ describe('route', ()=> {
     expect(routes[2].exchangeRoutes[0].transaction.params.path).toEqual([DAI, WETH, DEPAY])
     expect(routes[2].transaction.value).toEqual('0')
   });
-
-  it('filters routes with tokens that are not transferable', async ()=>{
-    mockNotTransferable({ blockchain, api: Token[blockchain].ERC20, token: DAI })
-    
-    let routes = await route({
-      accept: [{
-        fromAddress,
-        toAddress,
-        blockchain,
-        token: toToken,
-        amount: tokenAmountOut
-      }],
-      apiKey
-    })
-
-    expect(routes.map((route)=>route.fromToken.address)).toEqual([DEPAY, ETH])
-  })
 
   describe('exchange routes without plugins', ()=> {
 

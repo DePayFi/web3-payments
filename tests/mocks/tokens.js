@@ -28,18 +28,6 @@ let mockBalance = ({ provider, blockchain, api, token, account, balance })=>{
   })
 }
 
-let mockNotTransferable = ({ blockchain, api, token })=>{
-  mock({
-    blockchain,
-    estimate: {
-      api,
-      to: token,
-      method: 'transfer',
-      return: Error('Not transferable')
-    }
-  })
-}
-
 let mockAllowance = ({ provider, blockchain, api, token, account, spender, allowance })=>{
   mock({
     provider,
@@ -57,6 +45,5 @@ let mockAllowance = ({ provider, blockchain, api, token, account, spender, allow
 export {
   mockDecimals,
   mockBalance,
-  mockNotTransferable,
   mockAllowance,
 }

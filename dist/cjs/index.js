@@ -4449,7 +4449,6 @@ async function route({ accept, whitelist, blacklist, apiKey, event }) {
   let paymentRoutes = getAllAssets({ accept, whitelist, apiKey })
     .then((assets)=>filterBlacklistedAssets({ assets, blacklist }))
     .then(assetsToTokens)
-    .then(filterTransferableTokens)
     .then((tokens) => convertToRoutes({ tokens, accept }))
     .then(convertToAmounts)
     .then(addDirectTransferStatus)
@@ -4494,12 +4493,6 @@ let filterBlacklistedAssets = ({ assets, blacklist }) => {
       }
     })
   }
-};
-
-let filterTransferableTokens = async (tokens) => {
-  return await Promise.all(tokens.map((token) => token.transferable())).then((transferables) =>
-    tokens.filter((token, index) => transferables[index]),
-  )
 };
 
 let addExchangeRoutes = async (routes) => {
