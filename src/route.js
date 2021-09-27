@@ -1,6 +1,7 @@
 import plugins from './plugins'
 import routers from './routers'
 import { CONSTANTS } from 'depay-web3-constants'
+import { ethers } from 'ethers'
 import { getAssets } from 'depay-web3-assets'
 import { route as exchangeRoute } from 'depay-web3-exchanges'
 import { routeToTransaction } from './transaction'
@@ -12,7 +13,7 @@ class PaymentRoute {
     this.fromToken = fromToken
     this.fromBalance = 0
     this.toToken = toToken
-    this.toAmount = toAmount
+    this.toAmount = toAmount?.toString()
     this.fromAddress = fromAddress
     this.toAddress = toAddress
     this.exchangeRoutes = []
@@ -89,7 +90,7 @@ function convertToRoutes({ tokens, accept }) {
 
 async function convertToAmounts(routes) {
   return await Promise.all(routes.map(async (route)=>{
-    route.toAmount = await route.toToken.BigNumber(route.toAmount)
+    route.toAmount = (await route.toToken.BigNumber(route.toAmount)).toString()
     return route
   }))
 }
@@ -119,7 +120,7 @@ async function route({ accept, whitelist, blacklist, apiKey, event }) {
 let addBalances = async (routes) => {
   return Promise.all(routes.map((route) => route.fromToken.balance(route.fromAddress))).then((balances) => {
     balances.forEach((balance, index) => {
-      routes[index].fromBalance = balance
+      routes[index].fromBalance = balance.toString()
     })
     return routes
   })
@@ -191,9 +192,9 @@ let filterNotRoutable = (routes) => {
 let filterInsufficientBalance = (routes) => {
   return routes.filter((route) => {
     if (route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase()) {
-      return route.fromBalance.gte(route.toAmount)
+      return ethers.BigNumber.from(route.fromBalance).gte(ethers.BigNumber.from(route.toAmount))
     } else {
-      return route.fromBalance.gte(route.exchangeRoutes[0].amountInMax)
+      return ethers.BigNumber.from(route.fromBalance).gte(ethers.BigNumber.from(route.exchangeRoutes[0].amountInMax))
     }
   })
 }
@@ -210,7 +211,7 @@ let addApproval = (routes) => {
         ) {
           routes[index].approvalRequired = false
         } else {
-          routes[index].approvalRequired = route.fromBalance.gte(allowances[index])
+          routes[index].approvalRequired = ethers.BigNumber.from(route.fromBalance).gte(ethers.BigNumber.from(allowances[index]))
           if(routes[index].approvalRequired) {
             routes[index].approvalTransaction = {
               blockchain: route.blockchain,
@@ -254,8 +255,8 @@ let filterDuplicateFromTokens = (routes) => {
     let otherMoreEfficientRoute = routes.find((routeB, indexB)=>{
       if(routeA.fromToken.address != routeB.fromToken.address) { return false }
       if(routeA.fromToken.blockchain != routeB.fromToken.blockchain) { return false }
-      if(routeB.fromAmount.lt(routeA.fromAmount)) { return true }
-      if(routeB.fromAmount.eq(routeA.fromAmount) && indexB < indexA) { return true }
+      if(ethers.BigNumber.from(routeB.fromAmount).lt(ethers.BigNumber.from(routeA.fromAmount))) { return true }
+      if(routeB.fromAmount == routeA.fromAmount && indexB < indexA) { return true }
     })
 
     return otherMoreEfficientRoute == undefined

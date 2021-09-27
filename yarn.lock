@@ -2498,10 +2498,10 @@ depay-web3-constants@^3.0.1:
   resolved "https://registry.yarnpkg.com/depay-web3-constants/-/depay-web3-constants-3.0.1.tgz#c8979b063de9b875eb7692e8d93b0c9da80232b9"
   integrity sha512-bRHj8mLnXuPWORZ6eE/2qKry3C9k7W7z4EHPKc5cruTJuBLnhN/zqmZWo/3nbEMaqd6n2tI/ObwW6bzA+E4rlg==
 
-depay-web3-exchanges@^6.0.0:
-  version "6.0.0"
-  resolved "https://registry.yarnpkg.com/depay-web3-exchanges/-/depay-web3-exchanges-6.0.0.tgz#617a8a7d3b698023f7dce8c63fe3b2d18ed50a8f"
-  integrity sha512-ffYKmiAI1Lzndf0x7KpCKJtj4p4/lVP0jauCgTxzXa1TklORnQ1dIWE5wXLXXnfPkmn4efhWeYMneYhdxLyNNA==
+depay-web3-exchanges@^6.0.2:
+  version "6.0.2"
+  resolved "https://registry.yarnpkg.com/depay-web3-exchanges/-/depay-web3-exchanges-6.0.2.tgz#b3427c844f5f4dbb1024ea4a8a3469533a1eee3c"
+  integrity sha512-hsGcgpYSixDIgP/9Ujv5wUXA2cCEjr4x/E3jKGimaO/WEIE2VxSx8mDE3va0gwxjOQEUghYX2YVm9OY94lfpaQ==
 
 depay-web3-mock@^8.2.5:
   version "8.2.5"

@@ -4307,8 +4307,8 @@ let transactionPath = ({ paymentRoute, exchangeRoute })=> {
 let transactionAmounts = ({ paymentRoute, exchangeRoute })=> {
   if(exchangeRoute) {
     return [
-      exchangeRoute.amountIn,
-      exchangeRoute.amountOutMin,
+      exchangeRoute.amountIn.toString(),
+      exchangeRoute.amountOutMin.toString(),
       exchangeRoute.transaction.params.deadline
     ]
   } else {
@@ -4339,22 +4339,23 @@ let transactionPlugins = ({ paymentRoute, exchangeRoute, event })=> {
 let transactionValue = ({ paymentRoute, exchangeRoute })=> {
   if(paymentRoute.fromToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
     if(exchangeRoute) {
-      return exchangeRoute.amountIn
+      return exchangeRoute.amountIn.toString()
     } else { // direct payment
-      return paymentRoute.toAmount
+      return paymentRoute.toAmount.toString()
     }
   } else {
-    return BigNumber.from('0')
+    return BigNumber.from('0').toString()
   }
 };
 
+function _optionalChain(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 class PaymentRoute {
   constructor({ blockchain, fromToken, toToken, toAmount, fromAddress, toAddress }) {
     this.blockchain = blockchain;
     this.fromToken = fromToken;
     this.fromBalance = 0;
     this.toToken = toToken;
-    this.toAmount = toAmount;
+    this.toAmount = _optionalChain([toAmount, 'optionalAccess', _ => _.toString, 'call', _2 => _2()]);
     this.fromAddress = fromAddress;
     this.toAddress = toAddress;
     this.exchangeRoutes = [];
@@ -4431,7 +4432,7 @@ function convertToRoutes({ tokens, accept }) {
 
 async function convertToAmounts(routes) {
   return await Promise.all(routes.map(async (route)=>{
-    route.toAmount = await route.toToken.BigNumber(route.toAmount);
+    route.toAmount = (await route.toToken.BigNumber(route.toAmount)).toString();
     return route
   }))
 }
@@ -4461,7 +4462,7 @@ async function route({ accept, whitelist, blacklist, apiKey, event }) {
 let addBalances = async (routes) => {
   return Promise.all(routes.map((route) => route.fromToken.balance(route.fromAddress))).then((balances) => {
     balances.forEach((balance, index) => {
-      routes[index].fromBalance = balance;
+      routes[index].fromBalance = balance.toString();
     });
     return routes
   })
@@ -4533,9 +4534,9 @@ let filterNotRoutable = (routes) => {
 let filterInsufficientBalance = (routes) => {
   return routes.filter((route) => {
     if (route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase()) {
-      return route.fromBalance.gte(route.toAmount)
+      return BigNumber.from(route.fromBalance).gte(BigNumber.from(route.toAmount))
     } else {
-      return route.fromBalance.gte(route.exchangeRoutes[0].amountInMax)
+      return BigNumber.from(route.fromBalance).gte(BigNumber.from(route.exchangeRoutes[0].amountInMax))
     }
   })
 };
@@ -4552,7 +4553,7 @@ let addApproval = (routes) => {
         ) {
           routes[index].approvalRequired = false;
         } else {
-          routes[index].approvalRequired = route.fromBalance.gte(allowances[index]);
+          routes[index].approvalRequired = BigNumber.from(route.fromBalance).gte(BigNumber.from(allowances[index]));
           if(routes[index].approvalRequired) {
             routes[index].approvalTransaction = {
               blockchain: route.blockchain,
@@ -4596,8 +4597,8 @@ let filterDuplicateFromTokens = (routes) => {
     let otherMoreEfficientRoute = routes.find((routeB, indexB)=>{
       if(routeA.fromToken.address != routeB.fromToken.address) { return false }
       if(routeA.fromToken.blockchain != routeB.fromToken.blockchain) { return false }
-      if(routeB.fromAmount.lt(routeA.fromAmount)) { return true }
-      if(routeB.fromAmount.eq(routeA.fromAmount) && indexB < indexA) { return true }
+      if(BigNumber.from(routeB.fromAmount).lt(BigNumber.from(routeA.fromAmount))) { return true }
+      if(routeB.fromAmount == routeA.fromAmount && indexB < indexA) { return true }
     });
 
     return otherMoreEfficientRoute == undefined

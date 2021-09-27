@@ -91,8 +91,8 @@ let transactionPath = ({ paymentRoute, exchangeRoute })=> {
 let transactionAmounts = ({ paymentRoute, exchangeRoute })=> {
   if(exchangeRoute) {
     return [
-      exchangeRoute.amountIn,
-      exchangeRoute.amountOutMin,
+      exchangeRoute.amountIn.toString(),
+      exchangeRoute.amountOutMin.toString(),
       exchangeRoute.transaction.params.deadline
     ]
   } else {
@@ -123,12 +123,12 @@ let transactionPlugins = ({ paymentRoute, exchangeRoute, event })=> {
 let transactionValue = ({ paymentRoute, exchangeRoute })=> {
   if(paymentRoute.fromToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
     if(exchangeRoute) {
-      return exchangeRoute.amountIn
+      return exchangeRoute.amountIn.toString()
     } else { // direct payment
-      return paymentRoute.toAmount
+      return paymentRoute.toAmount.toString()
     }
   } else {
-    return ethers.BigNumber.from('0')
+    return ethers.BigNumber.from('0').toString()
   }
 }
 
