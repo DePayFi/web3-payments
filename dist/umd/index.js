@@ -8,6 +8,35 @@
 
   var require$$0__default = /*#__PURE__*/_interopDefaultLegacy(require$$0);
 
+  const prepareUniswapTransaction = (transaction)=>{
+    transaction.params.path = transaction.params.path.filter((token, index, path)=>{
+      if(
+        index == 1 &&
+        token == depayWeb3Constants.CONSTANTS[transaction.blockchain].WRAPPED &&
+        path[0] == depayWeb3Constants.CONSTANTS[transaction.blockchain].NATIVE
+      ) { 
+        return false
+      } else if (
+        index == path.length-2 &&
+        token == depayWeb3Constants.CONSTANTS[transaction.blockchain].WRAPPED &&
+        path[path.length-1] == depayWeb3Constants.CONSTANTS[transaction.blockchain].NATIVE
+      ) {
+        return false
+      } else {
+        return true
+      }
+    });
+    return transaction
+  };
+
+  const prepareContractCallAddressAmountBooleanTransaction = (transaction, toContract)=> {
+    transaction.params.data = [
+      toContract.signature,
+      toContract.params[0]
+    ];
+    return transaction
+  };
+
   var plugins = {
     ethereum: {
       payment: {
@@ -15,29 +44,16 @@
       },
       uniswap_v2: {
         address: '0xe04b08Dfc6CaA0F4Ec523a3Ae283Ece7efE00019',
-        prepareTransaction: (transaction)=> {
-          transaction.params.path = transaction.params.path.filter((token, index, path)=>{
-            if(
-              index == 1 &&
-              token == depayWeb3Constants.CONSTANTS[transaction.blockchain].WRAPPED &&
-              path[0] == depayWeb3Constants.CONSTANTS[transaction.blockchain].NATIVE
-            ) { 
-              return false
-            } else if (
-              index == path.length-2 &&
-              token == depayWeb3Constants.CONSTANTS[transaction.blockchain].WRAPPED &&
-              path[path.length-1] == depayWeb3Constants.CONSTANTS[transaction.blockchain].NATIVE
-            ) {
-              return false
-            } else {
-              return true
-            }
-          });
-          return transaction
-        }
+        prepareTransaction: prepareUniswapTransaction
       },
       paymentWithEvent: {
         address: '0xD8fBC10787b019fE4059Eb5AA5fB11a5862229EF'
+      },
+      contractCall: {
+        approveAndCallContractAddressAmountBoolean: {
+          address: '0xF984eb8b466AD6c728E0aCc7b69Af6f69B32437F',
+          prepareTransaction: prepareContractCallAddressAmountBooleanTransaction
+        }
       }
     },
     bsc: {
@@ -46,29 +62,16 @@
       },
       pancakeswap: {
         address: '0xAC3Ec4e420DD78bA86d932501E1f3867dbbfb77B',
-        prepareTransaction: (transaction)=> {
-          transaction.params.path = transaction.params.path.filter((token, index, path)=>{
-            if(
-              index == 1 &&
-              token == depayWeb3Constants.CONSTANTS[transaction.blockchain].WRAPPED &&
-              path[0] == depayWeb3Constants.CONSTANTS[transaction.blockchain].NATIVE
-            ) { 
-              return false
-            } else if (
-              index == path.length-2 &&
-              token == depayWeb3Constants.CONSTANTS[transaction.blockchain].WRAPPED &&
-              path[path.length-1] == depayWeb3Constants.CONSTANTS[transaction.blockchain].NATIVE
-            ) {
-              return false
-            } else {
-              return true
-            }
-          });
-          return transaction
-        }
+        prepareTransaction: prepareUniswapTransaction
       },
       paymentWithEvent: {
         address: '0x1869E236c03eE67B9FfEd3aCA139f4AeBA79Dc21'
+      },
+      contractCall: {
+        approveAndCallContractAddressAmountBoolean: {
+          address: '0xd73dFeF8F9c213b449fB39B84c2b33FBBc2C8eD3',
+          prepareTransaction: prepareContractCallAddressAmountBooleanTransaction
+        }
       }
     } 
   };
@@ -4224,7 +4227,7 @@
       return logger.throwError(fault, Logger.errors.NUMERIC_FAULT, params);
   }
 
-  let routeToTransaction = ({ paymentRoute, event })=> {
+  let getTransaction = ({ paymentRoute, event })=> {
     let exchangeRoute = paymentRoute.exchangeRoutes[0];
 
     let transaction = {
@@ -4237,10 +4240,13 @@
     };
 
     if(exchangeRoute) {
-      let exchangePlugin = plugins[paymentRoute.blockchain][exchangeRoute.exchange.name];
-      if(exchangePlugin) {
-        transaction = exchangePlugin.prepareTransaction(transaction);
+      if(paymentRoute.exchangePlugin) {
+        transaction = paymentRoute.exchangePlugin.prepareTransaction(transaction);
       }
+    }
+
+    if(paymentRoute.contractCallPlugin) {
+      transaction = paymentRoute.contractCallPlugin.prepareTransaction(transaction, paymentRoute.toContract);
     }
 
     return transaction
@@ -4328,10 +4334,20 @@
     let paymentPlugins = [];
 
     if(exchangeRoute) {
-      paymentPlugins.push(plugins[paymentRoute.blockchain][exchangeRoute.exchange.name].address);
+      paymentRoute.exchangePlugin = plugins[paymentRoute.blockchain][exchangeRoute.exchange.name];
+      paymentPlugins.push(paymentRoute.exchangePlugin.address);
     }
 
-    if(event == 'ifSwapped' && !paymentRoute.directTransfer) {
+    if(paymentRoute.toContract) {
+      let signature = paymentRoute.toContract.signature.match(/(?<=\().*(?=\))/);
+      if(signature) {
+        let splitSignature = signature[0].split(',');
+        if(splitSignature[0] == 'address' && splitSignature[1].match('uint') && splitSignature[2] == 'bool') {
+          paymentRoute.contractCallPlugin = plugins[paymentRoute.blockchain].contractCall.approveAndCallContractAddressAmountBoolean;
+          paymentPlugins.push(paymentRoute.contractCallPlugin.address);
+        }
+      }
+    } else if(event == 'ifSwapped' && !paymentRoute.directTransfer) {
       paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address);
     } else {
       paymentPlugins.push(plugins[paymentRoute.blockchain].payment.address);
@@ -4354,7 +4370,7 @@
 
   function _optionalChain(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
   class PaymentRoute {
-    constructor({ blockchain, fromToken, toToken, toAmount, fromAddress, toAddress }) {
+    constructor({ blockchain, fromToken, toToken, toAmount, fromAddress, toAddress, toContract }) {
       this.blockchain = blockchain;
       this.fromToken = fromToken;
       this.fromBalance = 0;
@@ -4362,6 +4378,7 @@
       this.toAmount = _optionalChain([toAmount, 'optionalAccess', _ => _.toString, 'call', _2 => _2()]);
       this.fromAddress = fromAddress;
       this.toAddress = toAddress;
+      this.toContract = toContract;
       this.exchangeRoutes = [];
       this.transaction = undefined;
       this.approvalRequired = undefined;
@@ -4428,7 +4445,8 @@
           toToken: toToken,
           toAmount: configuration.amount,
           fromAddress: configuration.fromAddress,
-          toAddress: configuration.toAddress
+          toAddress: configuration.toAddress,
+          toContract: configuration.toContract
         })
       })
     }).flat()
@@ -4453,9 +4471,9 @@
       .then(filterNotRoutable)
       .then(addBalances)
       .then(filterInsufficientBalance)
-      .then(addApproval)
       .then(sortPaymentRoutes)
       .then((routes)=>addTransactions({ routes, event }))
+      .then(addApproval)
       .then(addFromAmount)
       .then(filterDuplicateFromTokens);
 
@@ -4545,8 +4563,10 @@
       (allowances) => {
         routes.forEach((route, index) => {
           if(
-            route.directTransfer ||
-            route.fromToken.address.toLowerCase() == depayWeb3Constants.CONSTANTS[route.blockchain].NATIVE.toLowerCase()
+            (
+              route.directTransfer ||
+              route.fromToken.address.toLowerCase() == depayWeb3Constants.CONSTANTS[route.blockchain].NATIVE.toLowerCase()
+            ) && route.toContract == undefined
           ) {
             routes[index].approvalRequired = false;
           } else {
@@ -4569,7 +4589,7 @@
 
   let addDirectTransferStatus = (routes) => {
     return routes.map((route)=>{
-      route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase();
+      route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && route.toContract == undefined;
       return route
     })
   };
@@ -4652,7 +4672,7 @@
 
   let addTransactions = ({ routes, event }) => {
     return routes.map((route)=>{
-      route.transaction = routeToTransaction({ paymentRoute: route, event });
+      route.transaction = getTransaction({ paymentRoute: route, event });
       route.event = !route.directTransfer;
       return route
     })

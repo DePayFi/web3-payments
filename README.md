@@ -123,7 +123,7 @@ Allows to emit events as part of the payment transaction.
 
 Possible values:
 
-`ifSwapped`: Only emits an event if payment requires swap, otherwise no dedicated payment event is emited. Use classic transfer event in this case.
+`ifSwapped`: Only emits an event if payment requires swap, otherwise no dedicated payment event is emited. Use classic transfer event in case of a direct payment (does not go through the DePay router).
 
 ```javascript
 let paymentRoutes = route({
@@ -147,6 +147,8 @@ let paymentRoutes = route({
 })
 
 ```
+
+Events are not emitted if payment receiver is a smart contract. Make sure your smart contract emits events in that case!
 
 ### routers
 
