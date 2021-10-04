@@ -4467,9 +4467,9 @@ async function route({ accept, whitelist, blacklist, apiKey, event }) {
     .then(filterNotRoutable)
     .then(addBalances)
     .then(filterInsufficientBalance)
+    .then(addApproval)
     .then(sortPaymentRoutes)
     .then((routes)=>addTransactions({ routes, event }))
-    .then(addApproval)
     .then(addFromAmount)
     .then(filterDuplicateFromTokens);
 
