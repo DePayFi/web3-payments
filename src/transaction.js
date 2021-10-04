@@ -4,7 +4,7 @@ import { CONSTANTS } from 'depay-web3-constants'
 import { ethers } from 'ethers'
 import { Token } from 'depay-web3-tokens'
 
-let routeToTransaction = ({ paymentRoute, event })=> {
+let getTransaction = ({ paymentRoute, event })=> {
   let exchangeRoute = paymentRoute.exchangeRoutes[0]
 
   let transaction = {
@@ -17,10 +17,13 @@ let routeToTransaction = ({ paymentRoute, event })=> {
   }
 
   if(exchangeRoute) {
-    let exchangePlugin = plugins[paymentRoute.blockchain][exchangeRoute.exchange.name]
-    if(exchangePlugin) {
-      transaction = exchangePlugin.prepareTransaction(transaction)
+    if(paymentRoute.exchangePlugin) {
+      transaction = paymentRoute.exchangePlugin.prepareTransaction(transaction)
     }
+  }
+
+  if(paymentRoute.contractCallPlugin) {
+    transaction = paymentRoute.contractCallPlugin.prepareTransaction(transaction, paymentRoute.toContract)
   }
 
   return transaction
@@ -108,10 +111,20 @@ let transactionPlugins = ({ paymentRoute, exchangeRoute, event })=> {
   let paymentPlugins = []
 
   if(exchangeRoute) {
-    paymentPlugins.push(plugins[paymentRoute.blockchain][exchangeRoute.exchange.name].address)
+    paymentRoute.exchangePlugin = plugins[paymentRoute.blockchain][exchangeRoute.exchange.name]
+    paymentPlugins.push(paymentRoute.exchangePlugin.address)
   }
 
-  if(event == 'ifSwapped' && !paymentRoute.directTransfer) {
+  if(paymentRoute.toContract) {
+    let signature = paymentRoute.toContract.signature.match(/(?<=\().*(?=\))/)
+    if(signature) {
+      let splitSignature = signature[0].split(',')
+      if(splitSignature[0] == 'address' && splitSignature[1].match('uint') && splitSignature[2] == 'bool') {
+        paymentRoute.contractCallPlugin = plugins[paymentRoute.blockchain].contractCall.approveAndCallContractAddressAmountBoolean
+        paymentPlugins.push(paymentRoute.contractCallPlugin.address)
+      }
+    }
+  } else if(event == 'ifSwapped' && !paymentRoute.directTransfer) {
     paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address)
   } else {
     paymentPlugins.push(plugins[paymentRoute.blockchain].payment.address)
@@ -133,5 +146,5 @@ let transactionValue = ({ paymentRoute, exchangeRoute })=> {
 }
 
 export {
-  routeToTransaction
+  getTransaction
 }

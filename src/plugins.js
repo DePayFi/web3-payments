@@ -1,5 +1,34 @@
 import { CONSTANTS } from 'depay-web3-constants'
 
+const prepareUniswapTransaction = (transaction)=>{
+  transaction.params.path = transaction.params.path.filter((token, index, path)=>{
+    if(
+      index == 1 &&
+      token == CONSTANTS[transaction.blockchain].WRAPPED &&
+      path[0] == CONSTANTS[transaction.blockchain].NATIVE
+    ) { 
+      return false
+    } else if (
+      index == path.length-2 &&
+      token == CONSTANTS[transaction.blockchain].WRAPPED &&
+      path[path.length-1] == CONSTANTS[transaction.blockchain].NATIVE
+    ) {
+      return false
+    } else {
+      return true
+    }
+  })
+  return transaction
+}
+
+const prepareContractCallAddressAmountBooleanTransaction = (transaction, toContract)=> {
+  transaction.params.data = [
+    toContract.signature,
+    toContract.params[0]
+  ]
+  return transaction
+}
+
 export default {
   ethereum: {
     payment: {
@@ -7,29 +36,16 @@ export default {
     },
     uniswap_v2: {
       address: '0xe04b08Dfc6CaA0F4Ec523a3Ae283Ece7efE00019',
-      prepareTransaction: (transaction)=> {
-        transaction.params.path = transaction.params.path.filter((token, index, path)=>{
-          if(
-            index == 1 &&
-            token == CONSTANTS[transaction.blockchain].WRAPPED &&
-            path[0] == CONSTANTS[transaction.blockchain].NATIVE
-          ) { 
-            return false
-          } else if (
-            index == path.length-2 &&
-            token == CONSTANTS[transaction.blockchain].WRAPPED &&
-            path[path.length-1] == CONSTANTS[transaction.blockchain].NATIVE
-          ) {
-            return false
-          } else {
-            return true
-          }
-        })
-        return transaction
-      }
+      prepareTransaction: prepareUniswapTransaction
     },
     paymentWithEvent: {
       address: '0xD8fBC10787b019fE4059Eb5AA5fB11a5862229EF'
+    },
+    contractCall: {
+      approveAndCallContractAddressAmountBoolean: {
+        address: '0xF984eb8b466AD6c728E0aCc7b69Af6f69B32437F',
+        prepareTransaction: prepareContractCallAddressAmountBooleanTransaction
+      }
     }
   },
   bsc: {
@@ -38,29 +54,16 @@ export default {
     },
     pancakeswap: {
       address: '0xAC3Ec4e420DD78bA86d932501E1f3867dbbfb77B',
-      prepareTransaction: (transaction)=> {
-        transaction.params.path = transaction.params.path.filter((token, index, path)=>{
-          if(
-            index == 1 &&
-            token == CONSTANTS[transaction.blockchain].WRAPPED &&
-            path[0] == CONSTANTS[transaction.blockchain].NATIVE
-          ) { 
-            return false
-          } else if (
-            index == path.length-2 &&
-            token == CONSTANTS[transaction.blockchain].WRAPPED &&
-            path[path.length-1] == CONSTANTS[transaction.blockchain].NATIVE
-          ) {
-            return false
-          } else {
-            return true
-          }
-        })
-        return transaction
-      }
+      prepareTransaction: prepareUniswapTransaction
     },
     paymentWithEvent: {
       address: '0x1869E236c03eE67B9FfEd3aCA139f4AeBA79Dc21'
+    },
+    contractCall: {
+      approveAndCallContractAddressAmountBoolean: {
+        address: '0xd73dFeF8F9c213b449fB39B84c2b33FBBc2C8eD3',
+        prepareTransaction: prepareContractCallAddressAmountBooleanTransaction
+      }
     }
   } 
 }

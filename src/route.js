@@ -4,11 +4,11 @@ import { CONSTANTS } from 'depay-web3-constants'
 import { ethers } from 'ethers'
 import { getAssets } from 'depay-web3-assets'
 import { route as exchangeRoute } from 'depay-web3-exchanges'
-import { routeToTransaction } from './transaction'
+import { getTransaction } from './transaction'
 import { Token } from 'depay-web3-tokens'
 
 class PaymentRoute {
-  constructor({ blockchain, fromToken, toToken, toAmount, fromAddress, toAddress }) {
+  constructor({ blockchain, fromToken, toToken, toAmount, fromAddress, toAddress, toContract }) {
     this.blockchain = blockchain
     this.fromToken = fromToken
     this.fromBalance = 0
@@ -16,6 +16,7 @@ class PaymentRoute {
     this.toAmount = toAmount?.toString()
     this.fromAddress = fromAddress
     this.toAddress = toAddress
+    this.toContract = toContract
     this.exchangeRoutes = []
     this.transaction = undefined
     this.approvalRequired = undefined
@@ -82,7 +83,8 @@ function convertToRoutes({ tokens, accept }) {
         toToken: toToken,
         toAmount: configuration.amount,
         fromAddress: configuration.fromAddress,
-        toAddress: configuration.toAddress
+        toAddress: configuration.toAddress,
+        toContract: configuration.toContract
       })
     })
   }).flat()
@@ -199,8 +201,10 @@ let addApproval = (routes) => {
     (allowances) => {
       routes.forEach((route, index) => {
         if(
-          route.directTransfer ||
-          route.fromToken.address.toLowerCase() == CONSTANTS[route.blockchain].NATIVE.toLowerCase()
+          (
+            route.directTransfer ||
+            route.fromToken.address.toLowerCase() == CONSTANTS[route.blockchain].NATIVE.toLowerCase()
+          ) && route.toContract == undefined
         ) {
           routes[index].approvalRequired = false
         } else {
@@ -223,7 +227,7 @@ let addApproval = (routes) => {
 
 let addDirectTransferStatus = (routes) => {
   return routes.map((route)=>{
-    route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase()
+    route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && route.toContract == undefined
     return route
   })
 }
@@ -308,7 +312,7 @@ let sortPaymentRoutes = (routes) => {
 
 let addTransactions = ({ routes, event }) => {
   return routes.map((route)=>{
-    route.transaction = routeToTransaction({ paymentRoute: route, event })
+    route.transaction = getTransaction({ paymentRoute: route, event })
     route.event = !route.directTransfer
     return route
   })

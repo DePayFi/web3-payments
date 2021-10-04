@@ -73,6 +73,37 @@ let paymentRoutes = route({
 })
 ```
 
+#### Pay into Smart Contracts
+
+In case you want to pay into smart contract (calling a smart contract method), you will need to pass `toContract` in addition to `toAddress`:
+
+```javascript
+import { route } from 'depay-web3-payments'
+
+let paymentRoutes = route({
+  accept: [
+    {
+      blockchain: 'ethereum',
+      token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
+      amount: 20,
+      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
+      toAddress: '0xb0252f13850a4823706607524de0b146820F2240',
+      toContract: {
+        signature: 'claim(address,uint256,bool)',
+        params: ['true']
+      }
+    }
+  ]
+})
+```
+
+To contract needs to contain at lest the `signature` field. Depending on the `signature` field `params` also need to be provided.
+
+The previous example after swapping payment tokens, will call the contract at `0xb0252f13850a4823706607524de0b146820F2240` calling method `claim` passing `address` from the payment sender
+and amounts from the final token amounts also forwarding `params[0]` to pass the value for `bool`.
+
+If you want to know more about paying into smart contracts, checkout the [depay-evm-router](https://github.com/depayfi/depay-evm-router).
+
 #### whitelist
 
 Allows only fromTokens (from the sender) that are part of the whitelist:
@@ -123,7 +154,7 @@ Allows to emit events as part of the payment transaction.
 
 Possible values:
 
-`ifSwapped`: Only emits an event if payment requires swap, otherwise no dedicated payment event is emited. Use classic transfer event in this case.
+`ifSwapped`: Only emits an event if payment requires swap, otherwise no dedicated payment event is emited. Use classic transfer event in case of a direct payment (does not go through the DePay router).
 
 ```javascript
 let paymentRoutes = route({
@@ -147,6 +178,8 @@ let paymentRoutes = route({
 })
 
 ```
+
+Events are not emitted if payment receiver is a smart contract. Make sure your smart contract emits events in that case!
 
 ### routers
 
