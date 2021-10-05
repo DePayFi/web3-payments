@@ -119,10 +119,14 @@ let transactionPlugins = ({ paymentRoute, exchangeRoute, event })=> {
     let signature = paymentRoute.toContract.signature.match(/(?<=\().*(?=\))/)
     if(signature) {
       let splitSignature = signature[0].split(',')
-      if(splitSignature[0] == 'address' && splitSignature[1].match('uint') && splitSignature[2] == 'bool') {
+      if(splitSignature[0] == 'address' && splitSignature[1].match('uint') && splitSignature[2] == 'bool' && Number.isNaN(parseInt(paymentRoute.toContract.params[0]))) {
         paymentRoute.contractCallPlugin = plugins[paymentRoute.blockchain].contractCall.approveAndCallContractAddressAmountBoolean
-        paymentPlugins.push(paymentRoute.contractCallPlugin.address)
+      } else if(splitSignature[0] == 'address' && splitSignature[1].match('uint') && splitSignature[2] == 'bool' && !Number.isNaN(parseInt(paymentRoute.toContract.params[0]))) {
+        paymentRoute.contractCallPlugin = plugins[paymentRoute.blockchain].contractCall.approveAndCallContractAddressPassedAmountBoolean
+      } else {
+        throw('No payment plugins exists to pay into contract with signature:', signature)
       }
+      paymentPlugins.push(paymentRoute.contractCallPlugin.address)
     }
   } else if(event == 'ifSwapped' && !paymentRoute.directTransfer) {
     paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address)

@@ -37,6 +37,15 @@
     return transaction
   };
 
+  const prepareContractCallAddressPassedAmountBooleanTransaction = (transaction, toContract)=> {
+    transaction.params.data = [
+      toContract.signature,
+      toContract.params[1]
+    ];
+    transaction.params.amounts[5] = toContract.params[0];
+    return transaction
+  };
+
   var plugins = {
     ethereum: {
       payment: {
@@ -53,6 +62,10 @@
         approveAndCallContractAddressAmountBoolean: {
           address: '0xF984eb8b466AD6c728E0aCc7b69Af6f69B32437F',
           prepareTransaction: prepareContractCallAddressAmountBooleanTransaction
+        },
+        approveAndCallContractAddressPassedAmountBoolean: {
+          address: '0x2D18c5A46cc1780d2460DD51B5d0996e55Fd2446',
+          prepareTransaction: prepareContractCallAddressPassedAmountBooleanTransaction
         }
       }
     },
@@ -71,6 +84,10 @@
         approveAndCallContractAddressAmountBoolean: {
           address: '0xd73dFeF8F9c213b449fB39B84c2b33FBBc2C8eD3',
           prepareTransaction: prepareContractCallAddressAmountBooleanTransaction
+        },
+        approveAndCallContractAddressPassedAmountBoolean: {
+          address: '0x7E655088214d0657251A51aDccE9109CFd23B5B5',
+          prepareTransaction: prepareContractCallAddressPassedAmountBooleanTransaction
         }
       }
     } 
@@ -4342,10 +4359,14 @@
       let signature = paymentRoute.toContract.signature.match(/(?<=\().*(?=\))/);
       if(signature) {
         let splitSignature = signature[0].split(',');
-        if(splitSignature[0] == 'address' && splitSignature[1].match('uint') && splitSignature[2] == 'bool') {
+        if(splitSignature[0] == 'address' && splitSignature[1].match('uint') && splitSignature[2] == 'bool' && Number.isNaN(parseInt(paymentRoute.toContract.params[0]))) {
           paymentRoute.contractCallPlugin = plugins[paymentRoute.blockchain].contractCall.approveAndCallContractAddressAmountBoolean;
-          paymentPlugins.push(paymentRoute.contractCallPlugin.address);
+        } else if(splitSignature[0] == 'address' && splitSignature[1].match('uint') && splitSignature[2] == 'bool' && !Number.isNaN(parseInt(paymentRoute.toContract.params[0]))) {
+          paymentRoute.contractCallPlugin = plugins[paymentRoute.blockchain].contractCall.approveAndCallContractAddressPassedAmountBoolean;
+        } else {
+          throw(signature)
         }
+        paymentPlugins.push(paymentRoute.contractCallPlugin.address);
       }
     } else if(event == 'ifSwapped' && !paymentRoute.directTransfer) {
       paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address);

@@ -29,6 +29,15 @@ const prepareContractCallAddressAmountBooleanTransaction = (transaction, toContr
   return transaction
 }
 
+const prepareContractCallAddressPassedAmountBooleanTransaction = (transaction, toContract)=> {
+  transaction.params.data = [
+    toContract.signature,
+    toContract.params[1]
+  ]
+  transaction.params.amounts[5] = toContract.params[0]
+  return transaction
+}
+
 export default {
   ethereum: {
     payment: {
@@ -45,6 +54,10 @@ export default {
       approveAndCallContractAddressAmountBoolean: {
         address: '0xF984eb8b466AD6c728E0aCc7b69Af6f69B32437F',
         prepareTransaction: prepareContractCallAddressAmountBooleanTransaction
+      },
+      approveAndCallContractAddressPassedAmountBoolean: {
+        address: '0x2D18c5A46cc1780d2460DD51B5d0996e55Fd2446',
+        prepareTransaction: prepareContractCallAddressPassedAmountBooleanTransaction
       }
     }
   },
@@ -63,6 +76,10 @@ export default {
       approveAndCallContractAddressAmountBoolean: {
         address: '0xd73dFeF8F9c213b449fB39B84c2b33FBBc2C8eD3',
         prepareTransaction: prepareContractCallAddressAmountBooleanTransaction
+      },
+      approveAndCallContractAddressPassedAmountBoolean: {
+        address: '0x7E655088214d0657251A51aDccE9109CFd23B5B5',
+        prepareTransaction: prepareContractCallAddressPassedAmountBooleanTransaction
       }
     }
   } 

@@ -104,6 +104,54 @@ and amounts from the final token amounts also forwarding `params[0]` to pass the
 
 If you want to know more about paying into smart contracts, checkout the [depay-evm-router](https://github.com/depayfi/depay-evm-router).
 
+Read following the currently supported contract call signatures:
+
+##### signature(address,uint256,bool)
+
+###### While inferring uint256 from paid amount:
+
+```javascript
+import { route } from 'depay-web3-payments'
+
+let paymentRoutes = route({
+  accept: [
+    {
+      blockchain: 'ethereum',
+      token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
+      amount: 20,
+      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
+      toAddress: '0xb0252f13850a4823706607524de0b146820F2240',
+      toContract: {
+        signature: 'claim(address,uint256,bool)',
+        params: ['true']
+      }
+    }
+  ]
+})
+```
+
+###### Passing uint256 explicitly:
+
+```javascript
+import { route } from 'depay-web3-payments'
+
+let paymentRoutes = route({
+  accept: [
+    {
+      blockchain: 'ethereum',
+      token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
+      amount: 20,
+      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
+      toAddress: '0xb0252f13850a4823706607524de0b146820F2240',
+      toContract: {
+        signature: 'claim(address,uint256,bool)',
+        params: ['40000000000000000000', 'true']
+      }
+    }
+  ]
+})
+```
+
 #### whitelist
 
 Allows only fromTokens (from the sender) that are part of the whitelist:
