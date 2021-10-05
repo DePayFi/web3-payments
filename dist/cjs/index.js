@@ -4347,7 +4347,7 @@ let transactionAmounts = ({ paymentRoute, exchangeRoute })=> {
       exchangeRoute.transaction.params.deadline
     ]
   } else {
-    return [paymentRoute.toAmount]
+    return [paymentRoute.toAmount, paymentRoute.toAmount]
   }
 };
 
