@@ -42,6 +42,10 @@
       toContract.signature,
       toContract.params[1]
     ];
+    transaction.params.amounts[1] ??= '0';
+    transaction.params.amounts[2] ??= '0';
+    transaction.params.amounts[3] ??= '0';
+    transaction.params.amounts[4] ??= '0';
     transaction.params.amounts[5] = toContract.params[0];
     return transaction
   };
