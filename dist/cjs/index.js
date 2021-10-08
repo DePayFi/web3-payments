@@ -4252,6 +4252,7 @@ function throwFault(fault, operation, value) {
     return logger.throwError(fault, Logger.errors.NUMERIC_FAULT, params);
 }
 
+function _optionalChain$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 let getTransaction = ({ paymentRoute, event })=> {
   let exchangeRoute = paymentRoute.exchangeRoutes[0];
 
@@ -4364,9 +4365,10 @@ let transactionPlugins = ({ paymentRoute, exchangeRoute, event })=> {
   }
 
   if(paymentRoute.toContract) {
-    let signature = paymentRoute.toContract.signature.match(/(?<=\().*(?=\))/);
-    if(signature) {
-      let splitSignature = signature[0].split(',');
+    let signature = paymentRoute.toContract.signature.match(/\(.*\)/);
+    if(signature && _optionalChain$1([signature, 'optionalAccess', _ => _.length])) {
+      signature = signature[0].replace(/[\(\)]/g, '');
+      let splitSignature = signature.split(',');
       if(splitSignature[0] == 'address' && splitSignature[1].match('uint') && splitSignature[2] == 'bool' && Number.isNaN(parseInt(paymentRoute.toContract.params[0]))) {
         paymentRoute.contractCallPlugin = plugins[paymentRoute.blockchain].contractCall.approveAndCallContractAddressAmountBoolean;
       } else if(splitSignature[0] == 'address' && splitSignature[1].match('uint') && splitSignature[2] == 'bool' && !Number.isNaN(parseInt(paymentRoute.toContract.params[0]))) {

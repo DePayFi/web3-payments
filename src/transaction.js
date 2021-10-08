@@ -116,9 +116,10 @@ let transactionPlugins = ({ paymentRoute, exchangeRoute, event })=> {
   }
 
   if(paymentRoute.toContract) {
-    let signature = paymentRoute.toContract.signature.match(/(?<=\().*(?=\))/)
-    if(signature) {
-      let splitSignature = signature[0].split(',')
+    let signature = paymentRoute.toContract.signature.match(/\(.*\)/)
+    if(signature && signature?.length) {
+      signature = signature[0].replace(/[\(\)]/g, '')
+      let splitSignature = signature.split(',')
       if(splitSignature[0] == 'address' && splitSignature[1].match('uint') && splitSignature[2] == 'bool' && Number.isNaN(parseInt(paymentRoute.toContract.params[0]))) {
         paymentRoute.contractCallPlugin = plugins[paymentRoute.blockchain].contractCall.approveAndCallContractAddressAmountBoolean
       } else if(splitSignature[0] == 'address' && splitSignature[1].match('uint') && splitSignature[2] == 'bool' && !Number.isNaN(parseInt(paymentRoute.toContract.params[0]))) {
