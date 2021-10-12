@@ -1,13 +1,46 @@
-import { UniswapV2Factory, UniswapV2Router } from '../apis'
+import { ethers } from 'ethers'
+import { findByName } from 'depay-web3-exchanges'
 import { mock } from 'depay-web3-mock'
 
+let exchange = findByName('uniswap_v2')
+
 let mockPair = (provider, pair, params)=>{
+  mock({
+    provider: provider,
+    blockchain: 'ethereum',
+    call: {
+      to: pair,
+      api: exchange.contracts.pair.api,
+      method: 'getReserves',
+      return: [ethers.utils.parseUnits('1000', 18), ethers.utils.parseUnits('1000', 18), '1629804922']
+    }
+  })
+  mock({
+    provider: provider,
+    blockchain: 'ethereum',
+    call: {
+      to: pair,
+      api: exchange.contracts.pair.api,
+      method: 'token0',
+      return: params[0]
+    }
+  })
+  mock({
+    provider: provider,
+    blockchain: 'ethereum',
+    call: {
+      to: pair,
+      api: exchange.contracts.pair.api,
+      method: 'token1',
+      return: params[1]
+    }
+  })
   mock({
     provider,
     blockchain: 'ethereum',
     call: {
-      to: '0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f',
-      api: UniswapV2Factory,
+      to: exchange.contracts.factory.address,
+      api: exchange.contracts.factory.api,
       method: 'getPair',
       params: params,
       return: pair
@@ -20,8 +53,8 @@ let mockAmounts = ({ provider, method, params, amounts })=>{
     provider,
     blockchain: 'ethereum',
     call: {
-      to: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
-      api: UniswapV2Router,
+      to: exchange.contracts.router.address,
+      api: exchange.contracts.router.api,
       method,
       params,
       return: amounts

@@ -1,7 +1,7 @@
 {
   "name": "depay-web3-payments",
   "moduleName": "Web3Payments",
-  "version": "6.3.4",
+  "version": "6.3.5",
   "description": "JavaScript library to scan crypto wallets for liquefiable assets and calculate most cost-effective payment routing.",
   "main": "dist/cjs/index.js",
   "module": "dist/es/index.js",
@@ -38,7 +38,7 @@
   "peerDependencies": {
     "depay-web3-assets": "^2.2.0",
     "depay-web3-constants": "^3.0.1",
-    "depay-web3-exchanges": "^6.2.0",
+    "depay-web3-exchanges": "^6.2.2",
     "depay-web3-tokens": "^6.0.0"
   },
   "engines": {
@@ -58,10 +58,10 @@
     "depay-web3-blockchains": "^2.6.0",
     "depay-web3-client": "^6.0.0",
     "depay-web3-constants": "^3.0.1",
-    "depay-web3-exchanges": "^6.2.0",
-    "depay-web3-mock": "^8.2.5",
+    "depay-web3-exchanges": "^6.2.2",
+    "depay-web3-mock": "^8.2.7",
     "depay-web3-tokens": "^6.0.0",
-    "depay-web3-wallets": "^5.6.9",
+    "depay-web3-wallets": "^5.7.3",
     "eslint": "^7.15.0",
     "eslint-loader": "^4.0.2",
     "eslint-plugin-import": "^2.22.1",
