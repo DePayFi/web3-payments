@@ -13,7 +13,7 @@ npm install --save depay-web3-payments
 ```javascript
 import { route } from 'depay-web3-payments'
 
-let paymentRoutes = route({
+let paymentRoutes = await route({
   accept: [{
     blockchain: 'ethereum',
     token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
@@ -36,7 +36,7 @@ Routes payment and returns payment routes:
 ```javascript
 import { route } from 'depay-web3-payments'
 
-let paymentRoutes = route({
+let paymentRoutes = await route({
   accept: [{
     blockchain: 'ethereum',
     token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
@@ -53,7 +53,7 @@ Also allows to pass in multiple accepted means of payment:
 ```javascript
 import { route } from 'depay-web3-payments'
 
-let paymentRoutes = route({
+let paymentRoutes = await route({
   accept: [
     {
       blockchain: 'ethereum',
@@ -80,7 +80,7 @@ In case you want to pay into smart contract (calling a smart contract method), y
 ```javascript
 import { route } from 'depay-web3-payments'
 
-let paymentRoutes = route({
+let paymentRoutes = await route({
   accept: [
     {
       blockchain: 'ethereum',
@@ -113,7 +113,7 @@ Read following the currently supported contract call signatures:
 ```javascript
 import { route } from 'depay-web3-payments'
 
-let paymentRoutes = route({
+let paymentRoutes = await route({
   accept: [
     {
       blockchain: 'ethereum',
@@ -135,7 +135,7 @@ let paymentRoutes = route({
 ```javascript
 import { route } from 'depay-web3-payments'
 
-let paymentRoutes = route({
+let paymentRoutes = await route({
   accept: [
     {
       blockchain: 'ethereum',
@@ -157,7 +157,7 @@ let paymentRoutes = route({
 Allows only fromTokens (from the sender) that are part of the whitelist:
 
 ```javacript
-let paymentRoutes = route({
+let paymentRoutes = await route({
 
   whitelist: {
     ethereum: [
@@ -180,7 +180,7 @@ let paymentRoutes = route({
 Filters fromTokens to not be used for payment routing:
 
 ```javacript
-let paymentRoutes = route({
+let paymentRoutes = await route({
 
   blacklist: {
     ethereum: [
@@ -205,7 +205,7 @@ Possible values:
 `ifSwapped`: Only emits an event if payment requires swap, otherwise no dedicated payment event is emited. Use classic transfer event in case of a direct payment (does not go through the DePay router).
 
 ```javascript
-let paymentRoutes = route({
+let paymentRoutes = await route({
   accept: [
     {
       blockchain: 'ethereum',
