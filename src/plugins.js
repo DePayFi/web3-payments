@@ -1,4 +1,4 @@
-import { CONSTANTS } from 'depay-web3-constants'
+import { CONSTANTS } from '@depay/web3-constants'
 
 const prepareUniswapTransaction = (transaction)=>{
   transaction.params.path = transaction.params.path.filter((token, index, path)=>{

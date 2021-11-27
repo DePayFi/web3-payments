@@ -1,15 +1,15 @@
 import fetchMock from 'fetch-mock'
 import plugins from 'src/plugins'
 import routers from 'src/routers'
-import { CONSTANTS } from 'depay-web3-constants'
+import { CONSTANTS } from '@depay/web3-constants'
 import { ethers } from 'ethers'
-import { mock, resetMocks, anything } from 'depay-web3-mock'
+import { mock, resetMocks, anything } from '@depay/web3-mock'
 import { mockAssets } from 'tests/mocks/DePayPRO'
 import { mockDecimals, mockBalance, mockAllowance } from 'tests/mocks/tokens'
 import { mockPair, mockAmounts } from 'tests/mocks/Pancakeswap'
-import { resetCache, provider } from 'depay-web3-client'
+import { resetCache, provider } from '@depay/web3-client'
 import { route } from 'src'
-import { Token } from 'depay-web3-tokens'
+import { Token } from '@depay/web3-tokens'
 
 describe('route', ()=> {
 

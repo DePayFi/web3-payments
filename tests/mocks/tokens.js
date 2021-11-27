@@ -1,5 +1,5 @@
-import { Token } from 'depay-web3-tokens'
-import { mock } from 'depay-web3-mock'
+import { Token } from '@depay/web3-tokens'
+import { mock } from '@depay/web3-mock'
 
 let mockDecimals = ({ provider, blockchain, api, token, decimals })=>{
   return mock({

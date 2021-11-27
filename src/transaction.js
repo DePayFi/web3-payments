@@ -1,8 +1,8 @@
 import plugins from './plugins'
 import routers from './routers'
-import { CONSTANTS } from 'depay-web3-constants'
+import { CONSTANTS } from '@depay/web3-constants'
 import { ethers } from 'ethers'
-import { Token } from 'depay-web3-tokens'
+import { Token } from '@depay/web3-tokens'
 
 let getTransaction = ({ paymentRoute, event })=> {
   let exchangeRoute = paymentRoute.exchangeRoutes[0]

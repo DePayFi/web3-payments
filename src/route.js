@@ -1,11 +1,11 @@
 import plugins from './plugins'
 import routers from './routers'
-import { CONSTANTS } from 'depay-web3-constants'
+import { CONSTANTS } from '@depay/web3-constants'
 import { ethers } from 'ethers'
-import { getAssets } from 'depay-web3-assets'
-import { route as exchangeRoute } from 'depay-web3-exchanges'
+import { getAssets } from '@depay/web3-assets'
+import { route as exchangeRoute } from '@depay/web3-exchanges'
 import { getTransaction } from './transaction'
-import { Token } from 'depay-web3-tokens'
+import { Token } from '@depay/web3-tokens'
 
 class PaymentRoute {
   constructor({ blockchain, fromToken, toToken, toAmount, fromAddress, toAddress, toContract }) {
@@ -196,7 +196,7 @@ let filterInsufficientBalance = (routes) => {
 
 let addApproval = (routes) => {
   return Promise.all(routes.map(
-    (route) => route.fromToken.allowance(routers[route.blockchain].address)
+    (route) => route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address)
   )).then(
     (allowances) => {
       routes.forEach((route, index) => {

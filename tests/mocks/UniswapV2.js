@@ -1,6 +1,6 @@
 import { ethers } from 'ethers'
-import { findByName } from 'depay-web3-exchanges'
-import { mock } from 'depay-web3-mock'
+import { findByName } from '@depay/web3-exchanges'
+import { mock } from '@depay/web3-mock'
 
 let exchange = findByName('uniswap_v2')
 

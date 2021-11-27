@@ -1,8 +1,8 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('depay-web3-constants'), require('depay-web3-assets'), require('depay-web3-exchanges'), require('depay-web3-tokens'), require('buffer')) :
-  typeof define === 'function' && define.amd ? define(['exports', 'depay-web3-constants', 'depay-web3-assets', 'depay-web3-exchanges', 'depay-web3-tokens', 'buffer'], factory) :
+  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@depay/web3-constants'), require('@depay/web3-assets'), require('@depay/web3-exchanges'), require('@depay/web3-tokens'), require('buffer')) :
+  typeof define === 'function' && define.amd ? define(['exports', '@depay/web3-constants', '@depay/web3-assets', '@depay/web3-exchanges', '@depay/web3-tokens', 'buffer'], factory) :
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.Web3Payments = {}, global.Web3Constants, global.Web3Assets, global.Web3Exchanges, global.Web3Tokens, global.require$$0));
-}(this, (function (exports, depayWeb3Constants, depayWeb3Assets, depayWeb3Exchanges, depayWeb3Tokens, require$$0) { 'use strict';
+}(this, (function (exports, web3Constants, web3Assets, web3Exchanges, web3Tokens, require$$0) { 'use strict';
 
   function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
@@ -12,14 +12,14 @@
     transaction.params.path = transaction.params.path.filter((token, index, path)=>{
       if(
         index == 1 &&
-        token == depayWeb3Constants.CONSTANTS[transaction.blockchain].WRAPPED &&
-        path[0] == depayWeb3Constants.CONSTANTS[transaction.blockchain].NATIVE
+        token == web3Constants.CONSTANTS[transaction.blockchain].WRAPPED &&
+        path[0] == web3Constants.CONSTANTS[transaction.blockchain].NATIVE
       ) { 
         return false
       } else if (
         index == path.length-2 &&
-        token == depayWeb3Constants.CONSTANTS[transaction.blockchain].WRAPPED &&
-        path[path.length-1] == depayWeb3Constants.CONSTANTS[transaction.blockchain].NATIVE
+        token == web3Constants.CONSTANTS[transaction.blockchain].WRAPPED &&
+        path[path.length-1] == web3Constants.CONSTANTS[transaction.blockchain].NATIVE
       ) {
         return false
       } else {
@@ -4276,7 +4276,7 @@
 
   let transactionAddress = ({ paymentRoute })=> {
     if(paymentRoute.directTransfer) {
-      if(paymentRoute.toToken.address == depayWeb3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
+      if(paymentRoute.toToken.address == web3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
         return paymentRoute.toAddress
       } else {
         return paymentRoute.toToken.address
@@ -4288,10 +4288,10 @@
 
   let transactionApi = ({ paymentRoute })=> {
     if(paymentRoute.directTransfer) {
-      if(paymentRoute.toToken.address == depayWeb3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
+      if(paymentRoute.toToken.address == web3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
         return undefined
       } else {
-        return depayWeb3Tokens.Token[paymentRoute.blockchain].DEFAULT
+        return web3Tokens.Token[paymentRoute.blockchain].DEFAULT
       }
     } else {
       return routers[paymentRoute.blockchain].api
@@ -4300,7 +4300,7 @@
 
   let transactionMethod = ({ paymentRoute })=> {
     if(paymentRoute.directTransfer) {
-      if(paymentRoute.toToken.address == depayWeb3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
+      if(paymentRoute.toToken.address == web3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
         return undefined
       } else {
         return 'transfer'
@@ -4312,7 +4312,7 @@
 
   let transactionParams = ({ paymentRoute, exchangeRoute, event })=> {
     if(paymentRoute.directTransfer) {
-      if(paymentRoute.toToken.address == depayWeb3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
+      if(paymentRoute.toToken.address == web3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
         return undefined
       } else {
         return [paymentRoute.toAddress, paymentRoute.toAmount]
@@ -4384,7 +4384,7 @@
   };
 
   let transactionValue = ({ paymentRoute, exchangeRoute })=> {
-    if(paymentRoute.fromToken.address == depayWeb3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
+    if(paymentRoute.fromToken.address == web3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
       if(exchangeRoute) {
         return exchangeRoute.amountIn.toString()
       } else { // direct payment
@@ -4429,7 +4429,7 @@
       routes.map(
         async (route)=> {
           route = JSON.parse(route);
-          return await depayWeb3Assets.getAssets({ blockchain: route.blockchain, account: route.fromAddress, apiKey })
+          return await web3Assets.getAssets({ blockchain: route.blockchain, account: route.fromAddress, apiKey })
         }
       )
     ).then((assets)=>{
@@ -4465,7 +4465,7 @@
       let relevantConfigurations = accept.filter((configuration)=>(configuration.blockchain == fromToken.blockchain));
       return relevantConfigurations.map((configuration)=>{
         let blockchain = configuration.blockchain;
-        let toToken = new depayWeb3Tokens.Token({ blockchain, address: configuration.token });
+        let toToken = new web3Tokens.Token({ blockchain, address: configuration.token });
         return new PaymentRoute({
           blockchain,
           fromToken: fromToken,
@@ -4517,7 +4517,7 @@
   };
 
   let assetsToTokens = async (assets) => {
-    return assets.map((asset) => new depayWeb3Tokens.Token({ blockchain: asset.blockchain, address: asset.address }))
+    return assets.map((asset) => new web3Tokens.Token({ blockchain: asset.blockchain, address: asset.address }))
   };
 
   let filterBlacklistedAssets = ({ assets, blacklist }) => {
@@ -4540,7 +4540,7 @@
     return await Promise.all(
       routes.map((route) => {
         if(route.directTransfer) { return [] }
-        return depayWeb3Exchanges.route({
+        return web3Exchanges.route({
           blockchain: route.blockchain,
           tokenIn: route.fromToken.address,
           tokenOut: route.toToken.address,
@@ -4585,14 +4585,14 @@
 
   let addApproval = (routes) => {
     return Promise.all(routes.map(
-      (route) => route.fromToken.allowance(routers[route.blockchain].address)
+      (route) => route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address)
     )).then(
       (allowances) => {
         routes.forEach((route, index) => {
           if(
             (
               route.directTransfer ||
-              route.fromToken.address.toLowerCase() == depayWeb3Constants.CONSTANTS[route.blockchain].NATIVE.toLowerCase()
+              route.fromToken.address.toLowerCase() == web3Constants.CONSTANTS[route.blockchain].NATIVE.toLowerCase()
             ) && route.toContract == undefined
           ) {
             routes[index].approvalRequired = false;
@@ -4602,9 +4602,9 @@
               routes[index].approvalTransaction = {
                 blockchain: route.blockchain,
                 to: route.fromToken.address,
-                api: depayWeb3Tokens.Token[route.blockchain].DEFAULT,
+                api: web3Tokens.Token[route.blockchain].DEFAULT,
                 method: 'approve',
-                params: [routers[route.blockchain].address, depayWeb3Constants.CONSTANTS[route.blockchain].MAXINT]
+                params: [routers[route.blockchain].address, web3Constants.CONSTANTS[route.blockchain].MAXINT]
               };
             }
           }
@@ -4624,7 +4624,7 @@
   let addFromAmount = (routes)=> {
     return routes.map((route)=>{
       if(route.directTransfer) {
-        if(route.fromToken.address.toLowerCase() == depayWeb3Constants.CONSTANTS[route.blockchain].NATIVE.toLowerCase()) {
+        if(route.fromToken.address.toLowerCase() == web3Constants.CONSTANTS[route.blockchain].NATIVE.toLowerCase()) {
           route.fromAmount = route.transaction.value;
         } else {
           route.fromAmount = route.transaction.params[1];
@@ -4686,10 +4686,10 @@
         return aWins
       }
 
-      if (a.fromToken.address.toLowerCase() == depayWeb3Constants.CONSTANTS[a.blockchain].NATIVE.toLowerCase()) {
+      if (a.fromToken.address.toLowerCase() == web3Constants.CONSTANTS[a.blockchain].NATIVE.toLowerCase()) {
         return aWins
       }
-      if (b.fromToken.address.toLowerCase() == depayWeb3Constants.CONSTANTS[b.blockchain].NATIVE.toLowerCase()) {
+      if (b.fromToken.address.toLowerCase() == web3Constants.CONSTANTS[b.blockchain].NATIVE.toLowerCase()) {
         return bWins
       }
 

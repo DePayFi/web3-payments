@@ -1,7 +1,7 @@
-import { CONSTANTS } from 'depay-web3-constants';
-import { getAssets } from 'depay-web3-assets';
-import { route as route$1 } from 'depay-web3-exchanges';
-import { Token } from 'depay-web3-tokens';
+import { CONSTANTS } from '@depay/web3-constants';
+import { getAssets } from '@depay/web3-assets';
+import { route as route$1 } from '@depay/web3-exchanges';
+import { Token } from '@depay/web3-tokens';
 import require$$0 from 'buffer';
 
 const prepareUniswapTransaction = (transaction)=>{
@@ -4581,7 +4581,7 @@ let filterInsufficientBalance = (routes) => {
 
 let addApproval = (routes) => {
   return Promise.all(routes.map(
-    (route) => route.fromToken.allowance(routers[route.blockchain].address)
+    (route) => route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address)
   )).then(
     (allowances) => {
       routes.forEach((route, index) => {
