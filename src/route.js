@@ -184,7 +184,7 @@ let filterNotRoutable = (routes) => {
   })
 }
 
-let filterInsufficientBalance = (routes) => {
+let filterInsufficientBalance = async(routes) => {
   return routes.filter((route) => {
     if (route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase()) {
       return ethers.BigNumber.from(route.fromBalance).gte(ethers.BigNumber.from(route.toAmount))

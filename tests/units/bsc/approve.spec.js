@@ -5,7 +5,7 @@ import { CONSTANTS } from '@depay/web3-constants'
 import { ethers } from 'ethers'
 import { getWallet } from '@depay/web3-wallets'
 import { mock, resetMocks, anything } from '@depay/web3-mock'
-import { mockAssets } from 'tests/mocks/DePayPRO'
+import { mockAssets } from 'tests/mocks/api'
 import { mockDecimals, mockBalance, mockAllowance } from 'tests/mocks/tokens'
 import { mockPair, mockAmounts } from 'tests/mocks/Pancakeswap'
 import { resetCache, provider } from '@depay/web3-client'
@@ -65,12 +65,12 @@ describe('route', ()=> {
         "name": "CAKE Stablecoin",
         "symbol": "CAKE",
         "address": CAKE,
-        "type": "BEP20"
+        "type": "20"
       }, {
         "name": "BUSD",
         "symbol": "BUSD",
         "address": BUSD,
-        "type": "BEP20"
+        "type": "20"
       }
     ]})
     mockDecimals({ provider: provider(blockchain), blockchain, api: Token[blockchain].BEP20, token: BUSD, decimals: 18 })

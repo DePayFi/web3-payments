@@ -5,7 +5,7 @@ import { CONSTANTS } from '@depay/web3-constants'
 import { ethers } from 'ethers'
 import { getWallet } from '@depay/web3-wallets'
 import { mock, resetMocks, anything } from '@depay/web3-mock'
-import { mockAssets } from 'tests/mocks/DePayPRO'
+import { mockAssets } from 'tests/mocks/api'
 import { mockDecimals, mockBalance, mockAllowance } from 'tests/mocks/tokens'
 import { mockPair, mockAmounts } from 'tests/mocks/UniswapV2'
 import { resetCache, provider } from '@depay/web3-client'
@@ -65,12 +65,12 @@ describe('route to contract as payment receiver', ()=> {
         "name": "Dai Stablecoin",
         "symbol": "DAI",
         "address": DAI,
-        "type": "ERC20"
+        "type": "20"
       }, {
         "name": "DePay",
         "symbol": "DEPAY",
         "address": DEPAY,
-        "type": "ERC20"
+        "type": "20"
       }
     ]})
     mockDecimals({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: DEPAY, decimals: 18 })

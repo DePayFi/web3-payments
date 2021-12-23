@@ -4,7 +4,7 @@ import routers from 'src/routers'
 import { CONSTANTS } from '@depay/web3-constants'
 import { ethers } from 'ethers'
 import { mock, connect, resetMocks, mockJsonRpcProvider } from '@depay/web3-mock'
-import { mockAssets } from 'tests/mocks/DePayPRO'
+import { mockAssets } from 'tests/mocks/api'
 import { mockDecimals, mockBalance, mockAllowance } from 'tests/mocks/tokens'
 import { mockPair as mockPancakeSwapPair, mockAmounts as mockPancakeSwapAmounts } from 'tests/mocks/Pancakeswap'
 import { mockPair as mockUniswapPair, mockAmounts as mockUniswapAmounts } from 'tests/mocks/UniswapV2'
@@ -33,7 +33,7 @@ describe('route', ()=> {
         "name": "Dai Stablecoin",
         "symbol": "DAI",
         "address": DAI_ethereum,
-        "type": "ERC20"
+        "type": "20"
       }
     ]})
     mockAssets({ blockchain: 'bsc', account: fromAddress, assets: [
