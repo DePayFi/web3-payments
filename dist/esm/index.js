@@ -46,6 +46,10 @@ const prepareContractCallAddressPassedAmountBooleanTransaction = (transaction, t
   return transaction
 };
 
+const preparePaymentFeeTransaction = (transaction)=> {
+
+};
+
 var plugins = {
   ethereum: {
     payment: {
@@ -67,6 +71,10 @@ var plugins = {
         address: '0x2D18c5A46cc1780d2460DD51B5d0996e55Fd2446',
         prepareTransaction: prepareContractCallAddressPassedAmountBooleanTransaction
       }
+    },
+    paymentFee: {
+      address: '0x874Cb669D7BFff79d4A6A30F4ea52c5e413BD6A7',
+      prepareTransaction: preparePaymentFeeTransaction
     }
   },
   bsc: {
@@ -89,6 +97,10 @@ var plugins = {
         address: '0x7E655088214d0657251A51aDccE9109CFd23B5B5',
         prepareTransaction: prepareContractCallAddressPassedAmountBooleanTransaction
       }
+    },
+    paymentFee: {
+      address: '0xae33f10AD57A38113f74FCdc1ffA6B1eC47B94E3',
+      prepareTransaction: preparePaymentFeeTransaction
     }
   } 
 };
@@ -3557,7 +3569,7 @@ var bn = createCommonjsModule(function (module) {
 })(module, commonjsGlobal);
 });
 
-const version$2 = "logger/5.4.1";
+const version$3 = "logger/5.4.1";
 
 let _permanentCensorErrors = false;
 let _censorErrors = false;
@@ -3833,7 +3845,7 @@ class Logger {
     }
     static globalLogger() {
         if (!_globalLogger) {
-            _globalLogger = new Logger(version$2);
+            _globalLogger = new Logger(version$3);
         }
         return _globalLogger;
     }
@@ -3869,12 +3881,22 @@ class Logger {
 Logger.errors = ErrorCode;
 Logger.levels = LogLevel;
 
-const version$1 = "bytes/5.4.0";
+const version$2 = "bytes/5.4.0";
 
-const logger$1 = new Logger(version$1);
+const logger$3 = new Logger(version$2);
 ///////////////////////////////
 function isHexable(value) {
     return !!(value.toHexString);
+}
+function addSlice(array) {
+    if (array.slice) {
+        return array;
+    }
+    array.slice = function () {
+        const args = Array.prototype.slice.call(arguments);
+        return addSlice(new Uint8Array(Array.prototype.slice.apply(array, args)));
+    };
+    return array;
 }
 function isBytes(value) {
     if (value == null) {
@@ -3897,6 +3919,52 @@ function isBytes(value) {
     }
     return true;
 }
+function arrayify(value, options) {
+    if (!options) {
+        options = {};
+    }
+    if (typeof (value) === "number") {
+        logger$3.checkSafeUint53(value, "invalid arrayify value");
+        const result = [];
+        while (value) {
+            result.unshift(value & 0xff);
+            value = parseInt(String(value / 256));
+        }
+        if (result.length === 0) {
+            result.push(0);
+        }
+        return addSlice(new Uint8Array(result));
+    }
+    if (options.allowMissingPrefix && typeof (value) === "string" && value.substring(0, 2) !== "0x") {
+        value = "0x" + value;
+    }
+    if (isHexable(value)) {
+        value = value.toHexString();
+    }
+    if (isHexString(value)) {
+        let hex = value.substring(2);
+        if (hex.length % 2) {
+            if (options.hexPad === "left") {
+                hex = "0x0" + hex.substring(2);
+            }
+            else if (options.hexPad === "right") {
+                hex += "0";
+            }
+            else {
+                logger$3.throwArgumentError("hex data is odd-length", "value", value);
+            }
+        }
+        const result = [];
+        for (let i = 0; i < hex.length; i += 2) {
+            result.push(parseInt(hex.substring(i, i + 2), 16));
+        }
+        return addSlice(new Uint8Array(result));
+    }
+    if (isBytes(value)) {
+        return addSlice(new Uint8Array(value));
+    }
+    return logger$3.throwArgumentError("invalid arrayify value", "value", value);
+}
 function isHexString(value, length) {
     if (typeof (value) !== "string" || !value.match(/^0x[0-9A-Fa-f]*$/)) {
         return false;
@@ -3912,7 +3980,7 @@ function hexlify(value, options) {
         options = {};
     }
     if (typeof (value) === "number") {
-        logger$1.checkSafeUint53(value, "invalid hexlify value");
+        logger$3.checkSafeUint53(value, "invalid hexlify value");
         let hex = "";
         while (value) {
             hex = HexCharacters[value & 0xf] + hex;
@@ -3948,7 +4016,7 @@ function hexlify(value, options) {
                 value += "0";
             }
             else {
-                logger$1.throwArgumentError("hex data is odd-length", "value", value);
+                logger$3.throwArgumentError("hex data is odd-length", "value", value);
             }
         }
         return value.toLowerCase();
@@ -3961,22 +4029,45 @@ function hexlify(value, options) {
         }
         return result;
     }
-    return logger$1.throwArgumentError("invalid hexlify value", "value", value);
+    return logger$3.throwArgumentError("invalid hexlify value", "value", value);
+}
+function hexZeroPad(value, length) {
+    if (typeof (value) !== "string") {
+        value = hexlify(value);
+    }
+    else if (!isHexString(value)) {
+        logger$3.throwArgumentError("invalid hex string", "value", value);
+    }
+    if (value.length > 2 * length + 2) {
+        logger$3.throwArgumentError("value out of range", "value", arguments[1]);
+    }
+    while (value.length < 2 * length + 2) {
+        value = "0x0" + value.substring(2);
+    }
+    return value;
 }
 
-const version = "bignumber/5.4.1";
+const version$1 = "bignumber/5.4.1";
 
 var BN = bn.BN;
-const logger = new Logger(version);
-const _constructorGuard = {};
+const logger$2 = new Logger(version$1);
+const _constructorGuard$1 = {};
 const MAX_SAFE = 0x1fffffffffffff;
+function isBigNumberish(value) {
+    return (value != null) && (BigNumber.isBigNumber(value) ||
+        (typeof (value) === "number" && (value % 1) === 0) ||
+        (typeof (value) === "string" && !!value.match(/^-?[0-9]+$/)) ||
+        isHexString(value) ||
+        (typeof (value) === "bigint") ||
+        isBytes(value));
+}
 // Only warn about passing 10 into radix once
 let _warnedToStringRadix = false;
 class BigNumber {
     constructor(constructorGuard, hex) {
-        logger.checkNew(new.target, BigNumber);
-        if (constructorGuard !== _constructorGuard) {
-            logger.throwError("cannot call constructor directly; use BigNumber.from", Logger.errors.UNSUPPORTED_OPERATION, {
+        logger$2.checkNew(new.target, BigNumber);
+        if (constructorGuard !== _constructorGuard$1) {
+            logger$2.throwError("cannot call constructor directly; use BigNumber.from", Logger.errors.UNSUPPORTED_OPERATION, {
                 operation: "new (BigNumber)"
             });
         }
@@ -4005,7 +4096,7 @@ class BigNumber {
     div(other) {
         const o = BigNumber.from(other);
         if (o.isZero()) {
-            throwFault("division by zero", "div");
+            throwFault$1("division by zero", "div");
         }
         return toBigNumber(toBN(this).div(toBN(other)));
     }
@@ -4015,53 +4106,53 @@ class BigNumber {
     mod(other) {
         const value = toBN(other);
         if (value.isNeg()) {
-            throwFault("cannot modulo negative values", "mod");
+            throwFault$1("cannot modulo negative values", "mod");
         }
         return toBigNumber(toBN(this).umod(value));
     }
     pow(other) {
         const value = toBN(other);
         if (value.isNeg()) {
-            throwFault("cannot raise to negative values", "pow");
+            throwFault$1("cannot raise to negative values", "pow");
         }
         return toBigNumber(toBN(this).pow(value));
     }
     and(other) {
         const value = toBN(other);
         if (this.isNegative() || value.isNeg()) {
-            throwFault("cannot 'and' negative values", "and");
+            throwFault$1("cannot 'and' negative values", "and");
         }
         return toBigNumber(toBN(this).and(value));
     }
     or(other) {
         const value = toBN(other);
         if (this.isNegative() || value.isNeg()) {
-            throwFault("cannot 'or' negative values", "or");
+            throwFault$1("cannot 'or' negative values", "or");
         }
         return toBigNumber(toBN(this).or(value));
     }
     xor(other) {
         const value = toBN(other);
         if (this.isNegative() || value.isNeg()) {
-            throwFault("cannot 'xor' negative values", "xor");
+            throwFault$1("cannot 'xor' negative values", "xor");
         }
         return toBigNumber(toBN(this).xor(value));
     }
     mask(value) {
         if (this.isNegative() || value < 0) {
-            throwFault("cannot mask negative values", "mask");
+            throwFault$1("cannot mask negative values", "mask");
         }
         return toBigNumber(toBN(this).maskn(value));
     }
     shl(value) {
         if (this.isNegative() || value < 0) {
-            throwFault("cannot shift negative values", "shl");
+            throwFault$1("cannot shift negative values", "shl");
         }
         return toBigNumber(toBN(this).shln(value));
     }
     shr(value) {
         if (this.isNegative() || value < 0) {
-            throwFault("cannot shift negative values", "shr");
+            throwFault$1("cannot shift negative values", "shr");
         }
         return toBigNumber(toBN(this).shrn(value));
     }
@@ -4091,7 +4182,7 @@ class BigNumber {
             return toBN(this).toNumber();
         }
         catch (error) {
-            throwFault("overflow", "toNumber", this.toString());
+            throwFault$1("overflow", "toNumber", this.toString());
         }
         return null;
     }
@@ -4100,7 +4191,7 @@ class BigNumber {
             return BigInt(this.toString());
         }
         catch (e) { }
-        return logger.throwError("this platform does not support BigInt", Logger.errors.UNSUPPORTED_OPERATION, {
+        return logger$2.throwError("this platform does not support BigInt", Logger.errors.UNSUPPORTED_OPERATION, {
             value: this.toString()
         });
     }
@@ -4110,14 +4201,14 @@ class BigNumber {
             if (arguments[0] === 10) {
                 if (!_warnedToStringRadix) {
                     _warnedToStringRadix = true;
-                    logger.warn("BigNumber.toString does not accept any parameters; base-10 is assumed");
+                    logger$2.warn("BigNumber.toString does not accept any parameters; base-10 is assumed");
                 }
             }
             else if (arguments[0] === 16) {
-                logger.throwError("BigNumber.toString does not accept any parameters; use bigNumber.toHexString()", Logger.errors.UNEXPECTED_ARGUMENT, {});
+                logger$2.throwError("BigNumber.toString does not accept any parameters; use bigNumber.toHexString()", Logger.errors.UNEXPECTED_ARGUMENT, {});
             }
             else {
-                logger.throwError("BigNumber.toString does not accept parameters", Logger.errors.UNEXPECTED_ARGUMENT, {});
+                logger$2.throwError("BigNumber.toString does not accept parameters", Logger.errors.UNEXPECTED_ARGUMENT, {});
             }
         }
         return toBN(this).toString(10);
@@ -4134,19 +4225,19 @@ class BigNumber {
         }
         if (typeof (value) === "string") {
             if (value.match(/^-?0x[0-9a-f]+$/i)) {
-                return new BigNumber(_constructorGuard, toHex(value));
+                return new BigNumber(_constructorGuard$1, toHex(value));
             }
             if (value.match(/^-?[0-9]+$/)) {
-                return new BigNumber(_constructorGuard, toHex(new BN(value)));
+                return new BigNumber(_constructorGuard$1, toHex(new BN(value)));
             }
-            return logger.throwArgumentError("invalid BigNumber string", "value", value);
+            return logger$2.throwArgumentError("invalid BigNumber string", "value", value);
         }
         if (typeof (value) === "number") {
             if (value % 1) {
-                throwFault("underflow", "BigNumber.from", value);
+                throwFault$1("underflow", "BigNumber.from", value);
             }
             if (value >= MAX_SAFE || value <= -MAX_SAFE) {
-                throwFault("overflow", "BigNumber.from", value);
+                throwFault$1("overflow", "BigNumber.from", value);
             }
             return BigNumber.from(String(value));
         }
@@ -4179,7 +4270,7 @@ class BigNumber {
                 }
             }
         }
-        return logger.throwArgumentError("invalid BigNumber value", "value", value);
+        return logger$2.throwArgumentError("invalid BigNumber value", "value", value);
     }
     static isBigNumber(value) {
         return !!(value && value._isBigNumber);
@@ -4197,7 +4288,7 @@ function toHex(value) {
         value = value.substring(1);
         // Cannot have mulitple negative signs (e.g. "--0x04")
         if (value[0] === "-") {
-            logger.throwArgumentError("invalid hex", "value", value);
+            logger$2.throwArgumentError("invalid hex", "value", value);
         }
         // Call toHex on the positive component
         value = toHex(value);
@@ -4236,24 +4327,399 @@ function toBN(value) {
     }
     return new BN(hex.substring(2), 16);
 }
-function throwFault(fault, operation, value) {
+function throwFault$1(fault, operation, value) {
     const params = { fault: fault, operation: operation };
     if (value != null) {
         params.value = value;
     }
-    return logger.throwError(fault, Logger.errors.NUMERIC_FAULT, params);
+    return logger$2.throwError(fault, Logger.errors.NUMERIC_FAULT, params);
+}
+
+const logger$1 = new Logger(version$1);
+const _constructorGuard = {};
+const Zero = BigNumber.from(0);
+const NegativeOne = BigNumber.from(-1);
+function throwFault(message, fault, operation, value) {
+    const params = { fault: fault, operation: operation };
+    if (value !== undefined) {
+        params.value = value;
+    }
+    return logger$1.throwError(message, Logger.errors.NUMERIC_FAULT, params);
+}
+// Constant to pull zeros from for multipliers
+let zeros = "0";
+while (zeros.length < 256) {
+    zeros += zeros;
+}
+// Returns a string "1" followed by decimal "0"s
+function getMultiplier(decimals) {
+    if (typeof (decimals) !== "number") {
+        try {
+            decimals = BigNumber.from(decimals).toNumber();
+        }
+        catch (e) { }
+    }
+    if (typeof (decimals) === "number" && decimals >= 0 && decimals <= 256 && !(decimals % 1)) {
+        return ("1" + zeros.substring(0, decimals));
+    }
+    return logger$1.throwArgumentError("invalid decimal size", "decimals", decimals);
+}
+function formatFixed(value, decimals) {
+    if (decimals == null) {
+        decimals = 0;
+    }
+    const multiplier = getMultiplier(decimals);
+    // Make sure wei is a big number (convert as necessary)
+    value = BigNumber.from(value);
+    const negative = value.lt(Zero);
+    if (negative) {
+        value = value.mul(NegativeOne);
+    }
+    let fraction = value.mod(multiplier).toString();
+    while (fraction.length < multiplier.length - 1) {
+        fraction = "0" + fraction;
+    }
+    // Strip training 0
+    fraction = fraction.match(/^([0-9]*[1-9]|0)(0*)/)[1];
+    const whole = value.div(multiplier).toString();
+    if (multiplier.length === 1) {
+        value = whole;
+    }
+    else {
+        value = whole + "." + fraction;
+    }
+    if (negative) {
+        value = "-" + value;
+    }
+    return value;
+}
+function parseFixed(value, decimals) {
+    if (decimals == null) {
+        decimals = 0;
+    }
+    const multiplier = getMultiplier(decimals);
+    if (typeof (value) !== "string" || !value.match(/^-?[0-9.,]+$/)) {
+        logger$1.throwArgumentError("invalid decimal value", "value", value);
+    }
+    // Is it negative?
+    const negative = (value.substring(0, 1) === "-");
+    if (negative) {
+        value = value.substring(1);
+    }
+    if (value === ".") {
+        logger$1.throwArgumentError("missing value", "value", value);
+    }
+    // Split it into a whole and fractional part
+    const comps = value.split(".");
+    if (comps.length > 2) {
+        logger$1.throwArgumentError("too many decimal points", "value", value);
+    }
+    let whole = comps[0], fraction = comps[1];
+    if (!whole) {
+        whole = "0";
+    }
+    if (!fraction) {
+        fraction = "0";
+    }
+    // Get significant digits to check truncation for underflow
+    {
+        const sigFraction = fraction.replace(/^([0-9]*?)(0*)$/, (all, sig, zeros) => (sig));
+        if (sigFraction.length > multiplier.length - 1) {
+            throwFault("fractional component exceeds decimals", "underflow", "parseFixed");
+        }
+    }
+    // Fully pad the string with zeros to get to wei
+    while (fraction.length < multiplier.length - 1) {
+        fraction += "0";
+    }
+    const wholeValue = BigNumber.from(whole);
+    const fractionValue = BigNumber.from(fraction);
+    let wei = (wholeValue.mul(multiplier)).add(fractionValue);
+    if (negative) {
+        wei = wei.mul(NegativeOne);
+    }
+    return wei;
+}
+class FixedFormat {
+    constructor(constructorGuard, signed, width, decimals) {
+        if (constructorGuard !== _constructorGuard) {
+            logger$1.throwError("cannot use FixedFormat constructor; use FixedFormat.from", Logger.errors.UNSUPPORTED_OPERATION, {
+                operation: "new FixedFormat"
+            });
+        }
+        this.signed = signed;
+        this.width = width;
+        this.decimals = decimals;
+        this.name = (signed ? "" : "u") + "fixed" + String(width) + "x" + String(decimals);
+        this._multiplier = getMultiplier(decimals);
+        Object.freeze(this);
+    }
+    static from(value) {
+        if (value instanceof FixedFormat) {
+            return value;
+        }
+        if (typeof (value) === "number") {
+            value = `fixed128x${value}`;
+        }
+        let signed = true;
+        let width = 128;
+        let decimals = 18;
+        if (typeof (value) === "string") {
+            if (value === "fixed") ;
+            else if (value === "ufixed") {
+                signed = false;
+            }
+            else {
+                const match = value.match(/^(u?)fixed([0-9]+)x([0-9]+)$/);
+                if (!match) {
+                    logger$1.throwArgumentError("invalid fixed format", "format", value);
+                }
+                signed = (match[1] !== "u");
+                width = parseInt(match[2]);
+                decimals = parseInt(match[3]);
+            }
+        }
+        else if (value) {
+            const check = (key, type, defaultValue) => {
+                if (value[key] == null) {
+                    return defaultValue;
+                }
+                if (typeof (value[key]) !== type) {
+                    logger$1.throwArgumentError("invalid fixed format (" + key + " not " + type + ")", "format." + key, value[key]);
+                }
+                return value[key];
+            };
+            signed = check("signed", "boolean", signed);
+            width = check("width", "number", width);
+            decimals = check("decimals", "number", decimals);
+        }
+        if (width % 8) {
+            logger$1.throwArgumentError("invalid fixed format width (not byte aligned)", "format.width", width);
+        }
+        if (decimals > 80) {
+            logger$1.throwArgumentError("invalid fixed format (decimals too large)", "format.decimals", decimals);
+        }
+        return new FixedFormat(_constructorGuard, signed, width, decimals);
+    }
+}
+class FixedNumber {
+    constructor(constructorGuard, hex, value, format) {
+        logger$1.checkNew(new.target, FixedNumber);
+        if (constructorGuard !== _constructorGuard) {
+            logger$1.throwError("cannot use FixedNumber constructor; use FixedNumber.from", Logger.errors.UNSUPPORTED_OPERATION, {
+                operation: "new FixedFormat"
+            });
+        }
+        this.format = format;
+        this._hex = hex;
+        this._value = value;
+        this._isFixedNumber = true;
+        Object.freeze(this);
+    }
+    _checkFormat(other) {
+        if (this.format.name !== other.format.name) {
+            logger$1.throwArgumentError("incompatible format; use fixedNumber.toFormat", "other", other);
+        }
+    }
+    addUnsafe(other) {
+        this._checkFormat(other);
+        const a = parseFixed(this._value, this.format.decimals);
+        const b = parseFixed(other._value, other.format.decimals);
+        return FixedNumber.fromValue(a.add(b), this.format.decimals, this.format);
+    }
+    subUnsafe(other) {
+        this._checkFormat(other);
+        const a = parseFixed(this._value, this.format.decimals);
+        const b = parseFixed(other._value, other.format.decimals);
+        return FixedNumber.fromValue(a.sub(b), this.format.decimals, this.format);
+    }
+    mulUnsafe(other) {
+        this._checkFormat(other);
+        const a = parseFixed(this._value, this.format.decimals);
+        const b = parseFixed(other._value, other.format.decimals);
+        return FixedNumber.fromValue(a.mul(b).div(this.format._multiplier), this.format.decimals, this.format);
+    }
+    divUnsafe(other) {
+        this._checkFormat(other);
+        const a = parseFixed(this._value, this.format.decimals);
+        const b = parseFixed(other._value, other.format.decimals);
+        return FixedNumber.fromValue(a.mul(this.format._multiplier).div(b), this.format.decimals, this.format);
+    }
+    floor() {
+        const comps = this.toString().split(".");
+        if (comps.length === 1) {
+            comps.push("0");
+        }
+        let result = FixedNumber.from(comps[0], this.format);
+        const hasFraction = !comps[1].match(/^(0*)$/);
+        if (this.isNegative() && hasFraction) {
+            result = result.subUnsafe(ONE.toFormat(result.format));
+        }
+        return result;
+    }
+    ceiling() {
+        const comps = this.toString().split(".");
+        if (comps.length === 1) {
+            comps.push("0");
+        }
+        let result = FixedNumber.from(comps[0], this.format);
+        const hasFraction = !comps[1].match(/^(0*)$/);
+        if (!this.isNegative() && hasFraction) {
+            result = result.addUnsafe(ONE.toFormat(result.format));
+        }
+        return result;
+    }
+    // @TODO: Support other rounding algorithms
+    round(decimals) {
+        if (decimals == null) {
+            decimals = 0;
+        }
+        // If we are already in range, we're done
+        const comps = this.toString().split(".");
+        if (comps.length === 1) {
+            comps.push("0");
+        }
+        if (decimals < 0 || decimals > 80 || (decimals % 1)) {
+            logger$1.throwArgumentError("invalid decimal count", "decimals", decimals);
+        }
+        if (comps[1].length <= decimals) {
+            return this;
+        }
+        const factor = FixedNumber.from("1" + zeros.substring(0, decimals), this.format);
+        const bump = BUMP.toFormat(this.format);
+        return this.mulUnsafe(factor).addUnsafe(bump).floor().divUnsafe(factor);
+    }
+    isZero() {
+        return (this._value === "0.0" || this._value === "0");
+    }
+    isNegative() {
+        return (this._value[0] === "-");
+    }
+    toString() { return this._value; }
+    toHexString(width) {
+        if (width == null) {
+            return this._hex;
+        }
+        if (width % 8) {
+            logger$1.throwArgumentError("invalid byte width", "width", width);
+        }
+        const hex = BigNumber.from(this._hex).fromTwos(this.format.width).toTwos(width).toHexString();
+        return hexZeroPad(hex, width / 8);
+    }
+    toUnsafeFloat() { return parseFloat(this.toString()); }
+    toFormat(format) {
+        return FixedNumber.fromString(this._value, format);
+    }
+    static fromValue(value, decimals, format) {
+        // If decimals looks more like a format, and there is no format, shift the parameters
+        if (format == null && decimals != null && !isBigNumberish(decimals)) {
+            format = decimals;
+            decimals = null;
+        }
+        if (decimals == null) {
+            decimals = 0;
+        }
+        if (format == null) {
+            format = "fixed";
+        }
+        return FixedNumber.fromString(formatFixed(value, decimals), FixedFormat.from(format));
+    }
+    static fromString(value, format) {
+        if (format == null) {
+            format = "fixed";
+        }
+        const fixedFormat = FixedFormat.from(format);
+        const numeric = parseFixed(value, fixedFormat.decimals);
+        if (!fixedFormat.signed && numeric.lt(Zero)) {
+            throwFault("unsigned value cannot be negative", "overflow", "value", value);
+        }
+        let hex = null;
+        if (fixedFormat.signed) {
+            hex = numeric.toTwos(fixedFormat.width).toHexString();
+        }
+        else {
+            hex = numeric.toHexString();
+            hex = hexZeroPad(hex, fixedFormat.width / 8);
+        }
+        const decimal = formatFixed(numeric, fixedFormat.decimals);
+        return new FixedNumber(_constructorGuard, hex, decimal, fixedFormat);
+    }
+    static fromBytes(value, format) {
+        if (format == null) {
+            format = "fixed";
+        }
+        const fixedFormat = FixedFormat.from(format);
+        if (arrayify(value).length > fixedFormat.width / 8) {
+            throw new Error("overflow");
+        }
+        let numeric = BigNumber.from(value);
+        if (fixedFormat.signed) {
+            numeric = numeric.fromTwos(fixedFormat.width);
+        }
+        const hex = numeric.toTwos((fixedFormat.signed ? 0 : 1) + fixedFormat.width).toHexString();
+        const decimal = formatFixed(numeric, fixedFormat.decimals);
+        return new FixedNumber(_constructorGuard, hex, decimal, fixedFormat);
+    }
+    static from(value, format) {
+        if (typeof (value) === "string") {
+            return FixedNumber.fromString(value, format);
+        }
+        if (isBytes(value)) {
+            return FixedNumber.fromBytes(value, format);
+        }
+        try {
+            return FixedNumber.fromValue(value, 0, format);
+        }
+        catch (error) {
+            // Allow NUMERIC_FAULT to bubble up
+            if (error.code !== Logger.errors.INVALID_ARGUMENT) {
+                throw error;
+            }
+        }
+        return logger$1.throwArgumentError("invalid FixedNumber value", "value", value);
+    }
+    static isFixedNumber(value) {
+        return !!(value && value._isFixedNumber);
+    }
+}
+const ONE = FixedNumber.from(1);
+const BUMP = FixedNumber.from("0.5");
+
+const version = "units/5.4.0";
+
+const logger = new Logger(version);
+const names = [
+    "wei",
+    "kwei",
+    "mwei",
+    "gwei",
+    "szabo",
+    "finney",
+    "ether",
+];
+function parseUnits(value, unitName) {
+    if (typeof (value) !== "string") {
+        logger.throwArgumentError("value must be a string", "value", value);
+    }
+    if (typeof (unitName) === "string") {
+        const index = names.indexOf(unitName);
+        if (index !== -1) {
+            unitName = 3 * index;
+        }
+    }
+    return parseFixed(value, (unitName != null) ? unitName : 18);
 }
 
 function _optionalChain$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
-let getTransaction = ({ paymentRoute, event })=> {
+let getTransaction = ({ paymentRoute, event, fee })=> {
   let exchangeRoute = paymentRoute.exchangeRoutes[0];
 
   let transaction = {
     blockchain: paymentRoute.blockchain,
-    to: transactionAddress({ paymentRoute }),
-    api: transactionApi({ paymentRoute }),
-    method: transactionMethod({ paymentRoute }),
-    params: transactionParams({ paymentRoute, exchangeRoute, event }),
+    to: transactionAddress({ paymentRoute, fee }),
+    api: transactionApi({ paymentRoute, fee }),
+    method: transactionMethod({ paymentRoute, fee }),
+    params: transactionParams({ paymentRoute, exchangeRoute, event, fee }),
     value: transactionValue({ paymentRoute, exchangeRoute })
   };
 
@@ -4270,8 +4736,8 @@ let getTransaction = ({ paymentRoute, event })=> {
   return transaction
 };
 
-let transactionAddress = ({ paymentRoute })=> {
-  if(paymentRoute.directTransfer) {
+let transactionAddress = ({ paymentRoute, fee })=> {
+  if(paymentRoute.directTransfer && !fee) {
     if(paymentRoute.toToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
       return paymentRoute.toAddress
     } else {
@@ -4282,8 +4748,8 @@ let transactionAddress = ({ paymentRoute })=> {
   }
 };
 
-let transactionApi = ({ paymentRoute })=> {
-  if(paymentRoute.directTransfer) {
+let transactionApi = ({ paymentRoute, fee })=> {
+  if(paymentRoute.directTransfer && !fee) {
     if(paymentRoute.toToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
       return undefined
     } else {
@@ -4294,8 +4760,8 @@ let transactionApi = ({ paymentRoute })=> {
   }
 };
 
-let transactionMethod = ({ paymentRoute })=> {
-  if(paymentRoute.directTransfer) {
+let transactionMethod = ({ paymentRoute, fee })=> {
+  if(paymentRoute.directTransfer && !fee) {
     if(paymentRoute.toToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
       return undefined
     } else {
@@ -4306,8 +4772,8 @@ let transactionMethod = ({ paymentRoute })=> {
   }
 };
 
-let transactionParams = ({ paymentRoute, exchangeRoute, event })=> {
-  if(paymentRoute.directTransfer) {
+let transactionParams = ({ paymentRoute, exchangeRoute, event, fee })=> {
+  if(paymentRoute.directTransfer && !fee) {
     if(paymentRoute.toToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
       return undefined
     } else {
@@ -4316,9 +4782,9 @@ let transactionParams = ({ paymentRoute, exchangeRoute, event })=> {
   } else {
     return {
       path: transactionPath({ paymentRoute, exchangeRoute }),
-      amounts: transactionAmounts({ paymentRoute, exchangeRoute }),
-      addresses: transactionAddresses({ paymentRoute }),
-      plugins: transactionPlugins({ paymentRoute, exchangeRoute, event }),
+      amounts: transactionAmounts({ paymentRoute, exchangeRoute, fee }),
+      addresses: transactionAddresses({ paymentRoute, fee }),
+      plugins: transactionPlugins({ paymentRoute, exchangeRoute, event, fee }),
       data: []
     }
   }
@@ -4332,23 +4798,59 @@ let transactionPath = ({ paymentRoute, exchangeRoute })=> {
   }
 };
 
-let transactionAmounts = ({ paymentRoute, exchangeRoute })=> {
+let transactionAmounts = ({ paymentRoute, exchangeRoute, fee })=> {
+  let amounts;
   if(exchangeRoute) {
-    return [
+    amounts = [
       exchangeRoute.amountIn.toString(),
-      exchangeRoute.amountOutMin.toString(),
+      subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee }),
       exchangeRoute.transaction.params.deadline
-    ]
+    ];
   } else {
-    return [paymentRoute.toAmount, paymentRoute.toAmount]
+    amounts = [
+      paymentRoute.toAmount, // from
+      subtractFee({ amount: paymentRoute.toAmount, paymentRoute, fee }) // to
+    ];
+  }
+  if(fee){
+    amounts[4] = transactionFeeAmount({ paymentRoute, fee });
+  }
+  for(var i = 0; i < amounts.length; i++) {
+    if(amounts[i] == undefined){ amounts[i] = '0'; }
+  }
+  return amounts
+};
+
+let subtractFee = ({ amount, paymentRoute, fee })=> {
+  if(fee) {
+    let feeAmount = transactionFeeAmount({ paymentRoute, fee });
+    return BigNumber.from(amount).sub(feeAmount).toString()
+  } else {
+    return amount
   }
 };
 
-let transactionAddresses = ({ paymentRoute })=> {
-  return [paymentRoute.fromAddress, paymentRoute.toAddress]
+let transactionFeeAmount = ({ paymentRoute, fee })=> {
+  if(typeof fee.amount == 'string' && fee.amount.match('%')) {
+    return BigNumber.from(paymentRoute.toAmount).div(100).mul(parseFloat(fee.amount)).toString()
+  } else if(typeof fee.amount == 'string') {
+    return fee.amount
+  } else if(typeof fee.amount == 'number') {
+    return parseUnits(fee.amount.toString(), paymentRoute.toDecimals).toString()
+  } else {
+    throw('Unknown fee amount type!')
+  }
 };
 
-let transactionPlugins = ({ paymentRoute, exchangeRoute, event })=> {
+let transactionAddresses = ({ paymentRoute, fee })=> {
+  if(fee) {
+    return [paymentRoute.fromAddress, fee.receiver, paymentRoute.toAddress]
+  } else {
+    return [paymentRoute.fromAddress, paymentRoute.toAddress]
+  }
+};
+
+let transactionPlugins = ({ paymentRoute, exchangeRoute, event, fee })=> {
   let paymentPlugins = [];
 
   if(exchangeRoute) {
@@ -4376,6 +4878,10 @@ let transactionPlugins = ({ paymentRoute, exchangeRoute, event })=> {
     paymentPlugins.push(plugins[paymentRoute.blockchain].payment.address);
   }
 
+  if(fee) {
+    paymentPlugins.push(plugins[paymentRoute.blockchain].paymentFee.address);
+  }
+
   return paymentPlugins
 };
 
@@ -4393,11 +4899,12 @@ let transactionValue = ({ paymentRoute, exchangeRoute })=> {
 
 function _optionalChain(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 class PaymentRoute {
-  constructor({ blockchain, fromToken, toToken, toAmount, fromAddress, toAddress, toContract }) {
+  constructor({ blockchain, fromToken, toToken, toDecimals, toAmount, fromAddress, toAddress, toContract }) {
     this.blockchain = blockchain;
     this.fromToken = fromToken;
     this.fromBalance = 0;
     this.toToken = toToken;
+    this.toDecimals = toDecimals;
     this.toAmount = _optionalChain([toAmount, 'optionalAccess', _ => _.toString, 'call', _2 => _2()]);
     this.fromAddress = fromAddress;
     this.toAddress = toAddress;
@@ -4456,38 +4963,32 @@ async function getAllAssets({ accept, apiKey, whitelist }) {
 }
 
 function convertToRoutes({ tokens, accept }) {
-
-  return tokens.map((fromToken)=>{
+  return Promise.all(tokens.map(async (fromToken)=>{
     let relevantConfigurations = accept.filter((configuration)=>(configuration.blockchain == fromToken.blockchain));
-    return relevantConfigurations.map((configuration)=>{
+    return Promise.all(relevantConfigurations.map(async (configuration)=>{
       let blockchain = configuration.blockchain;
       let toToken = new Token({ blockchain, address: configuration.token });
+      let toDecimals = await toToken.decimals();
+      let toAmount = (await toToken.BigNumber(configuration.amount)).toString();
       return new PaymentRoute({
         blockchain,
         fromToken: fromToken,
         toToken: toToken,
-        toAmount: configuration.amount,
+        toAmount: toAmount,
+        toDecimals: toDecimals,
         fromAddress: configuration.fromAddress,
         toAddress: configuration.toAddress,
         toContract: configuration.toContract
       })
-    })
-  }).flat()
+    }))
+  })).then((routes)=> routes.flat())
 }
 
-async function convertToAmounts(routes) {
-  return await Promise.all(routes.map(async (route)=>{
-    route.toAmount = (await route.toToken.BigNumber(route.toAmount)).toString();
-    return route
-  }))
-}
-
-async function route({ accept, whitelist, blacklist, apiKey, event }) {
+async function route({ accept, whitelist, blacklist, apiKey, event, fee }) {
   let paymentRoutes = getAllAssets({ accept, whitelist, apiKey })
     .then((assets)=>filterBlacklistedAssets({ assets, blacklist }))
     .then(assetsToTokens)
     .then((tokens) => convertToRoutes({ tokens, accept }))
-    .then(convertToAmounts)
     .then(addDirectTransferStatus)
     .then(addExchangeRoutes)
     .then(filterExchangeRoutesWithoutPlugin)
@@ -4496,7 +4997,7 @@ async function route({ accept, whitelist, blacklist, apiKey, event }) {
     .then(filterInsufficientBalance)
     .then(addApproval)
     .then(sortPaymentRoutes)
-    .then((routes)=>addTransactions({ routes, event }))
+    .then((routes)=>addTransactions({ routes, event, fee }))
     .then(addFromAmount)
     .then(filterDuplicateFromTokens);
 
@@ -4619,7 +5120,7 @@ let addDirectTransferStatus = (routes) => {
 
 let addFromAmount = (routes)=> {
   return routes.map((route)=>{
-    if(route.directTransfer) {
+    if(route.directTransfer && !route.fee) {
       if(route.fromToken.address.toLowerCase() == CONSTANTS[route.blockchain].NATIVE.toLowerCase()) {
         route.fromAmount = route.transaction.value;
       } else {
@@ -4693,10 +5194,11 @@ let sortPaymentRoutes = (routes) => {
   })
 };
 
-let addTransactions = ({ routes, event }) => {
+let addTransactions = ({ routes, event, fee }) => {
   return routes.map((route)=>{
-    route.transaction = getTransaction({ paymentRoute: route, event });
+    route.transaction = getTransaction({ paymentRoute: route, event, fee });
     route.event = !route.directTransfer;
+    route.fee = !!fee;
     return route
   })
 };

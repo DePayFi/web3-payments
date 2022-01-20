@@ -8,11 +8,12 @@ import { getTransaction } from './transaction'
 import { Token } from '@depay/web3-tokens'
 
 class PaymentRoute {
-  constructor({ blockchain, fromToken, toToken, toAmount, fromAddress, toAddress, toContract }) {
+  constructor({ blockchain, fromToken, toToken, toDecimals, toAmount, fromAddress, toAddress, toContract }) {
     this.blockchain = blockchain
     this.fromToken = fromToken
     this.fromBalance = 0
     this.toToken = toToken
+    this.toDecimals = toDecimals
     this.toAmount = toAmount?.toString()
     this.fromAddress = fromAddress
     this.toAddress = toAddress
@@ -71,38 +72,32 @@ async function getAllAssets({ accept, apiKey, whitelist }) {
 }
 
 function convertToRoutes({ tokens, accept }) {
-
-  return tokens.map((fromToken)=>{
+  return Promise.all(tokens.map(async (fromToken)=>{
     let relevantConfigurations = accept.filter((configuration)=>(configuration.blockchain == fromToken.blockchain))
-    return relevantConfigurations.map((configuration)=>{
+    return Promise.all(relevantConfigurations.map(async (configuration)=>{
       let blockchain = configuration.blockchain
       let toToken = new Token({ blockchain, address: configuration.token })
+      let toDecimals = await toToken.decimals()
+      let toAmount = (await toToken.BigNumber(configuration.amount)).toString()
       return new PaymentRoute({
         blockchain,
         fromToken: fromToken,
         toToken: toToken,
-        toAmount: configuration.amount,
+        toAmount: toAmount,
+        toDecimals: toDecimals,
         fromAddress: configuration.fromAddress,
         toAddress: configuration.toAddress,
         toContract: configuration.toContract
       })
-    })
-  }).flat()
+    }))
+  })).then((routes)=> routes.flat())
 }
 
-async function convertToAmounts(routes) {
-  return await Promise.all(routes.map(async (route)=>{
-    route.toAmount = (await route.toToken.BigNumber(route.toAmount)).toString()
-    return route
-  }))
-}
-
-async function route({ accept, whitelist, blacklist, apiKey, event }) {
+async function route({ accept, whitelist, blacklist, apiKey, event, fee }) {
   let paymentRoutes = getAllAssets({ accept, whitelist, apiKey })
     .then((assets)=>filterBlacklistedAssets({ assets, blacklist }))
     .then(assetsToTokens)
     .then((tokens) => convertToRoutes({ tokens, accept }))
-    .then(convertToAmounts)
     .then(addDirectTransferStatus)
     .then(addExchangeRoutes)
     .then(filterExchangeRoutesWithoutPlugin)
@@ -111,7 +106,7 @@ async function route({ accept, whitelist, blacklist, apiKey, event }) {
     .then(filterInsufficientBalance)
     .then(addApproval)
     .then(sortPaymentRoutes)
-    .then((routes)=>addTransactions({ routes, event }))
+    .then((routes)=>addTransactions({ routes, event, fee }))
     .then(addFromAmount)
     .then(filterDuplicateFromTokens)
 
@@ -234,7 +229,7 @@ let addDirectTransferStatus = (routes) => {
 
 let addFromAmount = (routes)=> {
   return routes.map((route)=>{
-    if(route.directTransfer) {
+    if(route.directTransfer && !route.fee) {
       if(route.fromToken.address.toLowerCase() == CONSTANTS[route.blockchain].NATIVE.toLowerCase()) {
         route.fromAmount = route.transaction.value
       } else {
@@ -310,10 +305,11 @@ let sortPaymentRoutes = (routes) => {
   })
 }
 
-let addTransactions = ({ routes, event }) => {
+let addTransactions = ({ routes, event, fee }) => {
   return routes.map((route)=>{
-    route.transaction = getTransaction({ paymentRoute: route, event })
+    route.transaction = getTransaction({ paymentRoute: route, event, fee })
     route.event = !route.directTransfer
+    route.fee = !!fee
     return route
   })
 }

@@ -224,10 +224,49 @@ let paymentRoutes = await route({
   apiKey: 'YOUR-API-KEY',
   event: 'ifSwapped'
 })
-
 ```
 
 Events are not emitted if payment receiver is a smart contract. Make sure your smart contract emits events in that case!
+
+#### fee
+
+`route` allows you also to configure a `fee` that is taken from the payment amount and is sent to another receiver (the fee receiver):
+
+```javascript
+let paymentRoutes = await route({
+  accept: [...],
+  fee: {
+    amount: '3%',
+    receiver: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
+  }
+})
+
+// splits 0.3 of the amount paid and sends it to the feeReceiver
+```
+
+`fee.amount` can be passed as percentage (String with ending %) or as a BigNumber string or as a pure number/decimal
+
+```javascript
+let paymentRoutes = await route({
+  accept: [...],
+  fee: {
+    amount: '300000000000000000',
+    receiver: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
+  }
+})
+// splits 0.3 of the amount paid and sends it to the feeReceiver
+```
+
+```javascript
+let paymentRoutes = await route({
+  accept: [...],
+  fee: {
+    amount: 0.3,
+    receiver: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
+  }
+})
+// splits 0.3 of the amount paid and sends it to the feeReceiver
+```
 
 ### routers
 
@@ -272,6 +311,7 @@ Payment routes are provided in the following structure:
   fromBalance: BigNumber (e.g. <BigNumber '10000000000000000000'>)
   toToken: Token (see @depay/web3-tokens)
   toAmount: BigNumber (e.g. <BigNumber '21000000000000000000'>)
+  toDecimals: number (e.g. 18)
   fromAmount: BigNumber (e.g. <BigNumber '31000000000000000000'>)
   fromAddress: String (e.g. '0xd8da6bf26964af9d7eed9e03e53415d37aa96045')
   toAddress: String (e.g. '0x65aBbdEd9B937E38480A50eca85A8E4D2c8350E4')

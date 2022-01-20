@@ -42,6 +42,10 @@ const prepareContractCallAddressPassedAmountBooleanTransaction = (transaction, t
   return transaction
 }
 
+const preparePaymentFeeTransaction = (transaction)=> {
+
+}
+
 export default {
   ethereum: {
     payment: {
@@ -63,6 +67,10 @@ export default {
         address: '0x2D18c5A46cc1780d2460DD51B5d0996e55Fd2446',
         prepareTransaction: prepareContractCallAddressPassedAmountBooleanTransaction
       }
+    },
+    paymentFee: {
+      address: '0x874Cb669D7BFff79d4A6A30F4ea52c5e413BD6A7',
+      prepareTransaction: preparePaymentFeeTransaction
     }
   },
   bsc: {
@@ -85,6 +93,10 @@ export default {
         address: '0x7E655088214d0657251A51aDccE9109CFd23B5B5',
         prepareTransaction: prepareContractCallAddressPassedAmountBooleanTransaction
       }
+    },
+    paymentFee: {
+      address: '0xae33f10AD57A38113f74FCdc1ffA6B1eC47B94E3',
+      prepareTransaction: preparePaymentFeeTransaction
     }
   } 
 }
