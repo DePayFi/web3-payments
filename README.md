@@ -234,21 +234,7 @@ Events are not emitted if payment receiver is a smart contract. Make sure your s
 
 ```javascript
 let paymentRoutes = await route({
-  accept: [
-    {
-      blockchain: 'ethereum',
-      token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
-      amount: 10,
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
-      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
-    },{
-      blockchain: 'bsc',
-      token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
-      amount: 10,
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
-      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
-    }
-  ],
+  accept: [...],
   fee: {
     amount: '3%',
     receiver: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
@@ -262,21 +248,7 @@ let paymentRoutes = await route({
 
 ```javascript
 let paymentRoutes = await route({
-  accept: [
-    {
-      blockchain: 'ethereum',
-      token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
-      amount: 10,
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
-      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
-    },{
-      blockchain: 'bsc',
-      token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
-      amount: 10,
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
-      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
-    }
-  ],
+  accept: [...],
   fee: {
     amount: '300000000000000000',
     receiver: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
@@ -287,21 +259,7 @@ let paymentRoutes = await route({
 
 ```javascript
 let paymentRoutes = await route({
-  accept: [
-    {
-      blockchain: 'ethereum',
-      token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
-      amount: 10,
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
-      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
-    },{
-      blockchain: 'bsc',
-      token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
-      amount: 10,
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
-      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
-    }
-  ],
+  accept: [...],
   fee: {
     amount: 0.3,
     receiver: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
