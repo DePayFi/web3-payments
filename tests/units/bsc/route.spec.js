@@ -526,4 +526,43 @@ describe('route', ()=> {
       })
     })
   })
+
+  it('provides routes also for fromToken, fromAmount and toToken configuration', async ()=>{
+
+    mockAmounts({ provider: provider(blockchain), method: 'getAmountsOut', params: [CAKEAmountInBN, [CAKE, WBNB, BUSD]], amounts: [CAKEAmountInBN, WBNBAmountInBN, tokenAmountOutBN] })
+
+    let routes = await route({
+      accept: [{
+        fromAddress,
+        toAddress,
+        blockchain,
+        fromToken: CAKE,
+        fromAmount: 0.3,
+        toToken: toToken
+      }],
+      apiKey
+    })
+
+    expect(routes.length).toEqual(1)
+
+    expect(routes[0].blockchain).toEqual(blockchain)
+    expect(routes[0].fromToken.address).toEqual(CAKE)
+    expect(routes[0].toToken.address).toEqual(BUSD)
+    expect(routes[0].fromAmount).toEqual(CAKEAmountInBN.toString())
+    expect(routes[0].fromAddress).toEqual(fromAddress)
+    expect(routes[0].toAddress).toEqual(toAddress)
+    expect(routes[0].fromBalance).toEqual(CAKEBalanceBN.toString())
+    expect(routes[0].exchangeRoutes[0].tokenIn).toEqual(CAKE)
+    expect(routes[0].exchangeRoutes[0].tokenOut).toEqual(BUSD)
+    expect(routes[0].exchangeRoutes[0].path).toEqual([CAKE, WBNB, BUSD])
+    expect(routes[0].exchangeRoutes[0].amountIn).toEqual(CAKEAmountInBN.toString())
+    expect(routes[0].exchangeRoutes[0].amountOutMin).toEqual(tokenAmountOutBN.toString())
+    expect(routes[0].exchangeRoutes[0].fromAddress).toEqual(fromAddress)
+    expect(routes[0].exchangeRoutes[0].toAddress).toEqual(toAddress)
+    expect(routes[0].exchangeRoutes[0].transaction.to).toEqual('0x10ED43C718714eb63d5aA57B78B54704E256024E')
+    expect(routes[0].exchangeRoutes[0].transaction.method).toEqual('swapExactTokensForTokens')
+    expect(routes[0].exchangeRoutes[0].transaction.params.amountOutMin).toEqual(tokenAmountOutBN.toString())
+    expect(routes[0].exchangeRoutes[0].transaction.params.path).toEqual([CAKE, WBNB, BUSD])
+    expect(routes[0].transaction.value).toEqual('0')
+  });
 })

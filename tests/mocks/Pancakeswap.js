@@ -49,7 +49,7 @@ let mockPair = (provider, pair, params)=>{
 }
 
 let mockAmounts = ({ provider, method, params, amounts })=>{
-  mock({
+  return mock({
     provider,
     blockchain: 'bsc',
     call: {

@@ -73,6 +73,30 @@ let paymentRoutes = await route({
 })
 ```
 
+#### fromToken + fromAmount + toToken
+
+In cases where you want to set the `fromToken` and `fromAmount` (instead of the target token and the target amount) when calculating payment routes you can pass `fromToken`, `fromAmount` + `toToken`.
+
+Make sure to NOT pass `token` nor `amount` if you use that option!
+
+```javascript
+import { route } from '@depay/web3-payments'
+
+let paymentRoutes = await route({
+  accept: [
+    {
+      blockchain: 'bsc',
+      fromAmount: 1,
+      fromToken: '0xe9e7cea3dedca5984780bafc599bd69add087d56',
+      toToken: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
+      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
+      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
+    }
+  ],
+  apiKey: 'YOUR-API-KEY'
+})
+```
+
 #### Pay into Smart Contracts
 
 In case you want to pay into smart contract (calling a smart contract method), you will need to pass `toContract` in addition to `toAddress`:
