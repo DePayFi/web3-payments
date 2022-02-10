@@ -13,7 +13,7 @@ class PaymentRoute {
     this.fromAddress = fromAddress
     this.fromToken = fromToken
     this.fromAmount = fromAmount?.toString()
-    this.fromDecimals = fromDecimals?.toString()
+    this.fromDecimals = fromDecimals
     this.fromBalance = 0
     this.toToken = toToken
     this.toAmount = toAmount?.toString()
@@ -80,12 +80,14 @@ function convertToRoutes({ tokens, accept }) {
       if(configuration.token && configuration.amount) {
         let blockchain = configuration.blockchain
         let toToken = new Token({ blockchain, address: configuration.token })
+        let fromDecimals = await fromToken.decimals()
         let toDecimals = await toToken.decimals()
         let toAmount = (await toToken.BigNumber(configuration.amount)).toString()
 
         return new PaymentRoute({
           blockchain,
           fromToken,
+          fromDecimals,
           toToken,
           toAmount,
           toDecimals,

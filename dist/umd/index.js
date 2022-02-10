@@ -4908,10 +4908,10 @@
       this.fromAddress = fromAddress;
       this.fromToken = fromToken;
       this.fromAmount = _optionalChain([fromAmount, 'optionalAccess', _ => _.toString, 'call', _2 => _2()]);
-      this.fromDecimals = _optionalChain([fromDecimals, 'optionalAccess', _3 => _3.toString, 'call', _4 => _4()]);
+      this.fromDecimals = fromDecimals;
       this.fromBalance = 0;
       this.toToken = toToken;
-      this.toAmount = _optionalChain([toAmount, 'optionalAccess', _5 => _5.toString, 'call', _6 => _6()]);
+      this.toAmount = _optionalChain([toAmount, 'optionalAccess', _3 => _3.toString, 'call', _4 => _4()]);
       this.toDecimals = toDecimals;
       this.toAddress = toAddress;
       this.toContract = toContract;
@@ -4975,12 +4975,14 @@
         if(configuration.token && configuration.amount) {
           let blockchain = configuration.blockchain;
           let toToken = new web3Tokens.Token({ blockchain, address: configuration.token });
+          let fromDecimals = await fromToken.decimals();
           let toDecimals = await toToken.decimals();
           let toAmount = (await toToken.BigNumber(configuration.amount)).toString();
 
           return new PaymentRoute({
             blockchain,
             fromToken,
+            fromDecimals,
             toToken,
             toAmount,
             toDecimals,

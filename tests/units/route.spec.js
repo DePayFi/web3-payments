@@ -140,6 +140,8 @@ describe('route', ()=> {
     expect(routes[0].approvalTransaction).toEqual(undefined)
     expect(routes[0].directTransfer).toEqual(false)
     expect(routes[0].fromAmount).toEqual(WBNB_USDT_bsc_amountIn.toString())
+    expect(routes[0].toDecimals).toEqual(18)
+    expect(routes[0].fromDecimals).toEqual(18)
 
     expect(routes[1].blockchain).toEqual('bsc')
     expect(routes[1].fromToken.address).toEqual(BUSD)
@@ -160,6 +162,8 @@ describe('route', ()=> {
     expect(routes[1].approvalTransaction).toEqual(undefined)
     expect(routes[1].directTransfer).toEqual(false)
     expect(routes[1].fromAmount).toEqual(BUSD_bsc_amountIn.toString())
+    expect(routes[1].toDecimals).toEqual(18)
+    expect(routes[1].fromDecimals).toEqual(18)
 
     expect(routes[2].blockchain).toEqual('ethereum')
     expect(routes[2].fromToken.address).toEqual(DAI_ethereum)
@@ -175,6 +179,8 @@ describe('route', ()=> {
     expect(routes[2].approvalTransaction).toEqual(undefined)
     expect(routes[2].directTransfer).toEqual(true)
     expect(routes[2].fromAmount).toEqual(DAI_ethereum_amount.toString())
+    expect(routes[2].toDecimals).toEqual(18)
+    expect(routes[2].fromDecimals).toEqual(18)
 
     expect(routes[3].blockchain).toEqual('ethereum')
     expect(routes[3].fromToken.address).toEqual(CONSTANTS.ethereum.NATIVE)
@@ -195,5 +201,7 @@ describe('route', ()=> {
     expect(routes[3].approvalTransaction).toEqual(undefined)
     expect(routes[3].directTransfer).toEqual(false)
     expect(routes[3].fromAmount).toEqual(WETH_DAI_ethereum_amountIn.toString())
+    expect(routes[3].toDecimals).toEqual(18)
+    expect(routes[3].fromDecimals).toEqual(18)
   })
 })
