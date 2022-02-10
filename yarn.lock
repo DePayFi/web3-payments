@@ -913,10 +913,10 @@
   resolved "https://registry.yarnpkg.com/@depay/web3-mock/-/web3-mock-11.0.0.tgz#e5768ca934e000d67e60d8b62937815f5c63974e"
   integrity sha512-73jlVh6lDbAGREqdXMeom76NBofJZLysNuo4meuJeVOaGn+mJf6U8ware5XbjysC+Rk11NhMvN4MJyOZCUMpDA==
 
-"@depay/web3-tokens@^8.0.0":
-  version "8.0.0"
-  resolved "https://registry.yarnpkg.com/@depay/web3-tokens/-/web3-tokens-8.0.0.tgz#00f487f89d9e50511555d08564f5e46c230f0479"
-  integrity sha512-AFPXjnjUJmsYbxSMQH4oiTjLdG5GZhfw353lk19nR0z4+XKOLP+DQHWIqjHbiai6373silhAGXVl0Y7o4T5iTg==
+"@depay/web3-tokens@^8.0.1":
+  version "8.0.1"
+  resolved "https://registry.yarnpkg.com/@depay/web3-tokens/-/web3-tokens-8.0.1.tgz#7967bd642e6eefbad1af670666a3e912ab11df31"
+  integrity sha512-1vs5NmbS0p7CH+ey0aLvl7ZZMFfbi4GLNEtHtuXjQU5MpItvEHuh7VXE+XkABc4FeBqElWDvP7zRNvtyvD6n7A==
 
 "@depay/web3-wallets@^8.0.2":
   version "8.0.2"
