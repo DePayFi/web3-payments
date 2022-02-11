@@ -549,6 +549,7 @@ describe('route', ()=> {
     expect(routes[0].fromToken.address).toEqual(DAI)
     expect(routes[0].toToken.address).toEqual(DEPAY)
     expect(routes[0].fromAmount).toEqual(DAIAmountInBN.toString())
+    expect(routes[0].toAmount).toEqual(tokenAmountOutBN.toString())
     expect(routes[0].fromAddress).toEqual(fromAddress)
     expect(routes[0].toAddress).toEqual(toAddress)
     expect(routes[0].fromBalance).toEqual(DAIBalanceBN.toString())

@@ -549,6 +549,7 @@ describe('route', ()=> {
     expect(routes[0].fromToken.address).toEqual(CAKE)
     expect(routes[0].toToken.address).toEqual(BUSD)
     expect(routes[0].fromAmount).toEqual(CAKEAmountInBN.toString())
+    expect(routes[0].toAmount).toEqual(tokenAmountOutBN.toString())
     expect(routes[0].fromAddress).toEqual(fromAddress)
     expect(routes[0].toAddress).toEqual(toAddress)
     expect(routes[0].fromBalance).toEqual(CAKEBalanceBN.toString())

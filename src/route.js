@@ -132,7 +132,7 @@ async function route({ accept, whitelist, blacklist, apiKey, event, fee }) {
     .then(addApproval)
     .then(sortPaymentRoutes)
     .then((routes)=>addTransactions({ routes, event, fee }))
-    .then(addFromAmount)
+    .then(addRouteAmounts)
     .then(filterDuplicateFromTokens)
 
   return paymentRoutes
@@ -265,16 +265,19 @@ let addDirectTransferStatus = (routes) => {
   })
 }
 
-let addFromAmount = (routes)=> {
+let addRouteAmounts = (routes)=> {
   return routes.map((route)=>{
     if(route.directTransfer && !route.fee) {
       if(route.fromToken.address.toLowerCase() == CONSTANTS[route.blockchain].NATIVE.toLowerCase()) {
         route.fromAmount = route.transaction.value
+        route.toAmount = route.transaction.value
       } else {
         route.fromAmount = route.transaction.params[1]
+        route.toAmount = route.transaction.params[1]
       }
     } else {
       route.fromAmount = route.transaction.params.amounts[0]
+      route.toAmount = route.transaction.params.amounts[1]
     }
     return route
   })
