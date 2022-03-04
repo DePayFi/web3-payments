@@ -21,7 +21,6 @@ describe('route to contract as payment receiver', ()=> {
   beforeEach(resetCache)
   beforeEach(()=>fetchMock.reset())
 
-  let apiKey = 'Test123'
   let DAI = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
   let DEPAY = "0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb"
   let WETH = CONSTANTS[blockchain].WRAPPED
@@ -106,8 +105,7 @@ describe('route to contract as payment receiver', ()=> {
         blockchain,
         token: toToken,
         amount: tokenAmountOut
-      }],
-      apiKey
+      }]
     })
 
     // DEPAY (direct transfer into smart contract goes through depay router none the less, to ensure approval!)
@@ -199,8 +197,7 @@ describe('route to contract as payment receiver', ()=> {
         blockchain,
         token: toToken,
         amount: tokenAmountOut
-      }],
-      apiKey
+      }]
     })
 
     // DEPAY (direct transfer into smart contract goes through depay router none the less, to ensure approval!)

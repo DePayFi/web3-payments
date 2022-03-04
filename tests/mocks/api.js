@@ -2,8 +2,7 @@ import fetchMock from 'fetch-mock'
 
 let mockAssets = ({ blockchain, account, assets })=>{
   fetchMock.get({
-      url: `https://api.depay.fi/v2/accounts/${blockchain}/${account}/assets`,
-      headers: { 'X-Api-Key': 'Test123' },
+      url: `https://public.depay.fi/accounts/${blockchain}/${account}/assets`,
       overwriteRoutes: true
     }, assets
   )

@@ -20,12 +20,9 @@ let paymentRoutes = await route({
     amount: 20,
     fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
     toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
-  }],
-  apiKey: 'YOUR-API-KEY'
+  }]
 })
 ```
-
-This requires you to have a [DePay PRO apiKey](https://depay.fi/documentation/api#introduction).
 
 ## Functionalities
 
@@ -43,8 +40,7 @@ let paymentRoutes = await route({
     amount: 20,
     fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
     toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
-  }],
-  apiKey: 'YOUR-API-KEY'
+  }]
 })
 ```
 
@@ -68,8 +64,7 @@ let paymentRoutes = await route({
       fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
       toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
     }
-  ],
-  apiKey: 'YOUR-API-KEY'
+  ]
 })
 ```
 
@@ -92,8 +87,7 @@ let paymentRoutes = await route({
       fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
       toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
     }
-  ],
-  apiKey: 'YOUR-API-KEY'
+  ]
 })
 ```
 
@@ -244,8 +238,7 @@ let paymentRoutes = await route({
       fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
       toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
     }
-  ],
-  apiKey: 'YOUR-API-KEY',
+  ]
   event: 'ifSwapped'
 })
 ```

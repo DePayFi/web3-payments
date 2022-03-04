@@ -4924,7 +4924,7 @@
     }
   }
 
-  async function getAllAssetsFromAggregator({ accept, apiKey }) {
+  async function getAllAssetsFromAggregator({ accept }) {
 
     let routes = [
       ...new Set(
@@ -4938,7 +4938,7 @@
       routes.map(
         async (route)=> {
           route = JSON.parse(route);
-          return await web3Assets.getAssets({ blockchain: route.blockchain, account: route.fromAddress, apiKey })
+          return await web3Assets.getAssets({ blockchain: route.blockchain, account: route.fromAddress })
         }
       )
     ).then((assets)=>{
@@ -4959,10 +4959,10 @@
     return assets
   }
 
-  async function getAllAssets({ accept, apiKey, whitelist }) {
+  async function getAllAssets({ accept, whitelist }) {
 
     if(whitelist == undefined) {
-      return getAllAssetsFromAggregator({ accept, apiKey })
+      return getAllAssetsFromAggregator({ accept })
     } else {
       return onlyGetWhitelistedAssets({ whitelist })
     }
@@ -5013,8 +5013,8 @@
     })).then((routes)=> routes.flat().filter(el => el))
   }
 
-  async function route({ accept, whitelist, blacklist, apiKey, event, fee }) {
-    let paymentRoutes = getAllAssets({ accept, whitelist, apiKey })
+  async function route({ accept, whitelist, blacklist, event, fee }) {
+    let paymentRoutes = getAllAssets({ accept, whitelist })
       .then((assets)=>filterBlacklistedAssets({ assets, blacklist }))
       .then(assetsToTokens)
       .then((tokens) => convertToRoutes({ tokens, accept }))

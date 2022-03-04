@@ -60,7 +60,6 @@ describe('route', ()=> {
   let BUSD = "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56"
   let WBNB = CONSTANTS.bsc.WRAPPED
   let WETH = CONSTANTS.ethereum.WRAPPED
-  let apiKey = 'Test123'
   let amount = 20
   let USDT_ethereum_amount = ethers.utils.parseUnits(amount.toString(), 6)
   let DAI_ethereum_amount = ethers.utils.parseUnits(amount.toString(), 18)
@@ -129,8 +128,7 @@ describe('route', ()=> {
         bsc: [
           BUSD,
         ]
-      },
-      apiKey
+      }
     })
 
     expect(routes.length).toEqual(2)

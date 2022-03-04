@@ -883,10 +883,10 @@
     "@walletconnect/client" "^1.6.5"
     "@walletconnect/qrcode-modal" "^1.6.5"
 
-"@depay/web3-assets@^5.1.0":
-  version "5.1.0"
-  resolved "https://registry.yarnpkg.com/@depay/web3-assets/-/web3-assets-5.1.0.tgz#fe71fe4318056662abe5ee16ee36ef1954447f19"
-  integrity sha512-i0A2LqCRzW9+5c8T4OZMvYSm+g/omHKJqcRcqlxRgwx0suXmxcW9VKIO6XtuBoCx8vUq0IJPPRVtNqbcRBq28Q==
+"@depay/web3-assets@^5.3.1":
+  version "5.3.1"
+  resolved "https://registry.yarnpkg.com/@depay/web3-assets/-/web3-assets-5.3.1.tgz#409fd73d62ef57da1075ab81f6e978c31a69fb47"
+  integrity sha512-bdehPlCt6kY9Lzf8Ybet7LH2QsF6HNUlAEy5p7Lnw0f2YbXg5u30p6IKFqFb9FBFaeWsUGkrHO4Zj4n6tXDb2A==
 
 "@depay/web3-blockchains@^4.0.0":
   version "4.0.0"
