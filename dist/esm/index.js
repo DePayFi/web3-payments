@@ -3569,7 +3569,7 @@ var bn = createCommonjsModule(function (module) {
 })(module, commonjsGlobal);
 });
 
-const version$3 = "logger/5.4.1";
+const version$3 = "logger/5.5.0";
 
 let _permanentCensorErrors = false;
 let _censorErrors = false;
@@ -3666,7 +3666,7 @@ var ErrorCode;
     //  - errorArgs?: The EIP848 error parameters
     //  - reason: The reason (only for EIP848 "Error(string)")
     ErrorCode["CALL_EXCEPTION"] = "CALL_EXCEPTION";
-    // Insufficien funds (< value + gasLimit * gasPrice)
+    // Insufficient funds (< value + gasLimit * gasPrice)
     //   - transaction: the transaction attempted
     ErrorCode["INSUFFICIENT_FUNDS"] = "INSUFFICIENT_FUNDS";
     // Nonce has already been used
@@ -3881,7 +3881,7 @@ class Logger {
 Logger.errors = ErrorCode;
 Logger.levels = LogLevel;
 
-const version$2 = "bytes/5.4.0";
+const version$2 = "bytes/5.5.0";
 
 const logger$3 = new Logger(version$2);
 ///////////////////////////////
@@ -3898,6 +3898,9 @@ function addSlice(array) {
     };
     return array;
 }
+function isInteger(value) {
+    return (typeof (value) === "number" && value == value && (value % 1) === 0);
+}
 function isBytes(value) {
     if (value == null) {
         return false;
@@ -3908,12 +3911,12 @@ function isBytes(value) {
     if (typeof (value) === "string") {
         return false;
     }
-    if (value.length == null) {
+    if (!isInteger(value.length) || value.length < 0) {
         return false;
     }
     for (let i = 0; i < value.length; i++) {
         const v = value[i];
-        if (typeof (v) !== "number" || v < 0 || v >= 256 || (v % 1)) {
+        if (!isInteger(v) || v < 0 || v >= 256) {
             return false;
         }
     }
@@ -4047,7 +4050,7 @@ function hexZeroPad(value, length) {
     return value;
 }
 
-const version$1 = "bignumber/5.4.1";
+const version$1 = "bignumber/5.5.0";
 
 var BN = bn.BN;
 const logger$2 = new Logger(version$1);
@@ -4249,7 +4252,7 @@ class BigNumber {
             return BigNumber.from(hexlify(anyValue));
         }
         if (anyValue) {
-            // Hexable interface (takes piority)
+            // Hexable interface (takes priority)
             if (anyValue.toHexString) {
                 const hex = anyValue.toHexString();
                 if (typeof (hex) === "string") {
@@ -4286,7 +4289,7 @@ function toHex(value) {
     if (value[0] === "-") {
         // Strip off the negative sign
         value = value.substring(1);
-        // Cannot have mulitple negative signs (e.g. "--0x04")
+        // Cannot have multiple negative signs (e.g. "--0x04")
         if (value[0] === "-") {
             logger$2.throwArgumentError("invalid hex", "value", value);
         }
@@ -4398,7 +4401,7 @@ function parseFixed(value, decimals) {
         decimals = 0;
     }
     const multiplier = getMultiplier(decimals);
-    if (typeof (value) !== "string" || !value.match(/^-?[0-9.,]+$/)) {
+    if (typeof (value) !== "string" || !value.match(/^-?[0-9.]+$/)) {
         logger$1.throwArgumentError("invalid decimal value", "value", value);
     }
     // Is it negative?
@@ -4421,12 +4424,17 @@ function parseFixed(value, decimals) {
     if (!fraction) {
         fraction = "0";
     }
-    // Get significant digits to check truncation for underflow
-    {
-        const sigFraction = fraction.replace(/^([0-9]*?)(0*)$/, (all, sig, zeros) => (sig));
-        if (sigFraction.length > multiplier.length - 1) {
-            throwFault("fractional component exceeds decimals", "underflow", "parseFixed");
-        }
+    // Trim trailing zeros
+    while (fraction[fraction.length - 1] === "0") {
+        fraction = fraction.substring(0, fraction.length - 1);
+    }
+    // Check the fraction doesn't exceed our decimals size
+    if (fraction.length > multiplier.length - 1) {
+        throwFault("fractional component exceeds decimals", "underflow", "parseFixed");
+    }
+    // If decimals is 0, we have an empty string for fraction
+    if (fraction === "") {
+        fraction = "0";
     }
     // Fully pad the string with zeros to get to wei
     while (fraction.length < multiplier.length - 1) {
@@ -4685,7 +4693,7 @@ class FixedNumber {
 const ONE = FixedNumber.from(1);
 const BUMP = FixedNumber.from("0.5");
 
-const version = "units/5.4.0";
+const version = "units/5.5.0";
 
 const logger = new Logger(version);
 const names = [
