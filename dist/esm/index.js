@@ -4942,7 +4942,7 @@ async function getAllAssetsFromAggregator({ accept }) {
     routes.map(
       async (route)=> {
         route = JSON.parse(route);
-        return await getAssets({ blockchain: route.blockchain, account: route.fromAddress })
+        return await getAssets({ accounts: { [route.blockchain]: route.fromAddress } })
       }
     )
   ).then((assets)=>{

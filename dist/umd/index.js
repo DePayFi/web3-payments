@@ -4946,7 +4946,7 @@
       routes.map(
         async (route)=> {
           route = JSON.parse(route);
-          return await web3Assets.getAssets({ blockchain: route.blockchain, account: route.fromAddress })
+          return await web3Assets.getAssets({ accounts: { [route.blockchain]: route.fromAddress } })
         }
       )
     ).then((assets)=>{

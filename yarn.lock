@@ -947,7 +947,7 @@
   dependencies:
     "@coinbase/wallet-sdk" "^3.0.5"
 
-"@depay/walletconnect-v1@^1.0.18":
+"@depay/walletconnect-v1@^1.1.0":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@depay/walletconnect-v1/-/walletconnect-v1-1.1.0.tgz#71c55b92bcfbaa5422fd7b8f0f77d3bc69fc5d9e"
   integrity sha512-QoH3Owm7VCHweq4uGYGZ0Nvov4Pzac+1JHY/f/MgNT+ldt3A6qV0wJL/fhWuKDhos1zr4j2PU1qCiVnsJ7DN7w==
@@ -955,15 +955,15 @@
     "@walletconnect/client" "^1.7.1"
     "@walletconnect/qrcode-modal" "^1.7.1"
 
-"@depay/web3-assets@^5.4.1":
-  version "5.4.1"
-  resolved "https://registry.yarnpkg.com/@depay/web3-assets/-/web3-assets-5.4.1.tgz#09e7bda8a83d080045428532a1ec41c314e92e61"
-  integrity sha512-z9YNOgxhxUOnnKHGS6GfL1AWuyr3iK2J8HutrZ3kbVTJQ5QevtrQYB9xf7aJSaZhz8FbAq9tGk/Azb1FH5CmCQ==
+"@depay/web3-assets@^6.0.0":
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/@depay/web3-assets/-/web3-assets-6.0.0.tgz#9307c3b8b6930f39566a0a4b1c9d1dea83adcb03"
+  integrity sha512-tcawpyqJRnYbzv4Dnf2aiHLQCdWf8+xqenO3b3AZm3OXcPcBKCmJTGS/iLx0DErifAwwxtAAkLUzvfCwdkaq6A==
 
-"@depay/web3-blockchains@^4.2.0":
-  version "4.2.0"
-  resolved "https://registry.yarnpkg.com/@depay/web3-blockchains/-/web3-blockchains-4.2.0.tgz#953824e179455dd408fccb267f1651460ea08173"
-  integrity sha512-AD456GyAQaLfp21D04XqiEebn/cPc3358GJZpBMa676zVv7+FJdTpuwmPNq3+MQdVNs0zRCGe5SkXh/HFWzw7Q==
+"@depay/web3-blockchains@^4.3.0":
+  version "4.3.0"
+  resolved "https://registry.yarnpkg.com/@depay/web3-blockchains/-/web3-blockchains-4.3.0.tgz#d6269f29cd716c5e26465fc88a24858c2b326ca5"
+  integrity sha512-7mUK8nDIp1wAPhFs0L6TtLoHjeIeK00c04vdwFRBao+GnWCQZXaVouNv55dWbko40RGLDbBg6AvoYF3zzFeS9Q==
 
 "@depay/web3-client@^8.0.0":
   version "8.0.0"

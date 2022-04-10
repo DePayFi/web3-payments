@@ -48,7 +48,7 @@ describe('route', ()=> {
     tokenAmountOut = 20
     tokenOutDecimals = 18
     tokenAmountOutBN = ethers.utils.parseUnits(tokenAmountOut.toString(), tokenOutDecimals)
-    fromAddress = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045'
+    fromAddress = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
     toAddress = '0x65aBbdEd9B937E38480A50eca85A8E4D2c8350E4'
   })
 
