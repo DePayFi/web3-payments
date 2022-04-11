@@ -1,9 +1,10 @@
 import fetchMock from 'fetch-mock'
 
-let mockAssets = ({ blockchain, account, assets })=>{
+let mockAssets = ({ blockchain, delay, account, assets })=>{
   fetchMock.get({
       url: `https://public.depay.fi/accounts/${blockchain}/${account}/assets`,
-      overwriteRoutes: true
+      overwriteRoutes: true,
+      delay
     }, assets
   )
 }

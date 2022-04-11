@@ -6,6 +6,7 @@ import { dripAssets } from '@depay/web3-assets'
 import { route as exchangeRoute } from '@depay/web3-exchanges'
 import { getTransaction } from './transaction'
 import { Token } from '@depay/web3-tokens'
+import { throttle } from 'lodash'
 
 class PaymentRoute {
   constructor({ blockchain, fromAddress, fromToken, fromDecimals, fromAmount, fromBalance, toToken, toDecimals, toAmount, toAddress, toContract }) {
@@ -77,7 +78,22 @@ function convertToRoutes({ assets, accept, from }) {
   })).then((routes)=> routes.flat().filter(el => el))
 }
 
-function route({ accept, from, whitelist, blacklist, event, fee, drip }) {
+function assetsToRoutes({ assets, blacklist, accept, from, event, fee }) {
+  return Promise.resolve(filterBlacklistedAssets({ assets, blacklist }))
+    .then((assets) => convertToRoutes({ assets, accept, from }))
+    .then(addDirectTransferStatus)
+    .then(addExchangeRoutes)
+    .then(filterExchangeRoutesWithoutPlugin)
+    .then(filterNotRoutable)
+    .then(filterInsufficientBalance)
+    .then(addApproval)
+    .then(sortPaymentRoutes)
+    .then((routes)=>addTransactions({ routes, event, fee }))
+    .then(addRouteAmounts)
+    .then(filterDuplicateFromTokens)
+}
+
+function route({ accept, from, whitelist, blacklist, event, fee, update }) {
   return new Promise(async (resolveAll, rejectAll)=>{
 
     const priority = accept.map((accepted)=>{
@@ -92,31 +108,25 @@ function route({ accept, from, whitelist, blacklist, event, fee, drip }) {
       }
     }
 
+    let throttledUpdate = throttle(async ({ assets, blacklist, accept, from, event, fee })=>{
+      update.callback(await assetsToRoutes({ assets, blacklist, accept, from, event, fee }))
+    }, update.every)
+    
+    let drippedAssets = []
     const allAssets = await dripAssets({
       accounts: from,
       priority: priority,
       only: whitelist,
       exclude: blacklist,
       drip: (asset)=>{
-        if(typeof drip != 'function') { return }
+        if(typeof update != 'undefined') {
+          drippedAssets.push(asset)
+          throttledUpdate({ assets: drippedAssets, blacklist, accept, from, event, fee })
+        }
       }
     })
 
-    let allPaymentRoutes = await (
-      Promise.resolve(filterBlacklistedAssets({ assets: allAssets, blacklist }))
-        .then((assets) => convertToRoutes({ assets, accept, from }))
-        .then(addDirectTransferStatus)
-        .then(addExchangeRoutes)
-        .then(filterExchangeRoutesWithoutPlugin)
-        .then(filterNotRoutable)
-        .then(filterInsufficientBalance)
-        .then(addApproval)
-        .then(sortPaymentRoutes)
-        .then((routes)=>addTransactions({ routes, event, fee }))
-        .then(addRouteAmounts)
-        .then(filterDuplicateFromTokens)
-    )
-
+    let allPaymentRoutes = await assetsToRoutes({ assets: allAssets, blacklist, accept, from, event, fee })
     resolveAll(allPaymentRoutes)
   })
 }

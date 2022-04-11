@@ -59,16 +59,18 @@ let paymentRoutes = await route({
       blockchain: 'ethereum',
       token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
       amount: 20,
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
       toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
     },{
       blockchain: 'bsc',
       token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
       amount: 20,
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
       toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
     }
-  ]
+  ],
+  from: {
+    ethereum: '0x5Af489c8786A018EC4814194dC8048be1007e390',
+    bsc: '0x5Af489c8786A018EC4814194dC8048be1007e390'
+  }
 })
 ```
 
@@ -88,10 +90,10 @@ let paymentRoutes = await route({
       fromAmount: 1,
       fromToken: '0xe9e7cea3dedca5984780bafc599bd69add087d56',
       toToken: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
       toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
     }
-  ]
+  ],
+  from: { bsc: '0x5Af489c8786A018EC4814194dC8048be1007e390' }
 })
 ```
 
@@ -108,14 +110,14 @@ let paymentRoutes = await route({
       blockchain: 'ethereum',
       token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
       amount: 20,
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
       toAddress: '0xb0252f13850a4823706607524de0b146820F2240',
       toContract: {
         signature: 'claim(address,uint256,bool)',
         params: ['true']
       }
     }
-  ]
+  ],
+  from: { bsc: '0x5Af489c8786A018EC4814194dC8048be1007e390' }
 })
 ```
 
@@ -141,14 +143,14 @@ let paymentRoutes = await route({
       blockchain: 'ethereum',
       token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
       amount: 20,
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
       toAddress: '0xb0252f13850a4823706607524de0b146820F2240',
       toContract: {
         signature: 'claim(address,uint256,bool)',
         params: ['true']
       }
     }
-  ]
+  ],
+  from: { bsc: '0x5Af489c8786A018EC4814194dC8048be1007e390' }
 })
 ```
 
@@ -163,14 +165,14 @@ let paymentRoutes = await route({
       blockchain: 'ethereum',
       token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
       amount: 20,
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
       toAddress: '0xb0252f13850a4823706607524de0b146820F2240',
       toContract: {
         signature: 'claim(address,uint256,bool)',
         params: ['40000000000000000000', 'true']
       }
     }
-  ]
+  ],
+  from: { bsc: '0x5Af489c8786A018EC4814194dC8048be1007e390' }
 })
 ```
 
@@ -233,17 +235,19 @@ let paymentRoutes = await route({
       blockchain: 'ethereum',
       token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
       amount: 20,
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
       toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
     },{
       blockchain: 'bsc',
       token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
       amount: 20,
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
       toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
     }
   ]
-  event: 'ifSwapped'
+  event: 'ifSwapped',
+  from: {
+    ethereum: '0x5Af489c8786A018EC4814194dC8048be1007e390',
+    bsc: '0x5Af489c8786A018EC4814194dC8048be1007e390'
+  }
 })
 ```
 
