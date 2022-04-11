@@ -1,5 +1,5 @@
 import { CONSTANTS } from '@depay/web3-constants';
-import { getAssets } from '@depay/web3-assets';
+import { dripAssets } from '@depay/web3-assets';
 import { route as route$1 } from '@depay/web3-exchanges';
 import { Token } from '@depay/web3-tokens';
 import require$$0 from 'buffer';
@@ -4907,13 +4907,13 @@ let transactionValue = ({ paymentRoute, exchangeRoute })=> {
 
 function _optionalChain(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 class PaymentRoute {
-  constructor({ blockchain, fromAddress, fromToken, fromDecimals, fromAmount, toToken, toDecimals, toAmount, toAddress, toContract }) {
+  constructor({ blockchain, fromAddress, fromToken, fromDecimals, fromAmount, fromBalance, toToken, toDecimals, toAmount, toAddress, toContract }) {
     this.blockchain = blockchain;
     this.fromAddress = fromAddress;
     this.fromToken = fromToken;
     this.fromAmount = _optionalChain([fromAmount, 'optionalAccess', _ => _.toString, 'call', _2 => _2()]);
     this.fromDecimals = fromDecimals;
-    this.fromBalance = 0;
+    this.fromBalance = fromBalance;
     this.toToken = toToken;
     this.toAmount = _optionalChain([toAmount, 'optionalAccess', _3 => _3.toString, 'call', _4 => _4()]);
     this.toDecimals = toDecimals;
@@ -4928,58 +4928,15 @@ class PaymentRoute {
   }
 }
 
-async function getAllAssetsFromAggregator({ accept }) {
-
-  let routes = [
-    ...new Set(
-      accept.map(
-        (configuration)=>(JSON.stringify({ blockchain: configuration.blockchain, fromAddress: configuration.fromAddress }))
-      )
-    )
-  ];
-
-  return await Promise.all(
-    routes.map(
-      async (route)=> {
-        route = JSON.parse(route);
-        return await getAssets({ accounts: { [route.blockchain]: route.fromAddress } })
-      }
-    )
-  ).then((assets)=>{
-    return assets.flat()
-  })
-}
-
-async function onlyGetWhitelistedAssets({ whitelist }) {
-  let assets = [];
-
-  Object.entries(whitelist).forEach((entry)=>{
-    let blockchain = entry[0];
-    entry[1].forEach((address)=>{
-      assets.push({ blockchain, address });
-    });
-  });
-
-  return assets
-}
-
-async function getAllAssets({ accept, whitelist }) {
-
-  if(whitelist == undefined) {
-    return getAllAssetsFromAggregator({ accept })
-  } else {
-    return onlyGetWhitelistedAssets({ whitelist })
-  }
-}
-
-function convertToRoutes({ tokens, accept }) {
-  return Promise.all(tokens.map(async (fromToken)=>{
-    let relevantConfigurations = accept.filter((configuration)=>(configuration.blockchain == fromToken.blockchain));
+function convertToRoutes({ assets, accept, from }) {
+  return Promise.all(assets.map(async (asset)=>{
+    let relevantConfigurations = accept.filter((configuration)=>(configuration.blockchain == asset.blockchain));
+    let fromToken = new Token(asset);
     return Promise.all(relevantConfigurations.map(async (configuration)=>{
       if(configuration.token && configuration.amount) {
         let blockchain = configuration.blockchain;
+        let fromDecimals = asset.decimals;
         let toToken = new Token({ blockchain, address: configuration.token });
-        let fromDecimals = await fromToken.decimals();
         let toDecimals = await toToken.decimals();
         let toAmount = (await toToken.BigNumber(configuration.amount)).toString();
 
@@ -4990,25 +4947,27 @@ function convertToRoutes({ tokens, accept }) {
           toToken,
           toAmount,
           toDecimals,
-          fromAddress: configuration.fromAddress,
+          fromBalance: asset.balance,
+          fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
           toContract: configuration.toContract
         })
       } else if(configuration.fromToken && configuration.fromAmount && fromToken.address.toLowerCase() == configuration.fromToken.toLowerCase()) {
         let blockchain = configuration.blockchain;
         let fromAmount = (await fromToken.BigNumber(configuration.fromAmount)).toString();
-        let fromDecimals = await fromToken.decimals();
+        let fromDecimals = asset.decimals;
         let toToken = new Token({ blockchain, address: configuration.toToken });
         let toDecimals = await toToken.decimals();
         
         return new PaymentRoute({
           blockchain,
           fromToken,
-          fromAmount,
           fromDecimals,
+          fromAmount,
           toToken,
           toDecimals,
-          fromAddress: configuration.fromAddress,
+          fromBalance: asset.balance,
+          fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
           toContract: configuration.toContract
         })
@@ -5017,38 +4976,49 @@ function convertToRoutes({ tokens, accept }) {
   })).then((routes)=> routes.flat().filter(el => el))
 }
 
-async function route({ accept, whitelist, blacklist, event, fee }) {
-  let paymentRoutes = getAllAssets({ accept, whitelist })
-    .then((assets)=>filterBlacklistedAssets({ assets, blacklist }))
-    .then(assetsToTokens)
-    .then((tokens) => convertToRoutes({ tokens, accept }))
-    .then(addDirectTransferStatus)
-    .then(addExchangeRoutes)
-    .then(filterExchangeRoutesWithoutPlugin)
-    .then(filterNotRoutable)
-    .then(addBalances)
-    .then(filterInsufficientBalance)
-    .then(addApproval)
-    .then(sortPaymentRoutes)
-    .then((routes)=>addTransactions({ routes, event, fee }))
-    .then(addRouteAmounts)
-    .then(filterDuplicateFromTokens);
+function route({ accept, from, whitelist, blacklist, event, fee, drip }) {
+  return new Promise(async (resolveAll, rejectAll)=>{
 
-  return paymentRoutes
-}
-
-let addBalances = async (routes) => {
-  return Promise.all(routes.map((route) => route.fromToken.balance(route.fromAddress))).then((balances) => {
-    balances.forEach((balance, index) => {
-      routes[index].fromBalance = balance.toString();
+    const priority = accept.map((accepted)=>{
+      return({ blockchain: accepted.blockchain, address: accepted.token || accepted.toToken })
     });
-    return routes
-  })
-};
 
-let assetsToTokens = async (assets) => {
-  return assets.map((asset) => new Token({ blockchain: asset.blockchain, address: asset.address }))
-};
+    if(whitelist) {
+      for (const blockchain in whitelist) {
+        (whitelist[blockchain] || []).forEach((address)=>{
+          priority.push({ blockchain, address });
+        });
+      }
+    }
+
+    const allAssets = await dripAssets({
+      accounts: from,
+      priority: priority,
+      only: whitelist,
+      exclude: blacklist,
+      drip: (asset)=>{
+        if(typeof drip != 'function') { return }
+      }
+    });
+
+    let allPaymentRoutes = await (
+      Promise.resolve(filterBlacklistedAssets({ assets: allAssets, blacklist }))
+        .then((assets) => convertToRoutes({ assets, accept, from }))
+        .then(addDirectTransferStatus)
+        .then(addExchangeRoutes)
+        .then(filterExchangeRoutesWithoutPlugin)
+        .then(filterNotRoutable)
+        .then(filterInsufficientBalance)
+        .then(addApproval)
+        .then(sortPaymentRoutes)
+        .then((routes)=>addTransactions({ routes, event, fee }))
+        .then(addRouteAmounts)
+        .then(filterDuplicateFromTokens)
+    );
+
+    resolveAll(allPaymentRoutes);
+  })
+}
 
 let filterBlacklistedAssets = ({ assets, blacklist }) => {
   if(blacklist == undefined) {

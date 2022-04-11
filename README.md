@@ -18,9 +18,11 @@ let paymentRoutes = await route({
     blockchain: 'ethereum',
     token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
     amount: 20,
-    fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
     toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
-  }]
+  }],
+  from: {
+    ethereum: '0x317D875cA3B9f8d14f960486C0d1D1913be74e90',
+  }
 })
 ```
 
@@ -38,9 +40,11 @@ let paymentRoutes = await route({
     blockchain: 'ethereum',
     token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
     amount: 20,
-    fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
     toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
-  }]
+  }],
+  from: {
+    ethereum: '0x5Af489c8786A018EC4814194dC8048be1007e390',
+  }
 })
 ```
 

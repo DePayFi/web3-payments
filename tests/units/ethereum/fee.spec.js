@@ -1,11 +1,12 @@
 import fetchMock from 'fetch-mock'
 import plugins from 'src/plugins'
 import routers from 'src/routers'
+import { Blockchain } from '@depay/web3-blockchains'
 import { CONSTANTS } from '@depay/web3-constants'
 import { ethers } from 'ethers'
 import { mock, resetMocks, anything } from '@depay/web3-mock'
 import { mockAssets } from 'tests/mocks/api'
-import { mockDecimals, mockBalance, mockAllowance } from 'tests/mocks/tokens'
+import { mockBasics, mockDecimals, mockBalance, mockAllowance } from 'tests/mocks/tokens'
 import { mockPair, mockAmounts } from 'tests/mocks/UniswapV2'
 import { resetCache, provider } from '@depay/web3-client'
 import { route } from 'src'
@@ -72,7 +73,15 @@ describe('fee', ()=> {
         "type": "20"
       }
     ]})
-    mockDecimals({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: DEPAY, decimals: 18 })
+
+    Blockchain.findByName(blockchain).tokens.forEach((token)=>{
+      if(token.type == '20') {
+        mock({ call: { return: '0', to: token.address, api: Token[blockchain].DEFAULT, method: 'balanceOf', params: accounts[0] }, provider: provider(blockchain), blockchain })
+      }
+    })
+
+    mockBasics({ provider: provider(blockchain), blockchain, api: Token[blockchain].DEFAULT, token: DEPAY, decimals: 18, name: 'DePay', symbol: 'DEPAY' })
+
     mockDecimals({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: DAI, decimals: 18 })
 
     mockPair(provider(blockchain), '0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d', [WETH, DEPAY])
@@ -97,7 +106,6 @@ describe('fee', ()=> {
 
       let routes = await route({
         accept: [{
-          fromAddress,
           toAddress,
           blockchain,
           token: toToken,
@@ -106,7 +114,8 @@ describe('fee', ()=> {
         fee: {
           receiver: feeReceiver,
           amount: '9%'
-        }
+        },
+        from: { [blockchain]: fromAddress }
       })
 
       // not swapped
@@ -138,7 +147,6 @@ describe('fee', ()=> {
 
       let routes = await route({
         accept: [{
-          fromAddress,
           toAddress,
           blockchain,
           token: toToken,
@@ -147,7 +155,8 @@ describe('fee', ()=> {
         fee: {
           receiver: feeReceiver,
           amount: 1.8
-        }
+        },
+        from: { [blockchain]: fromAddress }
       })
 
       // not swapped
@@ -179,7 +188,6 @@ describe('fee', ()=> {
 
       let routes = await route({
         accept: [{
-          fromAddress,
           toAddress,
           blockchain,
           token: toToken,
@@ -188,7 +196,8 @@ describe('fee', ()=> {
         fee: {
           receiver: feeReceiver,
           amount: '1800000000000000000'
-        }
+        },
+        from: { [blockchain]: fromAddress }
       })
 
       // not swapped
