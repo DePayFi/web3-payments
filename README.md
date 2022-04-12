@@ -18,9 +18,11 @@ let paymentRoutes = await route({
     blockchain: 'ethereum',
     token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
     amount: 20,
-    fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
     toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
-  }]
+  }],
+  from: {
+    ethereum: '0x317D875cA3B9f8d14f960486C0d1D1913be74e90',
+  }
 })
 ```
 
@@ -38,9 +40,11 @@ let paymentRoutes = await route({
     blockchain: 'ethereum',
     token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
     amount: 20,
-    fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
     toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
-  }]
+  }],
+  from: {
+    ethereum: '0x5Af489c8786A018EC4814194dC8048be1007e390',
+  }
 })
 ```
 
@@ -55,16 +59,33 @@ let paymentRoutes = await route({
       blockchain: 'ethereum',
       token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
       amount: 20,
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
       toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
     },{
       blockchain: 'bsc',
       token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
       amount: 20,
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
       toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
     }
-  ]
+  ],
+  from: {
+    ethereum: '0x5Af489c8786A018EC4814194dC8048be1007e390',
+    bsc: '0x5Af489c8786A018EC4814194dC8048be1007e390'
+  }
+})
+```
+
+If you want to work with intermediate routing results over waiting for all routes to be calculated, you can use the `update` option:
+
+```javascript
+import { route } from '@depay/web3-payments'
+
+let paymentRoutes = await route({
+  update: {
+    every: 500,
+    callback: (currentRoutes){
+      // yields the current routes every 500ms
+    }
+  }
 })
 ```
 
@@ -84,10 +105,10 @@ let paymentRoutes = await route({
       fromAmount: 1,
       fromToken: '0xe9e7cea3dedca5984780bafc599bd69add087d56',
       toToken: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
       toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
     }
-  ]
+  ],
+  from: { bsc: '0x5Af489c8786A018EC4814194dC8048be1007e390' }
 })
 ```
 
@@ -104,14 +125,14 @@ let paymentRoutes = await route({
       blockchain: 'ethereum',
       token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
       amount: 20,
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
       toAddress: '0xb0252f13850a4823706607524de0b146820F2240',
       toContract: {
         signature: 'claim(address,uint256,bool)',
         params: ['true']
       }
     }
-  ]
+  ],
+  from: { bsc: '0x5Af489c8786A018EC4814194dC8048be1007e390' }
 })
 ```
 
@@ -137,14 +158,14 @@ let paymentRoutes = await route({
       blockchain: 'ethereum',
       token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
       amount: 20,
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
       toAddress: '0xb0252f13850a4823706607524de0b146820F2240',
       toContract: {
         signature: 'claim(address,uint256,bool)',
         params: ['true']
       }
     }
-  ]
+  ],
+  from: { bsc: '0x5Af489c8786A018EC4814194dC8048be1007e390' }
 })
 ```
 
@@ -159,14 +180,14 @@ let paymentRoutes = await route({
       blockchain: 'ethereum',
       token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
       amount: 20,
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
       toAddress: '0xb0252f13850a4823706607524de0b146820F2240',
       toContract: {
         signature: 'claim(address,uint256,bool)',
         params: ['40000000000000000000', 'true']
       }
     }
-  ]
+  ],
+  from: { bsc: '0x5Af489c8786A018EC4814194dC8048be1007e390' }
 })
 ```
 
@@ -229,17 +250,19 @@ let paymentRoutes = await route({
       blockchain: 'ethereum',
       token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
       amount: 20,
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
       toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
     },{
       blockchain: 'bsc',
       token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
       amount: 20,
-      fromAddress: '0x5Af489c8786A018EC4814194dC8048be1007e390',
       toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
     }
   ]
-  event: 'ifSwapped'
+  event: 'ifSwapped',
+  from: {
+    ethereum: '0x5Af489c8786A018EC4814194dC8048be1007e390',
+    bsc: '0x5Af489c8786A018EC4814194dC8048be1007e390'
+  }
 })
 ```
 

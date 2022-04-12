@@ -1,6 +1,14 @@
 import { Token } from '@depay/web3-tokens'
 import { mock } from '@depay/web3-mock'
 
+let mockBasics = ({ provider, blockchain, api, token, decimals, name, symbol })=>{
+  return [
+    mock({ provider, blockchain, call: { to: token, api, method: 'decimals', return: decimals }}),
+    mock({ provider, blockchain, call: { to: token, api, method: 'name', return: name }}),
+    mock({ provider, blockchain, call: { to: token, api, method: 'symbol', return: symbol }}),
+  ]
+}
+
 let mockDecimals = ({ provider, blockchain, api, token, decimals })=>{
   return mock({
     provider,
@@ -46,4 +54,5 @@ export {
   mockDecimals,
   mockBalance,
   mockAllowance,
+  mockBasics,
 }

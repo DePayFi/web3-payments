@@ -2,19 +2,20 @@ import plugins from './plugins'
 import routers from './routers'
 import { CONSTANTS } from '@depay/web3-constants'
 import { ethers } from 'ethers'
-import { getAssets } from '@depay/web3-assets'
+import { dripAssets } from '@depay/web3-assets'
 import { route as exchangeRoute } from '@depay/web3-exchanges'
 import { getTransaction } from './transaction'
 import { Token } from '@depay/web3-tokens'
+import { throttle } from 'lodash'
 
 class PaymentRoute {
-  constructor({ blockchain, fromAddress, fromToken, fromDecimals, fromAmount, toToken, toDecimals, toAmount, toAddress, toContract }) {
+  constructor({ blockchain, fromAddress, fromToken, fromDecimals, fromAmount, fromBalance, toToken, toDecimals, toAmount, toAddress, toContract }) {
     this.blockchain = blockchain
     this.fromAddress = fromAddress
     this.fromToken = fromToken
     this.fromAmount = fromAmount?.toString()
     this.fromDecimals = fromDecimals
-    this.fromBalance = 0
+    this.fromBalance = fromBalance
     this.toToken = toToken
     this.toAmount = toAmount?.toString()
     this.toDecimals = toDecimals
@@ -29,58 +30,15 @@ class PaymentRoute {
   }
 }
 
-async function getAllAssetsFromAggregator({ accept }) {
-
-  let routes = [
-    ...new Set(
-      accept.map(
-        (configuration)=>(JSON.stringify({ blockchain: configuration.blockchain, fromAddress: configuration.fromAddress }))
-      )
-    )
-  ]
-
-  return await Promise.all(
-    routes.map(
-      async (route)=> {
-        route = JSON.parse(route)
-        return await getAssets({ blockchain: route.blockchain, account: route.fromAddress })
-      }
-    )
-  ).then((assets)=>{
-    return assets.flat()
-  })
-}
-
-async function onlyGetWhitelistedAssets({ whitelist }) {
-  let assets = []
-
-  Object.entries(whitelist).forEach((entry)=>{
-    let blockchain = entry[0]
-    entry[1].forEach((address)=>{
-      assets.push({ blockchain, address })
-    })
-  })
-
-  return assets
-}
-
-async function getAllAssets({ accept, whitelist }) {
-
-  if(whitelist == undefined) {
-    return getAllAssetsFromAggregator({ accept })
-  } else {
-    return onlyGetWhitelistedAssets({ whitelist })
-  }
-}
-
-function convertToRoutes({ tokens, accept }) {
-  return Promise.all(tokens.map(async (fromToken)=>{
-    let relevantConfigurations = accept.filter((configuration)=>(configuration.blockchain == fromToken.blockchain))
+function convertToRoutes({ assets, accept, from }) {
+  return Promise.all(assets.map(async (asset)=>{
+    let relevantConfigurations = accept.filter((configuration)=>(configuration.blockchain == asset.blockchain))
+    let fromToken = new Token(asset)
     return Promise.all(relevantConfigurations.map(async (configuration)=>{
       if(configuration.token && configuration.amount) {
         let blockchain = configuration.blockchain
+        let fromDecimals = asset.decimals
         let toToken = new Token({ blockchain, address: configuration.token })
-        let fromDecimals = await fromToken.decimals()
         let toDecimals = await toToken.decimals()
         let toAmount = (await toToken.BigNumber(configuration.amount)).toString()
 
@@ -91,25 +49,27 @@ function convertToRoutes({ tokens, accept }) {
           toToken,
           toAmount,
           toDecimals,
-          fromAddress: configuration.fromAddress,
+          fromBalance: asset.balance,
+          fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
           toContract: configuration.toContract
         })
       } else if(configuration.fromToken && configuration.fromAmount && fromToken.address.toLowerCase() == configuration.fromToken.toLowerCase()) {
         let blockchain = configuration.blockchain
         let fromAmount = (await fromToken.BigNumber(configuration.fromAmount)).toString()
-        let fromDecimals = await fromToken.decimals()
+        let fromDecimals = asset.decimals
         let toToken = new Token({ blockchain, address: configuration.toToken })
         let toDecimals = await toToken.decimals()
         
         return new PaymentRoute({
           blockchain,
           fromToken,
-          fromAmount,
           fromDecimals,
+          fromAmount,
           toToken,
           toDecimals,
-          fromAddress: configuration.fromAddress,
+          fromBalance: asset.balance,
+          fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
           toContract: configuration.toContract
         })
@@ -118,37 +78,60 @@ function convertToRoutes({ tokens, accept }) {
   })).then((routes)=> routes.flat().filter(el => el))
 }
 
-async function route({ accept, whitelist, blacklist, event, fee }) {
-  let paymentRoutes = getAllAssets({ accept, whitelist })
-    .then((assets)=>filterBlacklistedAssets({ assets, blacklist }))
-    .then(assetsToTokens)
-    .then((tokens) => convertToRoutes({ tokens, accept }))
+function assetsToRoutes({ assets, blacklist, accept, from, event, fee }) {
+  return Promise.resolve(filterBlacklistedAssets({ assets, blacklist }))
+    .then((assets) => convertToRoutes({ assets, accept, from }))
     .then(addDirectTransferStatus)
     .then(addExchangeRoutes)
     .then(filterExchangeRoutesWithoutPlugin)
     .then(filterNotRoutable)
-    .then(addBalances)
     .then(filterInsufficientBalance)
     .then(addApproval)
     .then(sortPaymentRoutes)
     .then((routes)=>addTransactions({ routes, event, fee }))
     .then(addRouteAmounts)
     .then(filterDuplicateFromTokens)
-
-  return paymentRoutes
 }
 
-let addBalances = async (routes) => {
-  return Promise.all(routes.map((route) => route.fromToken.balance(route.fromAddress))).then((balances) => {
-    balances.forEach((balance, index) => {
-      routes[index].fromBalance = balance.toString()
+function route({ accept, from, whitelist, blacklist, event, fee, update }) {
+  return new Promise(async (resolveAll, rejectAll)=>{
+
+    const priority = accept.map((accepted)=>{
+      return({ blockchain: accepted.blockchain, address: accepted.token || accepted.toToken })
     })
-    return routes
-  })
-}
 
-let assetsToTokens = async (assets) => {
-  return assets.map((asset) => new Token({ blockchain: asset.blockchain, address: asset.address }))
+    if(whitelist) {
+      for (const blockchain in whitelist) {
+        (whitelist[blockchain] || []).forEach((address)=>{
+          priority.push({ blockchain, address })
+        })
+      }
+    }
+
+    let throttledUpdate
+    if(update) {
+      throttledUpdate = throttle(async ({ assets, blacklist, accept, from, event, fee })=>{
+        update.callback(await assetsToRoutes({ assets, blacklist, accept, from, event, fee }))
+      }, update.every)
+    }
+    
+    let drippedAssets = []
+    const allAssets = await dripAssets({
+      accounts: from,
+      priority: priority,
+      only: whitelist,
+      exclude: blacklist,
+      drip: (asset)=>{
+        if(update) {
+          drippedAssets.push(asset)
+          throttledUpdate({ assets: drippedAssets, blacklist, accept, from, event, fee })
+        }
+      }
+    })
+
+    let allPaymentRoutes = await assetsToRoutes({ assets: allAssets, blacklist, accept, from, event, fee })
+    resolveAll(allPaymentRoutes)
+  })
 }
 
 let filterBlacklistedAssets = ({ assets, blacklist }) => {
