@@ -74,6 +74,21 @@ let paymentRoutes = await route({
 })
 ```
 
+If you want to work with intermediate routing results over waiting for all routes to be calculated, you can use the `update` option:
+
+```javascript
+import { route } from '@depay/web3-payments'
+
+let paymentRoutes = await route({
+  update: {
+    every: 500,
+    callback: (currentRoutes){
+      // yields the current routes every 500ms
+    }
+  }
+})
+```
+
 #### fromToken + fromAmount + toToken
 
 In cases where you want to set the `fromToken` and `fromAmount` (instead of the target token and the target amount) when calculating payment routes you can pass `fromToken`, `fromAmount` + `toToken`.
