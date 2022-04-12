@@ -22209,9 +22209,12 @@
         }
       }
 
-      let throttledUpdate = lodash.throttle(async ({ assets, blacklist, accept, from, event, fee })=>{
-        update.callback(await assetsToRoutes({ assets, blacklist, accept, from, event, fee }));
-      }, update.every);
+      let throttledUpdate;
+      if(update) {
+        throttledUpdate = lodash.throttle(async ({ assets, blacklist, accept, from, event, fee })=>{
+          update.callback(await assetsToRoutes({ assets, blacklist, accept, from, event, fee }));
+        }, update.every);
+      }
       
       let drippedAssets = [];
       const allAssets = await web3Assets.dripAssets({
@@ -22220,7 +22223,7 @@
         only: whitelist,
         exclude: blacklist,
         drip: (asset)=>{
-          if(typeof update != 'undefined') {
+          if(update) {
             drippedAssets.push(asset);
             throttledUpdate({ assets: drippedAssets, blacklist, accept, from, event, fee });
           }

@@ -108,9 +108,12 @@ function route({ accept, from, whitelist, blacklist, event, fee, update }) {
       }
     }
 
-    let throttledUpdate = throttle(async ({ assets, blacklist, accept, from, event, fee })=>{
-      update.callback(await assetsToRoutes({ assets, blacklist, accept, from, event, fee }))
-    }, update.every)
+    let throttledUpdate
+    if(update) {
+      throttledUpdate = throttle(async ({ assets, blacklist, accept, from, event, fee })=>{
+        update.callback(await assetsToRoutes({ assets, blacklist, accept, from, event, fee }))
+      }, update.every)
+    }
     
     let drippedAssets = []
     const allAssets = await dripAssets({
@@ -119,7 +122,7 @@ function route({ accept, from, whitelist, blacklist, event, fee, update }) {
       only: whitelist,
       exclude: blacklist,
       drip: (asset)=>{
-        if(typeof update != 'undefined') {
+        if(update) {
           drippedAssets.push(asset)
           throttledUpdate({ assets: drippedAssets, blacklist, accept, from, event, fee })
         }
