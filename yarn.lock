@@ -955,10 +955,10 @@
     "@walletconnect/client" "^1.7.1"
     "@walletconnect/qrcode-modal" "^1.7.1"
 
-"@depay/web3-assets@^6.1.1":
-  version "6.1.1"
-  resolved "https://registry.yarnpkg.com/@depay/web3-assets/-/web3-assets-6.1.1.tgz#8505fc80dda6ba58bfdd661f65af3583a411d3e3"
-  integrity sha512-5IffNy80AQFpoy7UeVq+F8689NEN9MimYOklsOhPt6LIqds+G0bg9EzFsC4p7z3B29G1sWFugjMoTPFnytuv2g==
+"@depay/web3-assets@^6.1.2":
+  version "6.1.2"
+  resolved "https://registry.yarnpkg.com/@depay/web3-assets/-/web3-assets-6.1.2.tgz#51c9c6c59d65f0384b3fe6b05be19ea317b81391"
+  integrity sha512-AEDFlkrYs2UDKRaq0fO7d6rg25lFpcMjnIeDQDnT0WRtCLdXnq821TTbg1VqxyRIjzaBN76lHQWkyWUz0LANiw==
 
 "@depay/web3-blockchains@^4.3.0":
   version "4.3.0"
