@@ -22197,16 +22197,17 @@
   function route({ accept, from, whitelist, blacklist, event, fee, update }) {
     return new Promise(async (resolveAll, rejectAll)=>{
 
-      const priority = accept.map((accepted)=>{
-        return({ blockchain: accepted.blockchain, address: accepted.token || accepted.toToken })
-      });
-
+      let priority = [];
       if(whitelist) {
         for (const blockchain in whitelist) {
           (whitelist[blockchain] || []).forEach((address)=>{
             priority.push({ blockchain, address });
           });
         }
+      } else {
+        accept.forEach((accepted)=>{
+          priority.push({ blockchain: accepted.blockchain, address: accepted.token || accepted.toToken });
+        });
       }
 
       let throttledUpdate;

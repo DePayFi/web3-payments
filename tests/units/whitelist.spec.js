@@ -75,7 +75,6 @@ describe('route', ()=> {
     mockUniswapPair(provider('ethereum'), '0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11', [DAI_ethereum, WETH])
     mockUniswapPair(provider('ethereum'), CONSTANTS.ethereum.ZERO, [DAI_ethereum, USDT_ethereum])
     mock({ provider: provider('ethereum'), blockchain: 'ethereum', balance: { for: fromAddress, return: ETH_balance } })
-    mockBalance({ provider: provider('ethereum'), blockchain: 'ethereum', api: Token.ethereum.ERC20, token: DAI_ethereum, account: fromAddress, balance: DAI_ethereum_balance })
     mockUniswapAmounts({ provider: provider('ethereum'), method: 'getAmountsIn', params: [USDT_ethereum_amount, [WETH, USDT_ethereum]], amounts: [WETH_USDT_ethereum_amountIn, USDT_ethereum_amount] })
     mockUniswapAmounts({ provider: provider('ethereum'), method: 'getAmountsIn', params: [DAI_ethereum_amount, [WETH, DAI_ethereum]], amounts: [WETH_DAI_ethereum_amountIn, DAI_ethereum_amount] })
     mockUniswapAmounts({ provider: provider('ethereum'), method: 'getAmountsIn', params: [USDT_ethereum_amount, [DAI_ethereum, WETH, USDT_ethereum]], amounts: [DAI_ethereum_amountIn, WETH_DAI_ethereum_amountIn, USDT_ethereum_amount] })
@@ -96,9 +95,13 @@ describe('route', ()=> {
     mockPancakeSwapAmounts({ provider: provider('bsc'), method: 'getAmountsIn', params: [USDT_bsc_amount ,[BUSD, WBNB, USDT_bsc]], amounts: [BUSD_bsc_amountIn, WBNB_USDT_bsc_amountIn, USDT_bsc_amount] })
     mockPancakeSwapAmounts({ provider: provider('bsc'), method: 'getAmountsIn', params: [DAI_bsc_amount ,[BUSD, WBNB, DAI_bsc]], amounts: [BUSD_bsc_amountIn, WBNB_DAI_bsc_amountIn, DAI_bsc_amount] })
     mock({ provider: provider('bsc'), blockchain: 'bsc', balance: { for: fromAddress, return: BNB_balance } })
-    mockBalance({ provider: provider('bsc'), blockchain: 'bsc', api: Token.bsc.BEP20, token: BUSD, account: fromAddress, balance: BUSD_balance })
     mockAllowance({ provider: provider('bsc'), blockchain: 'bsc', api: Token.bsc.BEP20, token: BUSD, account: fromAddress, spender: routers.bsc.address, allowance: CONSTANTS.bsc.MAXINT })
     mockBasics({ provider: provider('bsc'), blockchain: 'bsc', api: Token['bsc'].DEFAULT, token: DAI_bsc, decimals: 18, name: 'DAI', symbol: 'DAI' })
+    
+    mockBalance({ provider: provider('ethereum'), blockchain: 'ethereum', api: Token.ethereum.ERC20, token: USDT_ethereum, account: fromAddress, balance: DAI_ethereum_balance })
+    mockBalance({ provider: provider('ethereum'), blockchain: 'ethereum', api: Token.ethereum.ERC20, token: DAI_ethereum, account: fromAddress, balance: DAI_ethereum_balance })
+    mockBalance({ provider: provider('bsc'), blockchain: 'bsc', api: Token.bsc.BEP20, token: BUSD, account: fromAddress, balance: BUSD_balance })
+    mockBalance({ provider: provider('bsc'), blockchain: 'bsc', api: Token.bsc.BEP20, token: DAI_bsc, account: fromAddress, balance: BUSD_balance })
 
     connect('ethereum')
 
