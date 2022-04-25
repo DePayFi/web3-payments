@@ -22182,7 +22182,7 @@
   function assetsToRoutes({ assets, blacklist, accept, from, event, fee }) {
     return Promise.resolve(filterBlacklistedAssets({ assets, blacklist }))
       .then((assets) => convertToRoutes({ assets, accept, from }))
-      .then(addDirectTransferStatus)
+      .then((routes) => addDirectTransferStatus({ routes, fee }))
       .then(addExchangeRoutes)
       .then(filterExchangeRoutesWithoutPlugin)
       .then(filterNotRoutable)
@@ -22343,9 +22343,9 @@
     )
   };
 
-  let addDirectTransferStatus = (routes) => {
+  let addDirectTransferStatus = ({ routes, fee }) => {
     return routes.map((route)=>{
-      route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && route.toContract == undefined;
+      route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && route.toContract == undefined && fee == undefined;
       return route
     })
   };

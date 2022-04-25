@@ -161,12 +161,14 @@ describe('fee', ()=> {
 
       // not swapped
       expect(routes[0].transaction.method).toEqual('route')
+      expect(routes[0].directTransfer).toEqual(false)
       expect(routes[0].transaction.params.plugins).toContain(plugins[blockchain].paymentFee.address)
       expect(routes[0].transaction.params.amounts).toEqual(['20000000000000000000', '18200000000000000000', '0', '0', '1800000000000000000'])
       expect(routes[0].transaction.params.addresses).toEqual([accounts[0], feeReceiver, toAddress])
 
       // swapped
       expect(routes[1].transaction.method).toEqual('route')
+      expect(routes[0].directTransfer).toEqual(false)
       expect(routes[1].transaction.params.plugins).toContain(plugins[blockchain].paymentFee.address)
       expect(routes[1].transaction.params.amounts[0]).toEqual('11000000000000000000')
       expect(routes[1].transaction.params.amounts[1]).toEqual('18200000000000000000')
@@ -175,6 +177,7 @@ describe('fee', ()=> {
 
       // swapped
       expect(routes[2].transaction.method).toEqual('route')
+      expect(routes[0].directTransfer).toEqual(false)
       expect(routes[2].transaction.params.plugins).toContain(plugins[blockchain].paymentFee.address)
       expect(routes[2].transaction.params.amounts[0]).toEqual('300000000000000000')
       expect(routes[2].transaction.params.amounts[1]).toEqual('18200000000000000000')
