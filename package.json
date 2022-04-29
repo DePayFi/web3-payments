@@ -68,6 +68,7 @@
     "eslint-plugin-import": "^2.22.1",
     "ethers": "^5.4.6",
     "fetch-mock": "^9.11.0",
+    "jest-environment-jsdom": "^28.0.2",
     "node-fetch": "^2.6.1",
     "regenerator-runtime": "^0.13.7",
     "rollup": "^2.34.2",
