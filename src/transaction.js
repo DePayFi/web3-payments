@@ -125,7 +125,7 @@ let subtractFee = ({ amount, paymentRoute, fee })=> {
 
 let transactionFeeAmount = ({ paymentRoute, fee })=> {
   if(typeof fee.amount == 'string' && fee.amount.match('%')) {
-    return ethers.BigNumber.from(paymentRoute.toAmount).div(100).mul(parseFloat(fee.amount)).toString()
+    return ethers.BigNumber.from(paymentRoute.toAmount).div(1000).mul(parseFloat(fee.amount)*10).toString()
   } else if(typeof fee.amount == 'string') {
     return fee.amount
   } else if(typeof fee.amount == 'number') {

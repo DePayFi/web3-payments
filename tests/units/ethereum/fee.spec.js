@@ -140,6 +140,64 @@ describe('fee', ()=> {
       expect(routes[2].transaction.params.amounts[4]).toEqual('1800000000000000000')
       expect(routes[2].transaction.params.addresses).toEqual([accounts[0], feeReceiver, toAddress])
     });
+
+    it('allows for fees with decimals', async ()=>{
+
+      let routes = await route({
+        accept: [{
+          toAddress,
+          blockchain,
+          token: toToken,
+          amount: tokenAmountOut
+        }],
+        fee: {
+          receiver: feeReceiver,
+          amount: '1.5%'
+        },
+        from: { [blockchain]: fromAddress }
+      })
+
+      // not swapped
+      expect(routes[0].transaction.method).toEqual('route')
+      expect(routes[0].transaction.params.plugins).toContain(plugins[blockchain].paymentFee.address)
+      expect(routes[0].transaction.params.amounts).toEqual(['20000000000000000000', '19700000000000000000', '0', '0', '300000000000000000'])
+      expect(routes[0].transaction.params.addresses).toEqual([accounts[0], feeReceiver, toAddress])
+
+      // swapped
+      expect(routes[1].transaction.method).toEqual('route')
+      expect(routes[1].transaction.params.plugins).toContain(plugins[blockchain].paymentFee.address)
+      expect(routes[1].transaction.params.amounts[0]).toEqual('11000000000000000000')
+      expect(routes[1].transaction.params.amounts[1]).toEqual('19700000000000000000')
+      expect(routes[1].transaction.params.amounts[4]).toEqual('300000000000000000')
+      expect(routes[1].transaction.params.addresses).toEqual([accounts[0], feeReceiver, toAddress])
+
+      // swapped
+      expect(routes[2].transaction.method).toEqual('route')
+      expect(routes[2].transaction.params.plugins).toContain(plugins[blockchain].paymentFee.address)
+      expect(routes[2].transaction.params.amounts[0]).toEqual('300000000000000000')
+      expect(routes[2].transaction.params.amounts[1]).toEqual('19700000000000000000')
+      expect(routes[2].transaction.params.amounts[4]).toEqual('300000000000000000')
+      expect(routes[2].transaction.params.addresses).toEqual([accounts[0], feeReceiver, toAddress])
+    });
+
+    it('throws error if amount percentage has more than 1 decimal', async ()=>{
+
+      expect(()=>{
+        route({
+          accept: [{
+            toAddress,
+            blockchain,
+            token: toToken,
+            amount: tokenAmountOut
+          }],
+          fee: {
+            receiver: feeReceiver,
+            amount: '1.55%'
+          },
+          from: { [blockchain]: fromAddress }
+        })  
+      }).toThrow('Only up to 1 decimal is supported for fee amounts!')
+    });
   })
 
   describe('fee in absolute numbers as pure number', ()=>{

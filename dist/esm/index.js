@@ -4840,7 +4840,7 @@ let subtractFee = ({ amount, paymentRoute, fee })=> {
 
 let transactionFeeAmount = ({ paymentRoute, fee })=> {
   if(typeof fee.amount == 'string' && fee.amount.match('%')) {
-    return BigNumber.from(paymentRoute.toAmount).div(100).mul(parseFloat(fee.amount)).toString()
+    return BigNumber.from(paymentRoute.toAmount).div(1000).mul(parseFloat(fee.amount)*10).toString()
   } else if(typeof fee.amount == 'string') {
     return fee.amount
   } else if(typeof fee.amount == 'number') {
@@ -22191,6 +22191,8 @@ function assetsToRoutes({ assets, blacklist, accept, from, event, fee }) {
 }
 
 function route({ accept, from, whitelist, blacklist, event, fee, update }) {
+  if(fee && fee.amount && typeof(fee.amount) == 'string' && fee.amount.match(/\.\d\d+\%/)) { throw('Only up to 1 decimal is supported for fee amounts!') }
+
   return new Promise(async (resolveAll, rejectAll)=>{
 
     let priority = [];
