@@ -42,7 +42,7 @@
     "@depay/web3-tokens": "^8.1.0"
   },
   "engines": {
-    "node": ">=10"
+    "node": ">=16"
   },
   "devDependencies": {
     "@babel/core": "^7.12.9",
