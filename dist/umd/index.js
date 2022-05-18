@@ -22195,7 +22195,9 @@
   }
 
   function route({ accept, from, whitelist, blacklist, event, fee, update }) {
-    if(fee && fee.amount && typeof(fee.amount) == 'string' && fee.amount.match(/\.\d\d+\%/)) { throw('Only up to 1 decimal is supported for fee amounts!') }
+    if(fee && fee.amount && typeof(fee.amount) == 'string' && fee.amount.match(/\.\d\d+\%/)) {
+      throw('Only up to 1 decimal is supported for fee amounts!')
+    }
 
     return new Promise(async (resolveAll, rejectAll)=>{
 
