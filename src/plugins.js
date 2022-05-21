@@ -98,5 +98,31 @@ export default {
       address: '0xae33f10AD57A38113f74FCdc1ffA6B1eC47B94E3',
       prepareTransaction: preparePaymentFeeTransaction
     }
-  } 
+  },
+  polygon: {
+    payment: {
+      address: '0x78C0F1c712A9AA2004C1F401A7307d8bCB62abBd'
+    },
+    quickswap: {
+      address: '0x0Dfb7137bC64b63F7a0de7Cb9CDa178702666220',
+      prepareTransaction: prepareUniswapTransaction
+    },
+    paymentWithEvent: {
+      address: ' 0xfAD2F276D464EAdB71435127BA2c2e9dDefb93a4'
+    },
+    contractCall: {
+      approveAndCallContractAddressAmountBoolean: {
+        address: '0x8698E529E9867eEbcC68b4792daC627cd8870736',
+        prepareTransaction: prepareContractCallAddressAmountBooleanTransaction
+      },
+      approveAndCallContractAddressPassedAmountBoolean: {
+        address: '0xAB305eaDf5FB15AF6370106B231C67d103bBbbbC',
+        prepareTransaction: prepareContractCallAddressPassedAmountBooleanTransaction
+      }
+    },
+    paymentFee: {
+      address: '0xd625c7087E940b2A91ed8bD8db45cB24D3526B56',
+      prepareTransaction: preparePaymentFeeTransaction
+    }
+  },
 }
