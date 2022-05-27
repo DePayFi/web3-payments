@@ -286,11 +286,14 @@ let filterDuplicateFromTokens = (routes) => {
 
 let scoreBlockchainCost = (blockchain) => {
   switch(blockchain) {
+    case 'polygon':
+      return 50
+      break;
     case 'bsc':
-      return 1
+      return 90
       break;
     case 'ethereum':
-      return 2
+      return 99
       break;
     default:
       return 100
