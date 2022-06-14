@@ -271,7 +271,7 @@ var bn = createCommonjsModule(function (module) {
       number = -number;
     }
     if (number < 0x4000000) {
-      this.words = [ number & 0x3ffffff ];
+      this.words = [number & 0x3ffffff];
       this.length = 1;
     } else if (number < 0x10000000000000) {
       this.words = [
@@ -299,7 +299,7 @@ var bn = createCommonjsModule(function (module) {
     // Perhaps a Uint8Array
     assert(typeof number.length === 'number');
     if (number.length <= 0) {
-      this.words = [ 0 ];
+      this.words = [0];
       this.length = 1;
       return this;
     }
@@ -335,20 +335,22 @@ var bn = createCommonjsModule(function (module) {
         }
       }
     }
-    return this.strip();
+    return this._strip();
   };
 
   function parseHex4Bits (string, index) {
     var c = string.charCodeAt(index);
+    // '0' - '9'
+    if (c >= 48 && c <= 57) {
+      return c - 48;
     // 'A' - 'F'
-    if (c >= 65 && c <= 70) {
+    } else if (c >= 65 && c <= 70) {
       return c - 55;
     // 'a' - 'f'
     } else if (c >= 97 && c <= 102) {
       return c - 87;
-    // '0' - '9'
     } else {
-      return (c - 48) & 0xf;
+      assert(false, 'Invalid character in ' + string);
     }
   }
 
@@ -400,11 +402,12 @@ var bn = createCommonjsModule(function (module) {
       }
     }
 
-    this.strip();
+    this._strip();
   };
 
   function parseBase (str, start, end, mul) {
     var r = 0;
+    var b = 0;
     var len = Math.min(str.length, end);
     for (var i = start; i < len; i++) {
       var c = str.charCodeAt(i) - 48;
@@ -413,23 +416,25 @@ var bn = createCommonjsModule(function (module) {
 
       // 'a'
       if (c >= 49) {
-        r += c - 49 + 0xa;
+        b = c - 49 + 0xa;
 
       // 'A'
       } else if (c >= 17) {
-        r += c - 17 + 0xa;
+        b = c - 17 + 0xa;
 
       // '0' - '9'
       } else {
-        r += c;
+        b = c;
       }
+      assert(c >= 0 && b < mul, 'Invalid character');
+      r += b;
     }
     return r;
   }
 
   BN.prototype._parseBase = function _parseBase (number, base, start) {
     // Initialize as zero
-    this.words = [ 0 ];
+    this.words = [0];
     this.length = 1;
 
     // Find length of limb in base
@@ -471,7 +476,7 @@ var bn = createCommonjsModule(function (module) {
       }
     }
 
-    this.strip();
+    this._strip();
   };
 
   BN.prototype.copy = function copy (dest) {
@@ -482,6 +487,17 @@ var bn = createCommonjsModule(function (module) {
     dest.length = this.length;
     dest.negative = this.negative;
     dest.red = this.red;
+  };
+
+  function move (dest, src) {
+    dest.words = src.words;
+    dest.length = src.length;
+    dest.negative = src.negative;
+    dest.red = src.red;
+  }
+
+  BN.prototype._move = function _move (dest) {
+    move(dest, this);
   };
 
   BN.prototype.clone = function clone () {
@@ -498,7 +514,7 @@ var bn = createCommonjsModule(function (module) {
   };
 
   // Remove leading `0` from `this`
-  BN.prototype.strip = function strip () {
+  BN.prototype._strip = function strip () {
     while (this.length > 1 && this.words[this.length - 1] === 0) {
       this.length--;
     }
@@ -513,9 +529,21 @@ var bn = createCommonjsModule(function (module) {
     return this;
   };
 
-  BN.prototype.inspect = function inspect () {
+  // Check Symbol.for because not everywhere where Symbol defined
+  // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol#Browser_compatibility
+  if (typeof Symbol !== 'undefined' && typeof Symbol.for === 'function') {
+    try {
+      BN.prototype[Symbol.for('nodejs.util.inspect.custom')] = inspect;
+    } catch (e) {
+      BN.prototype.inspect = inspect;
+    }
+  } else {
+    BN.prototype.inspect = inspect;
+  }
+
+  function inspect () {
     return (this.red ? '<BN-R: ' : '<BN: ') + this.toString(16) + '>';
-  };
+  }
 
   /*
 
@@ -607,15 +635,15 @@ var bn = createCommonjsModule(function (module) {
         var w = this.words[i];
         var word = (((w << off) | carry) & 0xffffff).toString(16);
         carry = (w >>> (24 - off)) & 0xffffff;
-        if (carry !== 0 || i !== this.length - 1) {
-          out = zeros[6 - word.length] + word + out;
-        } else {
-          out = word + out;
-        }
         off += 2;
         if (off >= 26) {
           off -= 26;
           i--;
+        }
+        if (carry !== 0 || i !== this.length - 1) {
+          out = zeros[6 - word.length] + word + out;
+        } else {
+          out = word + out;
         }
       }
       if (carry !== 0) {
@@ -639,7 +667,7 @@ var bn = createCommonjsModule(function (module) {
       var c = this.clone();
       c.negative = 0;
       while (!c.isZero()) {
-        var r = c.modn(groupBase).toString(base);
+        var r = c.modrn(groupBase).toString(base);
         c = c.idivn(groupBase);
 
         if (!c.isZero()) {
@@ -677,56 +705,110 @@ var bn = createCommonjsModule(function (module) {
   };
 
   BN.prototype.toJSON = function toJSON () {
-    return this.toString(16);
+    return this.toString(16, 2);
   };
 
-  BN.prototype.toBuffer = function toBuffer (endian, length) {
-    assert(typeof Buffer !== 'undefined');
-    return this.toArrayLike(Buffer, endian, length);
-  };
+  if (Buffer) {
+    BN.prototype.toBuffer = function toBuffer (endian, length) {
+      return this.toArrayLike(Buffer, endian, length);
+    };
+  }
 
   BN.prototype.toArray = function toArray (endian, length) {
     return this.toArrayLike(Array, endian, length);
   };
 
+  var allocate = function allocate (ArrayType, size) {
+    if (ArrayType.allocUnsafe) {
+      return ArrayType.allocUnsafe(size);
+    }
+    return new ArrayType(size);
+  };
+
   BN.prototype.toArrayLike = function toArrayLike (ArrayType, endian, length) {
+    this._strip();
+
     var byteLength = this.byteLength();
     var reqLength = length || Math.max(1, byteLength);
     assert(byteLength <= reqLength, 'byte array longer than desired length');
     assert(reqLength > 0, 'Requested array length <= 0');
 
-    this.strip();
-    var littleEndian = endian === 'le';
-    var res = new ArrayType(reqLength);
+    var res = allocate(ArrayType, reqLength);
+    var postfix = endian === 'le' ? 'LE' : 'BE';
+    this['_toArrayLike' + postfix](res, byteLength);
+    return res;
+  };
 
-    var b, i;
-    var q = this.clone();
-    if (!littleEndian) {
-      // Assume big-endian
-      for (i = 0; i < reqLength - byteLength; i++) {
-        res[i] = 0;
+  BN.prototype._toArrayLikeLE = function _toArrayLikeLE (res, byteLength) {
+    var position = 0;
+    var carry = 0;
+
+    for (var i = 0, shift = 0; i < this.length; i++) {
+      var word = (this.words[i] << shift) | carry;
+
+      res[position++] = word & 0xff;
+      if (position < res.length) {
+        res[position++] = (word >> 8) & 0xff;
+      }
+      if (position < res.length) {
+        res[position++] = (word >> 16) & 0xff;
       }
 
-      for (i = 0; !q.isZero(); i++) {
-        b = q.andln(0xff);
-        q.iushrn(8);
-
-        res[reqLength - i - 1] = b;
-      }
-    } else {
-      for (i = 0; !q.isZero(); i++) {
-        b = q.andln(0xff);
-        q.iushrn(8);
-
-        res[i] = b;
-      }
-
-      for (; i < reqLength; i++) {
-        res[i] = 0;
+      if (shift === 6) {
+        if (position < res.length) {
+          res[position++] = (word >> 24) & 0xff;
+        }
+        carry = 0;
+        shift = 0;
+      } else {
+        carry = word >>> 24;
+        shift += 2;
       }
     }
 
-    return res;
+    if (position < res.length) {
+      res[position++] = carry;
+
+      while (position < res.length) {
+        res[position++] = 0;
+      }
+    }
+  };
+
+  BN.prototype._toArrayLikeBE = function _toArrayLikeBE (res, byteLength) {
+    var position = res.length - 1;
+    var carry = 0;
+
+    for (var i = 0, shift = 0; i < this.length; i++) {
+      var word = (this.words[i] << shift) | carry;
+
+      res[position--] = word & 0xff;
+      if (position >= 0) {
+        res[position--] = (word >> 8) & 0xff;
+      }
+      if (position >= 0) {
+        res[position--] = (word >> 16) & 0xff;
+      }
+
+      if (shift === 6) {
+        if (position >= 0) {
+          res[position--] = (word >> 24) & 0xff;
+        }
+        carry = 0;
+        shift = 0;
+      } else {
+        carry = word >>> 24;
+        shift += 2;
+      }
+    }
+
+    if (position >= 0) {
+      res[position--] = carry;
+
+      while (position >= 0) {
+        res[position--] = 0;
+      }
+    }
   };
 
   if (Math.clz32) {
@@ -799,7 +881,7 @@ var bn = createCommonjsModule(function (module) {
       var off = (bit / 26) | 0;
       var wbit = bit % 26;
 
-      w[bit] = (num.words[off] & (1 << wbit)) >>> wbit;
+      w[bit] = (num.words[off] >>> wbit) & 0x01;
     }
 
     return w;
@@ -863,7 +945,7 @@ var bn = createCommonjsModule(function (module) {
       this.words[i] = this.words[i] | num.words[i];
     }
 
-    return this.strip();
+    return this._strip();
   };
 
   BN.prototype.ior = function ior (num) {
@@ -898,7 +980,7 @@ var bn = createCommonjsModule(function (module) {
 
     this.length = b.length;
 
-    return this.strip();
+    return this._strip();
   };
 
   BN.prototype.iand = function iand (num) {
@@ -942,7 +1024,7 @@ var bn = createCommonjsModule(function (module) {
 
     this.length = a.length;
 
-    return this.strip();
+    return this._strip();
   };
 
   BN.prototype.ixor = function ixor (num) {
@@ -986,7 +1068,7 @@ var bn = createCommonjsModule(function (module) {
     }
 
     // And remove leading zeroes
-    return this.strip();
+    return this._strip();
   };
 
   BN.prototype.notn = function notn (width) {
@@ -1008,7 +1090,7 @@ var bn = createCommonjsModule(function (module) {
       this.words[off] = this.words[off] & ~(1 << wbit);
     }
 
-    return this.strip();
+    return this._strip();
   };
 
   // Add `num` to `this` in-place
@@ -1149,7 +1231,7 @@ var bn = createCommonjsModule(function (module) {
       this.negative = 1;
     }
 
-    return this.strip();
+    return this._strip();
   };
 
   // Subtract `num` from `this`
@@ -1195,7 +1277,7 @@ var bn = createCommonjsModule(function (module) {
       out.length--;
     }
 
-    return out.strip();
+    return out._strip();
   }
 
   // TODO(indutny): it may be reasonable to omit it for users who don't need
@@ -1817,12 +1899,14 @@ var bn = createCommonjsModule(function (module) {
       out.length--;
     }
 
-    return out.strip();
+    return out._strip();
   }
 
   function jumboMulTo (self, num, out) {
-    var fftm = new FFTM();
-    return fftm.mulp(self, num, out);
+    // Temporary disable, see https://github.com/indutny/bn.js/issues/211
+    // var fftm = new FFTM();
+    // return fftm.mulp(self, num, out);
+    return bigMulTo(self, num, out);
   }
 
   BN.prototype.mulTo = function mulTo (num, out) {
@@ -1839,202 +1923,6 @@ var bn = createCommonjsModule(function (module) {
     }
 
     return res;
-  };
-
-  // Cooley-Tukey algorithm for FFT
-  // slightly revisited to rely on looping instead of recursion
-
-  function FFTM (x, y) {
-    this.x = x;
-    this.y = y;
-  }
-
-  FFTM.prototype.makeRBT = function makeRBT (N) {
-    var t = new Array(N);
-    var l = BN.prototype._countBits(N) - 1;
-    for (var i = 0; i < N; i++) {
-      t[i] = this.revBin(i, l, N);
-    }
-
-    return t;
-  };
-
-  // Returns binary-reversed representation of `x`
-  FFTM.prototype.revBin = function revBin (x, l, N) {
-    if (x === 0 || x === N - 1) return x;
-
-    var rb = 0;
-    for (var i = 0; i < l; i++) {
-      rb |= (x & 1) << (l - i - 1);
-      x >>= 1;
-    }
-
-    return rb;
-  };
-
-  // Performs "tweedling" phase, therefore 'emulating'
-  // behaviour of the recursive algorithm
-  FFTM.prototype.permute = function permute (rbt, rws, iws, rtws, itws, N) {
-    for (var i = 0; i < N; i++) {
-      rtws[i] = rws[rbt[i]];
-      itws[i] = iws[rbt[i]];
-    }
-  };
-
-  FFTM.prototype.transform = function transform (rws, iws, rtws, itws, N, rbt) {
-    this.permute(rbt, rws, iws, rtws, itws, N);
-
-    for (var s = 1; s < N; s <<= 1) {
-      var l = s << 1;
-
-      var rtwdf = Math.cos(2 * Math.PI / l);
-      var itwdf = Math.sin(2 * Math.PI / l);
-
-      for (var p = 0; p < N; p += l) {
-        var rtwdf_ = rtwdf;
-        var itwdf_ = itwdf;
-
-        for (var j = 0; j < s; j++) {
-          var re = rtws[p + j];
-          var ie = itws[p + j];
-
-          var ro = rtws[p + j + s];
-          var io = itws[p + j + s];
-
-          var rx = rtwdf_ * ro - itwdf_ * io;
-
-          io = rtwdf_ * io + itwdf_ * ro;
-          ro = rx;
-
-          rtws[p + j] = re + ro;
-          itws[p + j] = ie + io;
-
-          rtws[p + j + s] = re - ro;
-          itws[p + j + s] = ie - io;
-
-          /* jshint maxdepth : false */
-          if (j !== l) {
-            rx = rtwdf * rtwdf_ - itwdf * itwdf_;
-
-            itwdf_ = rtwdf * itwdf_ + itwdf * rtwdf_;
-            rtwdf_ = rx;
-          }
-        }
-      }
-    }
-  };
-
-  FFTM.prototype.guessLen13b = function guessLen13b (n, m) {
-    var N = Math.max(m, n) | 1;
-    var odd = N & 1;
-    var i = 0;
-    for (N = N / 2 | 0; N; N = N >>> 1) {
-      i++;
-    }
-
-    return 1 << i + 1 + odd;
-  };
-
-  FFTM.prototype.conjugate = function conjugate (rws, iws, N) {
-    if (N <= 1) return;
-
-    for (var i = 0; i < N / 2; i++) {
-      var t = rws[i];
-
-      rws[i] = rws[N - i - 1];
-      rws[N - i - 1] = t;
-
-      t = iws[i];
-
-      iws[i] = -iws[N - i - 1];
-      iws[N - i - 1] = -t;
-    }
-  };
-
-  FFTM.prototype.normalize13b = function normalize13b (ws, N) {
-    var carry = 0;
-    for (var i = 0; i < N / 2; i++) {
-      var w = Math.round(ws[2 * i + 1] / N) * 0x2000 +
-        Math.round(ws[2 * i] / N) +
-        carry;
-
-      ws[i] = w & 0x3ffffff;
-
-      if (w < 0x4000000) {
-        carry = 0;
-      } else {
-        carry = w / 0x4000000 | 0;
-      }
-    }
-
-    return ws;
-  };
-
-  FFTM.prototype.convert13b = function convert13b (ws, len, rws, N) {
-    var carry = 0;
-    for (var i = 0; i < len; i++) {
-      carry = carry + (ws[i] | 0);
-
-      rws[2 * i] = carry & 0x1fff; carry = carry >>> 13;
-      rws[2 * i + 1] = carry & 0x1fff; carry = carry >>> 13;
-    }
-
-    // Pad with zeroes
-    for (i = 2 * len; i < N; ++i) {
-      rws[i] = 0;
-    }
-
-    assert(carry === 0);
-    assert((carry & ~0x1fff) === 0);
-  };
-
-  FFTM.prototype.stub = function stub (N) {
-    var ph = new Array(N);
-    for (var i = 0; i < N; i++) {
-      ph[i] = 0;
-    }
-
-    return ph;
-  };
-
-  FFTM.prototype.mulp = function mulp (x, y, out) {
-    var N = 2 * this.guessLen13b(x.length, y.length);
-
-    var rbt = this.makeRBT(N);
-
-    var _ = this.stub(N);
-
-    var rws = new Array(N);
-    var rwst = new Array(N);
-    var iwst = new Array(N);
-
-    var nrws = new Array(N);
-    var nrwst = new Array(N);
-    var niwst = new Array(N);
-
-    var rmws = out.words;
-    rmws.length = N;
-
-    this.convert13b(x.words, x.length, rws, N);
-    this.convert13b(y.words, y.length, nrws, N);
-
-    this.transform(rws, _, rwst, iwst, N, rbt);
-    this.transform(nrws, _, nrwst, niwst, N, rbt);
-
-    for (var i = 0; i < N; i++) {
-      var rx = rwst[i] * nrwst[i] - iwst[i] * niwst[i];
-      iwst[i] = rwst[i] * niwst[i] + iwst[i] * nrwst[i];
-      rwst[i] = rx;
-    }
-
-    this.conjugate(rwst, iwst, N);
-    this.transform(rwst, iwst, rmws, _, N, rbt);
-    this.conjugate(rmws, _, N);
-    this.normalize13b(rmws, N);
-
-    out.negative = x.negative ^ y.negative;
-    out.length = x.length + y.length;
-    return out.strip();
   };
 
   // Multiply `this` by `num`
@@ -2057,6 +1945,9 @@ var bn = createCommonjsModule(function (module) {
   };
 
   BN.prototype.imuln = function imuln (num) {
+    var isNegNum = num < 0;
+    if (isNegNum) num = -num;
+
     assert(typeof num === 'number');
     assert(num < 0x4000000);
 
@@ -2077,7 +1968,7 @@ var bn = createCommonjsModule(function (module) {
       this.length++;
     }
 
-    return this;
+    return isNegNum ? this.ineg() : this;
   };
 
   BN.prototype.muln = function muln (num) {
@@ -2152,7 +2043,7 @@ var bn = createCommonjsModule(function (module) {
       this.length += s;
     }
 
-    return this.strip();
+    return this._strip();
   };
 
   BN.prototype.ishln = function ishln (bits) {
@@ -2216,7 +2107,7 @@ var bn = createCommonjsModule(function (module) {
       this.length = 1;
     }
 
-    return this.strip();
+    return this._strip();
   };
 
   BN.prototype.ishrn = function ishrn (bits, hint, extended) {
@@ -2281,7 +2172,7 @@ var bn = createCommonjsModule(function (module) {
       this.words[this.length - 1] &= mask;
     }
 
-    return this.strip();
+    return this._strip();
   };
 
   // Return only lowers bits of number
@@ -2297,7 +2188,7 @@ var bn = createCommonjsModule(function (module) {
 
     // Possible sign change
     if (this.negative !== 0) {
-      if (this.length === 1 && (this.words[0] | 0) < num) {
+      if (this.length === 1 && (this.words[0] | 0) <= num) {
         this.words[0] = num - (this.words[0] | 0);
         this.negative = 0;
         return this;
@@ -2356,7 +2247,7 @@ var bn = createCommonjsModule(function (module) {
       }
     }
 
-    return this.strip();
+    return this._strip();
   };
 
   BN.prototype.addn = function addn (num) {
@@ -2398,7 +2289,7 @@ var bn = createCommonjsModule(function (module) {
       this.words[i + shift] = w & 0x3ffffff;
     }
 
-    if (carry === 0) return this.strip();
+    if (carry === 0) return this._strip();
 
     // Subtraction overflow
     assert(carry === -1);
@@ -2410,7 +2301,7 @@ var bn = createCommonjsModule(function (module) {
     }
     this.negative = 1;
 
-    return this.strip();
+    return this._strip();
   };
 
   BN.prototype._wordDiv = function _wordDiv (num, mode) {
@@ -2472,9 +2363,9 @@ var bn = createCommonjsModule(function (module) {
       }
     }
     if (q) {
-      q.strip();
+      q._strip();
     }
-    a.strip();
+    a._strip();
 
     // Denormalize
     if (mode !== 'div' && shift !== 0) {
@@ -2573,13 +2464,13 @@ var bn = createCommonjsModule(function (module) {
       if (mode === 'mod') {
         return {
           div: null,
-          mod: new BN(this.modn(num.words[0]))
+          mod: new BN(this.modrn(num.words[0]))
         };
       }
 
       return {
         div: this.divn(num.words[0]),
-        mod: new BN(this.modn(num.words[0]))
+        mod: new BN(this.modrn(num.words[0]))
       };
     }
 
@@ -2614,13 +2505,16 @@ var bn = createCommonjsModule(function (module) {
     var cmp = mod.cmp(half);
 
     // Round down
-    if (cmp < 0 || r2 === 1 && cmp === 0) return dm.div;
+    if (cmp < 0 || (r2 === 1 && cmp === 0)) return dm.div;
 
     // Round up
     return dm.div.negative !== 0 ? dm.div.isubn(1) : dm.div.iaddn(1);
   };
 
-  BN.prototype.modn = function modn (num) {
+  BN.prototype.modrn = function modrn (num) {
+    var isNegNum = num < 0;
+    if (isNegNum) num = -num;
+
     assert(num <= 0x3ffffff);
     var p = (1 << 26) % num;
 
@@ -2629,11 +2523,19 @@ var bn = createCommonjsModule(function (module) {
       acc = (p * acc + (this.words[i] | 0)) % num;
     }
 
-    return acc;
+    return isNegNum ? -acc : acc;
+  };
+
+  // WARNING: DEPRECATED
+  BN.prototype.modn = function modn (num) {
+    return this.modrn(num);
   };
 
   // In-place division by number
   BN.prototype.idivn = function idivn (num) {
+    var isNegNum = num < 0;
+    if (isNegNum) num = -num;
+
     assert(num <= 0x3ffffff);
 
     var carry = 0;
@@ -2643,7 +2545,8 @@ var bn = createCommonjsModule(function (module) {
       carry = w % num;
     }
 
-    return this.strip();
+    this._strip();
+    return isNegNum ? this.ineg() : this;
   };
 
   BN.prototype.divn = function divn (num) {
@@ -2895,7 +2798,7 @@ var bn = createCommonjsModule(function (module) {
     if (this.negative !== 0 && !negative) return -1;
     if (this.negative === 0 && negative) return 1;
 
-    this.strip();
+    this._strip();
 
     var res;
     if (this.length > 1) {
@@ -3139,10 +3042,10 @@ var bn = createCommonjsModule(function (module) {
       r.isub(this.p);
     } else {
       if (r.strip !== undefined) {
-        // r is BN v4 instance
+        // r is a BN v4 instance
         r.strip();
       } else {
-        // r is BN v5 instance
+        // r is a BN v5 instance
         r._strip();
       }
     }
@@ -3317,7 +3220,9 @@ var bn = createCommonjsModule(function (module) {
 
   Red.prototype.imod = function imod (a) {
     if (this.prime) return this.prime.ireduce(a)._forceRed(this);
-    return a.umod(this.m)._forceRed(this);
+
+    move(a, a.umod(this.m)._forceRed(this));
+    return a;
   };
 
   Red.prototype.neg = function neg (a) {
@@ -3599,7 +3504,7 @@ var bn = createCommonjsModule(function (module) {
 })(module, commonjsGlobal);
 });
 
-const version$3 = "logger/5.5.0";
+const version$3 = "logger/5.6.0";
 
 let _permanentCensorErrors = false;
 let _censorErrors = false;
@@ -3778,6 +3683,40 @@ class Logger {
         messageDetails.push(`code=${code}`);
         messageDetails.push(`version=${this.version}`);
         const reason = message;
+        let url = "";
+        switch (code) {
+            case ErrorCode.NUMERIC_FAULT: {
+                url = "NUMERIC_FAULT";
+                const fault = message;
+                switch (fault) {
+                    case "overflow":
+                    case "underflow":
+                    case "division-by-zero":
+                        url += "-" + fault;
+                        break;
+                    case "negative-power":
+                    case "negative-width":
+                        url += "-unsupported";
+                        break;
+                    case "unbound-bitwise-result":
+                        url += "-unbound-result";
+                        break;
+                }
+                break;
+            }
+            case ErrorCode.CALL_EXCEPTION:
+            case ErrorCode.INSUFFICIENT_FUNDS:
+            case ErrorCode.MISSING_NEW:
+            case ErrorCode.NONCE_EXPIRED:
+            case ErrorCode.REPLACEMENT_UNDERPRICED:
+            case ErrorCode.TRANSACTION_REPLACED:
+            case ErrorCode.UNPREDICTABLE_GAS_LIMIT:
+                url = code;
+                break;
+        }
+        if (url) {
+            message += " [ See: https:/\/links.ethers.org/v5-errors-" + url + " ]";
+        }
         if (messageDetails.length) {
             message += " (" + messageDetails.join(", ") + ")";
         }
@@ -3911,7 +3850,7 @@ class Logger {
 Logger.errors = ErrorCode;
 Logger.levels = LogLevel;
 
-const version$2 = "bytes/5.5.0";
+const version$2 = "bytes/5.6.1";
 
 const logger$3 = new Logger(version$2);
 ///////////////////////////////
@@ -3978,7 +3917,7 @@ function arrayify(value, options) {
         let hex = value.substring(2);
         if (hex.length % 2) {
             if (options.hexPad === "left") {
-                hex = "0x0" + hex.substring(2);
+                hex = "0" + hex;
             }
             else if (options.hexPad === "right") {
                 hex += "0";
@@ -4080,7 +4019,7 @@ function hexZeroPad(value, length) {
     return value;
 }
 
-const version$1 = "bignumber/5.5.0";
+const version$1 = "bignumber/5.6.2";
 
 var BN = bn.BN;
 const logger$2 = new Logger(version$1);
@@ -4098,7 +4037,6 @@ function isBigNumberish(value) {
 let _warnedToStringRadix = false;
 class BigNumber {
     constructor(constructorGuard, hex) {
-        logger$2.checkNew(new.target, BigNumber);
         if (constructorGuard !== _constructorGuard$1) {
             logger$2.throwError("cannot call constructor directly; use BigNumber.from", Logger.errors.UNSUPPORTED_OPERATION, {
                 operation: "new (BigNumber)"
@@ -4129,7 +4067,7 @@ class BigNumber {
     div(other) {
         const o = BigNumber.from(other);
         if (o.isZero()) {
-            throwFault$1("division by zero", "div");
+            throwFault$1("division-by-zero", "div");
         }
         return toBigNumber(toBN(this).div(toBN(other)));
     }
@@ -4139,53 +4077,53 @@ class BigNumber {
     mod(other) {
         const value = toBN(other);
         if (value.isNeg()) {
-            throwFault$1("cannot modulo negative values", "mod");
+            throwFault$1("division-by-zero", "mod");
         }
         return toBigNumber(toBN(this).umod(value));
     }
     pow(other) {
         const value = toBN(other);
         if (value.isNeg()) {
-            throwFault$1("cannot raise to negative values", "pow");
+            throwFault$1("negative-power", "pow");
         }
         return toBigNumber(toBN(this).pow(value));
     }
     and(other) {
         const value = toBN(other);
         if (this.isNegative() || value.isNeg()) {
-            throwFault$1("cannot 'and' negative values", "and");
+            throwFault$1("unbound-bitwise-result", "and");
         }
         return toBigNumber(toBN(this).and(value));
     }
     or(other) {
         const value = toBN(other);
         if (this.isNegative() || value.isNeg()) {
-            throwFault$1("cannot 'or' negative values", "or");
+            throwFault$1("unbound-bitwise-result", "or");
         }
         return toBigNumber(toBN(this).or(value));
     }
     xor(other) {
         const value = toBN(other);
         if (this.isNegative() || value.isNeg()) {
-            throwFault$1("cannot 'xor' negative values", "xor");
+            throwFault$1("unbound-bitwise-result", "xor");
         }
         return toBigNumber(toBN(this).xor(value));
     }
     mask(value) {
         if (this.isNegative() || value < 0) {
-            throwFault$1("cannot mask negative values", "mask");
+            throwFault$1("negative-width", "mask");
         }
         return toBigNumber(toBN(this).maskn(value));
     }
     shl(value) {
         if (this.isNegative() || value < 0) {
-            throwFault$1("cannot shift negative values", "shl");
+            throwFault$1("negative-width", "shl");
         }
         return toBigNumber(toBN(this).shln(value));
     }
     shr(value) {
         if (this.isNegative() || value < 0) {
-            throwFault$1("cannot shift negative values", "shr");
+            throwFault$1("negative-width", "shr");
         }
         return toBigNumber(toBN(this).shrn(value));
     }
@@ -4542,7 +4480,6 @@ class FixedFormat {
 }
 class FixedNumber {
     constructor(constructorGuard, hex, value, format) {
-        logger$1.checkNew(new.target, FixedNumber);
         if (constructorGuard !== _constructorGuard) {
             logger$1.throwError("cannot use FixedNumber constructor; use FixedNumber.from", Logger.errors.UNSUPPORTED_OPERATION, {
                 operation: "new FixedFormat"
@@ -4723,7 +4660,7 @@ class FixedNumber {
 const ONE = FixedNumber.from(1);
 const BUMP = FixedNumber.from("0.5");
 
-const version = "units/5.5.0";
+const version = "units/5.6.1";
 
 const logger = new Logger(version);
 const names = [
