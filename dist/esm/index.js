@@ -22330,6 +22330,9 @@ let addRouteAmounts = (routes)=> {
     } else {
       route.fromAmount = route.transaction.params.amounts[0];
       route.toAmount = route.transaction.params.amounts[1];
+      if(route.fee){
+        route.feeAmount = route.transaction.params.amounts[4];
+      }
     }
     return route
   })

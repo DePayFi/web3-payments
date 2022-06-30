@@ -123,6 +123,8 @@ describe('fee', ()=> {
       expect(routes[0].transaction.params.plugins).toContain(plugins[blockchain].paymentFee.address)
       expect(routes[0].transaction.params.amounts).toEqual(['20000000000000000000', '18200000000000000000', '0', '0', '1800000000000000000'])
       expect(routes[0].transaction.params.addresses).toEqual([accounts[0], feeReceiver, toAddress])
+      expect(routes[0].toAmount).toEqual('18200000000000000000')
+      expect(routes[0].feeAmount).toEqual('1800000000000000000')
 
       // swapped
       expect(routes[1].transaction.method).toEqual('route')
@@ -131,6 +133,8 @@ describe('fee', ()=> {
       expect(routes[1].transaction.params.amounts[1]).toEqual('18200000000000000000')
       expect(routes[1].transaction.params.amounts[4]).toEqual('1800000000000000000')
       expect(routes[1].transaction.params.addresses).toEqual([accounts[0], feeReceiver, toAddress])
+      expect(routes[1].toAmount).toEqual('18200000000000000000')
+      expect(routes[1].feeAmount).toEqual('1800000000000000000')
 
       // swapped
       expect(routes[2].transaction.method).toEqual('route')
@@ -139,6 +143,8 @@ describe('fee', ()=> {
       expect(routes[2].transaction.params.amounts[1]).toEqual('18200000000000000000')
       expect(routes[2].transaction.params.amounts[4]).toEqual('1800000000000000000')
       expect(routes[2].transaction.params.addresses).toEqual([accounts[0], feeReceiver, toAddress])
+      expect(routes[2].toAmount).toEqual('18200000000000000000')
+      expect(routes[2].feeAmount).toEqual('1800000000000000000')
     });
 
     it('allows for fees with decimals', async ()=>{

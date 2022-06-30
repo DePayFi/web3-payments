@@ -354,6 +354,7 @@ Payment routes are provided in the following structure:
   fromDecimals: number (e.g. 18)
   toToken: Token (see @depay/web3-tokens)
   toAmount: BigNumber (e.g. <BigNumber '21000000000000000000'>)
+  feeAmount: BigNumber (e.g. <BigNumber '2100000000000000000'>)
   toDecimals: number (e.g. 18)
   toAddress: String (e.g. '0x65aBbdEd9B937E38480A50eca85A8E4D2c8350E4')
   exchangeRoutes: Array (list of exchange routes offering to convert )
