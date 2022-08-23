@@ -186,6 +186,51 @@ describe('fee', ()=> {
       expect(routes[2].transaction.params.addresses).toEqual([accounts[0], feeReceiver, toAddress])
     });
 
+    it('rounds fee amounts for small decimal tokens', async ()=>{
+
+      let USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+      toToken = USDC
+      tokenAmountOut = 1.0025
+      tokenOutDecimals = 6
+      tokenAmountOutBN = ethers.utils.parseUnits(tokenAmountOut.toString(), tokenOutDecimals)
+
+      mockAssets({ blockchain, account: fromAddress, assets: [{
+        "name": "USD Coin",
+        "symbol": "USDC",
+        "address": USDC,
+        "type": "20"
+      }]})
+
+      mockBasics({ provider: provider(blockchain), blockchain, api: Token[blockchain].DEFAULT, token: USDC, decimals: 6, name: 'USD Coin', symbol: 'USDC' })
+      mockPair(provider(blockchain), '0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc', [WETH, USDC])
+      mockPair(provider(blockchain), '0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5', [DAI, USDC])
+      mock({ provider: provider(blockchain), blockchain, balance: { for: fromAddress, return: '0' } })
+      mockBalance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: USDC, account: fromAddress, balance: '10000000' })
+      mockAllowance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: USDC, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
+      mockBalance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: WETH, account: fromAddress, balance: '0' })
+      mockBalance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, balance: '0' })
+
+      let routes = await route({
+        accept: [{
+          toAddress,
+          blockchain,
+          token: toToken,
+          amount: tokenAmountOut
+        }],
+        fee: {
+          receiver: feeReceiver,
+          amount: '1.5%'
+        },
+        from: { [blockchain]: fromAddress }
+      })
+
+      // not swapped
+      expect(routes[0].transaction.method).toEqual('route')
+      expect(routes[0].transaction.params.plugins).toContain(plugins[blockchain].paymentFee.address)
+      expect(routes[0].transaction.params.amounts).toEqual(['1002500', '987463', '0', '0', '15037'])
+      expect(routes[0].transaction.params.addresses).toEqual([accounts[0], feeReceiver, toAddress])
+    });
+
     it('throws error if amount percentage has more than 1 decimal', async ()=>{
 
       expect(()=>{
