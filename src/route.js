@@ -341,12 +341,12 @@ let sortPaymentRoutes = (routes) => {
 }
 
 let addTransactions = ({ routes, event, fee }) => {
-  return routes.map((route)=>{
-    route.transaction = getTransaction({ paymentRoute: route, event, fee })
+  return Promise.all(routes.map(async (route)=>{
+    route.transaction = await getTransaction({ paymentRoute: route, event, fee })
     route.event = !route.directTransfer
     route.fee = !!fee
     return route
-  })
+  }))
 }
 
 export default route

@@ -3504,7 +3504,7 @@ var bn = createCommonjsModule(function (module) {
 })(module, commonjsGlobal);
 });
 
-const version$3 = "logger/5.6.0";
+const version$3 = "logger/5.7.0";
 
 let _permanentCensorErrors = false;
 let _censorErrors = false;
@@ -3620,6 +3620,11 @@ var ErrorCode;
     //   - replacement: the full TransactionsResponse for the replacement
     //   - receipt: the receipt of the replacement
     ErrorCode["TRANSACTION_REPLACED"] = "TRANSACTION_REPLACED";
+    ///////////////////
+    // Interaction Errors
+    // The user rejected the action, such as signing a message or sending
+    // a transaction
+    ErrorCode["ACTION_REJECTED"] = "ACTION_REJECTED";
 })(ErrorCode || (ErrorCode = {}));
 const HEX = "0123456789abcdef";
 class Logger {
@@ -3850,7 +3855,7 @@ class Logger {
 Logger.errors = ErrorCode;
 Logger.levels = LogLevel;
 
-const version$2 = "bytes/5.6.1";
+const version$2 = "bytes/5.7.0";
 
 const logger$3 = new Logger(version$2);
 ///////////////////////////////
@@ -4019,7 +4024,7 @@ function hexZeroPad(value, length) {
     return value;
 }
 
-const version$1 = "bignumber/5.6.2";
+const version$1 = "bignumber/5.7.0";
 
 var BN = bn.BN;
 const logger$2 = new Logger(version$1);
@@ -4660,7 +4665,7 @@ class FixedNumber {
 const ONE = FixedNumber.from(1);
 const BUMP = FixedNumber.from("0.5");
 
-const version = "units/5.6.1";
+const version = "units/5.7.0";
 
 const logger = new Logger(version);
 const names = [
@@ -4686,7 +4691,7 @@ function parseUnits(value, unitName) {
 }
 
 function _optionalChain$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
-let getTransaction = ({ paymentRoute, event, fee })=> {
+let getTransaction = async({ paymentRoute, event, fee })=> {
   let exchangeRoute = paymentRoute.exchangeRoutes[0];
 
   let transaction = {
@@ -4779,7 +4784,7 @@ let transactionAmounts = ({ paymentRoute, exchangeRoute, fee })=> {
     amounts = [
       exchangeRoute.amountIn.toString(),
       subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee }),
-      exchangeRoute.transaction.params.deadline
+      Math.round(Date.now() / 1000) + 30 * 60, // 30 minutes
     ];
   } else {
     amounts = [
@@ -22402,12 +22407,12 @@ let sortPaymentRoutes = (routes) => {
 };
 
 let addTransactions = ({ routes, event, fee }) => {
-  return routes.map((route)=>{
-    route.transaction = getTransaction({ paymentRoute: route, event, fee });
+  return Promise.all(routes.map(async (route)=>{
+    route.transaction = await getTransaction({ paymentRoute: route, event, fee });
     route.event = !route.directTransfer;
     route.fee = !!fee;
     return route
-  })
+  }))
 };
 
 export { plugins, route, routers };

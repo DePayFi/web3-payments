@@ -3,9 +3,9 @@ import { mock } from '@depay/web3-mock'
 
 let mockBasics = ({ provider, blockchain, api, token, decimals, name, symbol })=>{
   return [
-    mock({ provider, blockchain, call: { to: token, api, method: 'decimals', return: decimals }}),
-    mock({ provider, blockchain, call: { to: token, api, method: 'name', return: name }}),
-    mock({ provider, blockchain, call: { to: token, api, method: 'symbol', return: symbol }}),
+    mock({ provider, blockchain, request: { to: token, api, method: 'decimals', return: decimals }}),
+    mock({ provider, blockchain, request: { to: token, api, method: 'name', return: name }}),
+    mock({ provider, blockchain, request: { to: token, api, method: 'symbol', return: symbol }}),
   ]
 }
 
@@ -13,7 +13,7 @@ let mockDecimals = ({ provider, blockchain, api, token, decimals })=>{
   return mock({
     provider,
     blockchain,
-    call: {
+    request: {
       to: token,
       api,
       method: 'decimals',
@@ -26,7 +26,7 @@ let mockBalance = ({ provider, blockchain, api, token, account, balance })=>{
   mock({
     provider,
     blockchain,
-    call: {
+    request: {
       to: token,
       api,
       method: 'balanceOf',
@@ -40,7 +40,7 @@ let mockAllowance = ({ provider, blockchain, api, token, account, spender, allow
   mock({
     provider,
     blockchain,
-    call: {
+    request: {
       to: token,
       api,
       method: 'allowance',

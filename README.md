@@ -377,16 +377,18 @@ This library supports the following blockchains:
 
 - [Ethereum](https://ethereum.org)
 - [Binance Smart Chain](https://www.binance.org/en/smartChain)
+- [Polygon](https://polygon.technology/)
 
 This library supports the following decentralized exchanges:
 
+Ethereum:
 - [Uniswap v2](https://uniswap.org)
+
+BNB Smart Chain:
 - [PancakeSwap v2](https://pancakeswap.info)
 
-Soon:
-- [Uniswap v3](https://uniswap.org)
-- [SushiSwap](https://sushi.com)
-- [Curve](https://curve.fi)
+Polygon:
+- [Quickswap](https://quickswap.exchange/#/)
 
 ## Development
 
@@ -395,12 +397,6 @@ Soon:
 ```
 yarn install
 yarn dev
-```
-
-### Release
-
-```
-npm publish
 ```
 
 ## Web3 Payments

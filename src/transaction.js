@@ -4,7 +4,7 @@ import { CONSTANTS } from '@depay/web3-constants'
 import { ethers } from 'ethers'
 import { Token } from '@depay/web3-tokens'
 
-let getTransaction = ({ paymentRoute, event, fee })=> {
+let getTransaction = async({ paymentRoute, event, fee })=> {
   let exchangeRoute = paymentRoute.exchangeRoutes[0]
 
   let transaction = {
@@ -97,7 +97,7 @@ let transactionAmounts = ({ paymentRoute, exchangeRoute, fee })=> {
     amounts = [
       exchangeRoute.amountIn.toString(),
       subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee }),
-      exchangeRoute.transaction.params.deadline
+      Math.round(Date.now() / 1000) + 30 * 60, // 30 minutes
     ]
   } else {
     amounts = [

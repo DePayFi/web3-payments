@@ -4,17 +4,18 @@ import routers from 'src/routers'
 import { Blockchain } from '@depay/web3-blockchains'
 import { CONSTANTS } from '@depay/web3-constants'
 import { ethers } from 'ethers'
-import { getWallet } from '@depay/web3-wallets'
+import { getWallets } from '@depay/web3-wallets'
 import { mock, resetMocks, anything } from '@depay/web3-mock'
 import { mockAssets } from 'tests/mocks/api'
 import { mockBasics, mockDecimals, mockBalance, mockAllowance } from 'tests/mocks/tokens'
 import { mockPair, mockAmounts } from 'tests/mocks/Pancakeswap'
-import { resetCache, provider } from '@depay/web3-client'
+import { resetCache, getProvider } from '@depay/web3-client'
 import { route } from 'src'
 import { Token } from '@depay/web3-tokens'
 
 describe('route', ()=> {
 
+  let provider
   const blockchain = 'bsc'
   const accounts = ['0xd8da6bf26964af9d7eed9e03e53415d37aa96045']
   beforeEach(resetMocks)
@@ -53,7 +54,7 @@ describe('route', ()=> {
     toAddress = '0x65aBbdEd9B937E38480A50eca85A8E4D2c8350E4'
   })
 
-  beforeEach(()=>{
+  beforeEach(async()=>{
     mock(blockchain)
     mockAssets({ blockchain, account: fromAddress, assets: [
       {
@@ -74,31 +75,32 @@ describe('route', ()=> {
       }
     ]})
 
+    provider = await getProvider(blockchain)
     Blockchain.findByName(blockchain).tokens.forEach((token)=>{
       if(token.type == '20') {
-        mock({ call: { return: '0', to: token.address, api: Token[blockchain].DEFAULT, method: 'balanceOf', params: accounts[0] }, provider: provider(blockchain), blockchain })
+        mock({ request: { return: '0', to: token.address, api: Token[blockchain].DEFAULT, method: 'balanceOf', params: accounts[0] }, provider, blockchain })
       }
     })
 
-    mockBasics({ provider: provider(blockchain), blockchain, api: Token[blockchain].DEFAULT, token: BUSD, decimals: 18, name: 'BUSD', symbol: 'BUSD' })
+    mockBasics({ provider, blockchain, api: Token[blockchain].DEFAULT, token: BUSD, decimals: 18, name: 'BUSD', symbol: 'BUSD' })
 
-    mockDecimals({ provider: provider(blockchain), blockchain, api: Token[blockchain].BEP20, token: CAKE, decimals: 18 })
+    mockDecimals({ provider, blockchain, api: Token[blockchain].BEP20, token: CAKE, decimals: 18 })
 
-    mockPair(provider(blockchain), '0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d', [WBNB, BUSD])
-    mockPair(provider(blockchain), '0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d', [BUSD, WBNB])
-    mockPair(provider(blockchain), '0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11', [CAKE, WBNB])
-    mockPair(provider(blockchain), CONSTANTS[blockchain].ZERO, [CAKE, BUSD])
+    mockPair(provider, '0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d', [WBNB, BUSD])
+    mockPair(provider, '0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d', [BUSD, WBNB])
+    mockPair(provider, '0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11', [CAKE, WBNB])
+    mockPair(provider, CONSTANTS[blockchain].ZERO, [CAKE, BUSD])
 
-    mockAmounts({ provider: provider(blockchain), method: 'getAmountsIn', params: [tokenAmountOutBN, [WBNB, BUSD]], amounts: [WBNBAmountInBN, tokenAmountOutBN] })
-    mockAmounts({ provider: provider(blockchain), method: 'getAmountsIn', params: [tokenAmountOutBN, [CAKE, WBNB, BUSD]], amounts: [CAKEAmountInBN, WBNBAmountInBN, tokenAmountOutBN] })
+    mockAmounts({ provider, method: 'getAmountsIn', params: [tokenAmountOutBN, [WBNB, BUSD]], amounts: [WBNBAmountInBN, tokenAmountOutBN] })
+    mockAmounts({ provider, method: 'getAmountsIn', params: [tokenAmountOutBN, [CAKE, WBNB, BUSD]], amounts: [CAKEAmountInBN, WBNBAmountInBN, tokenAmountOutBN] })
 
-    mockBalance({ provider: provider(blockchain), blockchain, api: Token[blockchain].BEP20, token: CAKE, account: fromAddress, balance: CAKEBalanceBN })
-    mockBalance({ provider: provider(blockchain), blockchain, api: Token[blockchain].BEP20, token: BUSD, account: fromAddress, balance: BUSDBalanceBN })
+    mockBalance({ provider, blockchain, api: Token[blockchain].BEP20, token: CAKE, account: fromAddress, balance: CAKEBalanceBN })
+    mockBalance({ provider, blockchain, api: Token[blockchain].BEP20, token: BUSD, account: fromAddress, balance: BUSDBalanceBN })
 
-    mockAllowance({ provider: provider(blockchain), blockchain, api: Token[blockchain].BEP20, token: BUSD, account: fromAddress, spender: routers[blockchain].address, allowance: ethers.BigNumber.from('0') })
-    mockAllowance({ provider: provider(blockchain), blockchain, api: Token[blockchain].BEP20, token: CAKE, account: fromAddress, spender: routers[blockchain].address, allowance: ethers.BigNumber.from('0') })
+    mockAllowance({ provider, blockchain, api: Token[blockchain].BEP20, token: BUSD, account: fromAddress, spender: routers[blockchain].address, allowance: ethers.BigNumber.from('0') })
+    mockAllowance({ provider, blockchain, api: Token[blockchain].BEP20, token: CAKE, account: fromAddress, spender: routers[blockchain].address, allowance: ethers.BigNumber.from('0') })
 
-    mock({ provider: provider(blockchain), blockchain, balance: { for: fromAddress, return: bnbBalanceBN } })
+    mock({ provider, blockchain, balance: { for: fromAddress, return: bnbBalanceBN } })
   })
 
   it('provides an approve function together with the payment routing', async ()=>{
@@ -127,7 +129,7 @@ describe('route', ()=> {
     expect(routes.map((route)=>{ return route.fromToken.address })).toEqual([BUSD, BNB, CAKE])
     expect(routes.map((route)=>{ return typeof route.approvalTransaction })).toEqual(['undefined', 'undefined', 'object'])
 
-    let wallet = getWallet()
+    let wallet = getWallets()[0]
     await wallet.sendTransaction(routes[2].approvalTransaction)
   })
 

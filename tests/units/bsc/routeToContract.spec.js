@@ -4,17 +4,17 @@ import routers from 'src/routers'
 import { Blockchain } from '@depay/web3-blockchains'
 import { CONSTANTS } from '@depay/web3-constants'
 import { ethers } from 'ethers'
-import { getWallet } from '@depay/web3-wallets'
 import { mock, resetMocks, anything } from '@depay/web3-mock'
 import { mockAssets } from 'tests/mocks/api'
 import { mockBasics, mockDecimals, mockBalance, mockAllowance } from 'tests/mocks/tokens'
 import { mockPair, mockAmounts } from 'tests/mocks/Pancakeswap'
-import { resetCache, provider } from '@depay/web3-client'
+import { resetCache, getProvider } from '@depay/web3-client'
 import { route } from 'src'
 import { Token } from '@depay/web3-tokens'
 
 describe('route to contract as payment receiver', ()=> {
 
+  let provider
   const blockchain = 'bsc'
   const accounts = ['0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045']
   beforeEach(resetMocks)
@@ -32,7 +32,9 @@ describe('route to contract as payment receiver', ()=> {
   let BUSDBalanceBN
   let toToken
   let WBNBAmountInBN
+  let WBNBAmountInSlippageBN
   let CAKEAmountInBN
+  let CAKEAmountInSlippageBN
   let tokenAmountOut
   let tokenOutDecimals
   let tokenAmountOutBN
@@ -45,7 +47,9 @@ describe('route to contract as payment receiver', ()=> {
     BUSDBalanceBN = ethers.BigNumber.from('22000000000000000000')
     toToken = BUSD
     WBNBAmountInBN = ethers.BigNumber.from('11000000000000000000')
+    WBNBAmountInSlippageBN = ethers.BigNumber.from('55000000000000000')
     CAKEAmountInBN = ethers.BigNumber.from('300000000000000000')
+    CAKEAmountInSlippageBN = ethers.BigNumber.from('1500000000000000')
     tokenAmountOut = 20
     tokenOutDecimals = 18
     tokenAmountOutBN = ethers.utils.parseUnits(tokenAmountOut.toString(), tokenOutDecimals)
@@ -53,7 +57,7 @@ describe('route to contract as payment receiver', ()=> {
     toAddress = '0x65aBbdEd9B937E38480A50eca85A8E4D2c8350E4'
   })
 
-  beforeEach(()=>{
+  beforeEach(async()=>{
     mock(blockchain)
     mockAssets({ blockchain, account: fromAddress, assets: [
       {
@@ -74,31 +78,32 @@ describe('route to contract as payment receiver', ()=> {
       }
     ]})
     
+    provider = await getProvider(blockchain)
     Blockchain.findByName(blockchain).tokens.forEach((token)=>{
       if(token.type == '20') {
-        mock({ call: { return: '0', to: token.address, api: Token[blockchain].DEFAULT, method: 'balanceOf', params: accounts[0] }, provider: provider(blockchain), blockchain })
+        mock({ request: { return: '0', to: token.address, api: Token[blockchain].DEFAULT, method: 'balanceOf', params: accounts[0] }, provider, blockchain })
       }
     })
 
-    mockBasics({ provider: provider(blockchain), blockchain, api: Token[blockchain].DEFAULT, token: BUSD, decimals: 18, name: 'BUSD', symbol: 'BUSD' })
+    mockBasics({ provider, blockchain, api: Token[blockchain].DEFAULT, token: BUSD, decimals: 18, name: 'BUSD', symbol: 'BUSD' })
 
-    mockDecimals({ provider: provider(blockchain), blockchain, api: Token[blockchain].BEP20, token: CAKE, decimals: 18 })
+    mockDecimals({ provider, blockchain, api: Token[blockchain].BEP20, token: CAKE, decimals: 18 })
 
-    mockPair(provider(blockchain), '0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d', [WBNB, BUSD])
-    mockPair(provider(blockchain), '0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d', [BUSD, WBNB])
-    mockPair(provider(blockchain), '0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11', [CAKE, WBNB])
-    mockPair(provider(blockchain), CONSTANTS[blockchain].ZERO, [CAKE, BUSD])
+    mockPair(provider, '0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d', [WBNB, BUSD])
+    mockPair(provider, '0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d', [BUSD, WBNB])
+    mockPair(provider, '0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11', [CAKE, WBNB])
+    mockPair(provider, CONSTANTS[blockchain].ZERO, [CAKE, BUSD])
 
-    mockAmounts({ provider: provider(blockchain), method: 'getAmountsIn', params: [tokenAmountOutBN, [WBNB, BUSD]], amounts: [WBNBAmountInBN, tokenAmountOutBN] })
-    mockAmounts({ provider: provider(blockchain), method: 'getAmountsIn', params: [tokenAmountOutBN, [CAKE, WBNB, BUSD]], amounts: [CAKEAmountInBN, WBNBAmountInBN, tokenAmountOutBN] })
+    mockAmounts({ provider, method: 'getAmountsIn', params: [tokenAmountOutBN, [WBNB, BUSD]], amounts: [WBNBAmountInBN, tokenAmountOutBN] })
+    mockAmounts({ provider, method: 'getAmountsIn', params: [tokenAmountOutBN, [CAKE, WBNB, BUSD]], amounts: [CAKEAmountInBN, WBNBAmountInBN, tokenAmountOutBN] })
 
-    mockBalance({ provider: provider(blockchain), blockchain, api: Token[blockchain].BEP20, token: CAKE, account: fromAddress, balance: CAKEBalanceBN })
-    mockBalance({ provider: provider(blockchain), blockchain, api: Token[blockchain].BEP20, token: BUSD, account: fromAddress, balance: BUSDBalanceBN })
+    mockBalance({ provider, blockchain, api: Token[blockchain].BEP20, token: CAKE, account: fromAddress, balance: CAKEBalanceBN })
+    mockBalance({ provider, blockchain, api: Token[blockchain].BEP20, token: BUSD, account: fromAddress, balance: BUSDBalanceBN })
 
-    mockAllowance({ provider: provider(blockchain), blockchain, api: Token[blockchain].BEP20, token: CAKE, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
-    mockAllowance({ provider: provider(blockchain), blockchain, api: Token[blockchain].BEP20, token: BUSD, account: fromAddress, spender: routers[blockchain].address, allowance: '0' })
+    mockAllowance({ provider, blockchain, api: Token[blockchain].BEP20, token: CAKE, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
+    mockAllowance({ provider, blockchain, api: Token[blockchain].BEP20, token: BUSD, account: fromAddress, spender: routers[blockchain].address, allowance: '0' })
 
-    mock({ provider: provider(blockchain), blockchain, balance: { for: fromAddress, return: bnbBalanceBN } })
+    mock({ provider, blockchain, balance: { for: fromAddress, return: bnbBalanceBN } })
   })
 
   it('constructs payment transaction in a way that allows to pay into a smart contract with address, amount and boolean', async ()=>{
@@ -147,7 +152,7 @@ describe('route to contract as payment receiver', ()=> {
     expect(routes[1].fromToken.address).toEqual(BNB)
     expect(routes[1].toToken.address).toEqual(BUSD)
     expect(routes[1].toAmount).toEqual(tokenAmountOutBN.toString())
-    expect(routes[1].fromAmount).toEqual(WBNBAmountInBN.toString())
+    expect(routes[1].fromAmount).toEqual(WBNBAmountInBN.add(WBNBAmountInSlippageBN).toString())
     expect(routes[1].fromAddress).toEqual(fromAddress)
     expect(routes[1].toAddress).toEqual(toAddress)
     expect(routes[1].fromBalance).toEqual(bnbBalanceBN.toString())
@@ -157,9 +162,9 @@ describe('route to contract as payment receiver', ()=> {
     expect(routes[1].transaction.blockchain).toEqual(blockchain)
     expect(routes[1].transaction.to).toEqual(routers[blockchain].address)
     expect(routes[1].transaction.method).toEqual('route')
-    expect(routes[1].transaction.value).toEqual(WBNBAmountInBN.toString())
+    expect(routes[1].transaction.value).toEqual(WBNBAmountInBN.add(WBNBAmountInSlippageBN).toString())
     expect(routes[1].transaction.params.addresses).toEqual([fromAddress, toAddress])
-    expect(routes[1].transaction.params.amounts[0]).toEqual(WBNBAmountInBN.toString())
+    expect(routes[1].transaction.params.amounts[0]).toEqual(WBNBAmountInBN.add(WBNBAmountInSlippageBN).toString())
     expect(routes[1].transaction.params.amounts[1]).toEqual('20000000000000000000')
     expect(routes[1].transaction.params.path).toEqual([BNB, BUSD])
     expect(routes[1].transaction.params.plugins[0]).toEqual(plugins[blockchain].pancakeswap.address)
@@ -172,7 +177,7 @@ describe('route to contract as payment receiver', ()=> {
     expect(routes[2].fromToken.address).toEqual(CAKE)
     expect(routes[2].toToken.address).toEqual(BUSD)
     expect(routes[2].toAmount).toEqual(tokenAmountOutBN.toString())
-    expect(routes[2].fromAmount).toEqual(CAKEAmountInBN.toString())
+    expect(routes[2].fromAmount).toEqual(CAKEAmountInBN.add(CAKEAmountInSlippageBN).toString())
     expect(routes[2].fromAddress).toEqual(fromAddress)
     expect(routes[2].toAddress).toEqual(toAddress)
     expect(routes[2].fromBalance).toEqual(CAKEBalanceBN.toString())
@@ -184,7 +189,7 @@ describe('route to contract as payment receiver', ()=> {
     expect(routes[2].transaction.to).toEqual(routers[blockchain].address)
     expect(routes[2].transaction.method).toEqual('route')
     expect(routes[2].transaction.params.addresses).toEqual([fromAddress, toAddress])
-    expect(routes[2].transaction.params.amounts[0]).toEqual(CAKEAmountInBN.toString())
+    expect(routes[2].transaction.params.amounts[0]).toEqual(CAKEAmountInBN.add(CAKEAmountInSlippageBN).toString())
     expect(routes[2].transaction.params.amounts[1]).toEqual('20000000000000000000')
     expect(routes[2].transaction.params.path).toEqual([CAKE, WBNB, BUSD])
     expect(routes[2].transaction.params.plugins[0]).toEqual(plugins[blockchain].pancakeswap.address)
@@ -244,7 +249,7 @@ describe('route to contract as payment receiver', ()=> {
     expect(routes[1].fromToken.address).toEqual(BNB)
     expect(routes[1].toToken.address).toEqual(BUSD)
     expect(routes[1].toAmount).toEqual(tokenAmountOutBN.toString())
-    expect(routes[1].fromAmount).toEqual(WBNBAmountInBN.toString())
+    expect(routes[1].fromAmount).toEqual(WBNBAmountInBN.add(WBNBAmountInSlippageBN).toString())
     expect(routes[1].fromAddress).toEqual(fromAddress)
     expect(routes[1].toAddress).toEqual(toAddress)
     expect(routes[1].fromBalance).toEqual(bnbBalanceBN.toString())
@@ -255,9 +260,9 @@ describe('route to contract as payment receiver', ()=> {
     expect(routes[1].transaction.blockchain).toEqual(blockchain)
     expect(routes[1].transaction.to).toEqual(routers[blockchain].address)
     expect(routes[1].transaction.method).toEqual('route')
-    expect(routes[1].transaction.value).toEqual(WBNBAmountInBN.toString())
+    expect(routes[1].transaction.value).toEqual(WBNBAmountInBN.add(WBNBAmountInSlippageBN).toString())
     expect(routes[1].transaction.params.addresses).toEqual([fromAddress, toAddress])
-    expect(routes[1].transaction.params.amounts[0]).toEqual(WBNBAmountInBN.toString())
+    expect(routes[1].transaction.params.amounts[0]).toEqual(WBNBAmountInBN.add(WBNBAmountInSlippageBN).toString())
     expect(routes[1].transaction.params.amounts[1]).toEqual('20000000000000000000')
     expect(routes[1].transaction.params.amounts[3]).toEqual('0')
     expect(routes[1].transaction.params.amounts[4]).toEqual('0')
@@ -273,7 +278,7 @@ describe('route to contract as payment receiver', ()=> {
     expect(routes[2].fromToken.address).toEqual(CAKE)
     expect(routes[2].toToken.address).toEqual(BUSD)
     expect(routes[2].toAmount).toEqual(tokenAmountOutBN.toString())
-    expect(routes[2].fromAmount).toEqual(CAKEAmountInBN.toString())
+    expect(routes[2].fromAmount).toEqual(CAKEAmountInBN.add(CAKEAmountInSlippageBN).toString())
     expect(routes[2].fromAddress).toEqual(fromAddress)
     expect(routes[2].toAddress).toEqual(toAddress)
     expect(routes[2].fromBalance).toEqual(CAKEBalanceBN.toString())
@@ -286,7 +291,7 @@ describe('route to contract as payment receiver', ()=> {
     expect(routes[2].transaction.to).toEqual(routers[blockchain].address)
     expect(routes[2].transaction.method).toEqual('route')
     expect(routes[2].transaction.params.addresses).toEqual([fromAddress, toAddress])
-    expect(routes[2].transaction.params.amounts[0]).toEqual(CAKEAmountInBN.toString())
+    expect(routes[2].transaction.params.amounts[0]).toEqual(CAKEAmountInBN.add(CAKEAmountInSlippageBN).toString())
     expect(routes[2].transaction.params.amounts[1]).toEqual('20000000000000000000')
     expect(routes[2].transaction.params.amounts[3]).toEqual('0')
     expect(routes[2].transaction.params.amounts[4]).toEqual('0')

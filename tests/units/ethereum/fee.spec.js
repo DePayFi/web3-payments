@@ -8,12 +8,13 @@ import { mock, resetMocks, anything } from '@depay/web3-mock'
 import { mockAssets } from 'tests/mocks/api'
 import { mockBasics, mockDecimals, mockBalance, mockAllowance } from 'tests/mocks/tokens'
 import { mockPair, mockAmounts } from 'tests/mocks/UniswapV2'
-import { resetCache, provider } from '@depay/web3-client'
+import { resetCache, getProvider } from '@depay/web3-client'
 import { route } from 'src'
 import { Token } from '@depay/web3-tokens'
 
 describe('fee', ()=> {
 
+  let provider
   const blockchain = 'ethereum'
   const accounts = ['0xd8da6bf26964af9d7eed9e03e53415d37aa96045']
   beforeEach(resetMocks)
@@ -53,7 +54,7 @@ describe('fee', ()=> {
     toAddress = '0x65aBbdEd9B937E38480A50eca85A8E4D2c8350E4'
   })
 
-  beforeEach(()=>{
+  beforeEach(async()=>{
     mock(blockchain)
     mockAssets({ blockchain, account: fromAddress, assets: [
       {
@@ -74,31 +75,32 @@ describe('fee', ()=> {
       }
     ]})
 
+    provider = await getProvider(blockchain)
     Blockchain.findByName(blockchain).tokens.forEach((token)=>{
       if(token.type == '20') {
-        mock({ call: { return: '0', to: token.address, api: Token[blockchain].DEFAULT, method: 'balanceOf', params: accounts[0] }, provider: provider(blockchain), blockchain })
+        mock({ request: { return: '0', to: token.address, api: Token[blockchain].DEFAULT, method: 'balanceOf', params: accounts[0] }, provider, blockchain })
       }
     })
 
-    mockBasics({ provider: provider(blockchain), blockchain, api: Token[blockchain].DEFAULT, token: DEPAY, decimals: 18, name: 'DePay', symbol: 'DEPAY' })
+    mockBasics({ provider, blockchain, api: Token[blockchain].DEFAULT, token: DEPAY, decimals: 18, name: 'DePay', symbol: 'DEPAY' })
 
-    mockDecimals({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: DAI, decimals: 18 })
+    mockDecimals({ provider, blockchain, api: Token[blockchain].ERC20, token: DAI, decimals: 18 })
 
-    mockPair(provider(blockchain), '0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d', [WETH, DEPAY])
-    mockPair(provider(blockchain), '0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d', [DEPAY, WETH])
-    mockPair(provider(blockchain), '0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11', [DAI, WETH])
-    mockPair(provider(blockchain), CONSTANTS[blockchain].ZERO, [DAI, DEPAY])
+    mockPair(provider, '0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d', [WETH, DEPAY])
+    mockPair(provider, '0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d', [DEPAY, WETH])
+    mockPair(provider, '0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11', [DAI, WETH])
+    mockPair(provider, CONSTANTS[blockchain].ZERO, [DAI, DEPAY])
 
-    mockAmounts({ provider: provider(blockchain), method: 'getAmountsIn', params: [tokenAmountOutBN, [WETH, DEPAY]], amounts: [WETHAmountInBN, tokenAmountOutBN] })
-    mockAmounts({ provider: provider(blockchain), method: 'getAmountsIn', params: [tokenAmountOutBN, [DAI, WETH, DEPAY]], amounts: [DAIAmountInBN, WETHAmountInBN, tokenAmountOutBN] })
+    mockAmounts({ provider, method: 'getAmountsIn', params: [tokenAmountOutBN, [WETH, DEPAY]], amounts: [WETHAmountInBN, tokenAmountOutBN] })
+    mockAmounts({ provider, method: 'getAmountsIn', params: [tokenAmountOutBN, [DAI, WETH, DEPAY]], amounts: [DAIAmountInBN, WETHAmountInBN, tokenAmountOutBN] })
 
-    mockBalance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, balance: DAIBalanceBN })
-    mockBalance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: DEPAY, account: fromAddress, balance: DEPAYBalanceBN })
+    mockBalance({ provider, blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, balance: DAIBalanceBN })
+    mockBalance({ provider, blockchain, api: Token[blockchain].ERC20, token: DEPAY, account: fromAddress, balance: DEPAYBalanceBN })
 
-    mockAllowance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
-    mockAllowance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: DEPAY, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
+    mockAllowance({ provider, blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
+    mockAllowance({ provider, blockchain, api: Token[blockchain].ERC20, token: DEPAY, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
 
-    mock({ provider: provider(blockchain), blockchain, balance: { for: fromAddress, return: etherBalanceBN } })
+    mock({ provider, blockchain, balance: { for: fromAddress, return: etherBalanceBN } })
   })
 
   describe('fee in percentage', ()=>{
@@ -129,7 +131,7 @@ describe('fee', ()=> {
       // swapped
       expect(routes[1].transaction.method).toEqual('route')
       expect(routes[1].transaction.params.plugins).toContain(plugins[blockchain].paymentFee.address)
-      expect(routes[1].transaction.params.amounts[0]).toEqual('11000000000000000000')
+      expect(routes[1].transaction.params.amounts[0]).toEqual('11055000000000000000')
       expect(routes[1].transaction.params.amounts[1]).toEqual('18200000000000000000')
       expect(routes[1].transaction.params.amounts[4]).toEqual('1800000000000000000')
       expect(routes[1].transaction.params.addresses).toEqual([accounts[0], feeReceiver, toAddress])
@@ -139,7 +141,7 @@ describe('fee', ()=> {
       // swapped
       expect(routes[2].transaction.method).toEqual('route')
       expect(routes[2].transaction.params.plugins).toContain(plugins[blockchain].paymentFee.address)
-      expect(routes[2].transaction.params.amounts[0]).toEqual('300000000000000000')
+      expect(routes[2].transaction.params.amounts[0]).toEqual('301500000000000000')
       expect(routes[2].transaction.params.amounts[1]).toEqual('18200000000000000000')
       expect(routes[2].transaction.params.amounts[4]).toEqual('1800000000000000000')
       expect(routes[2].transaction.params.addresses).toEqual([accounts[0], feeReceiver, toAddress])
@@ -172,7 +174,7 @@ describe('fee', ()=> {
       // swapped
       expect(routes[1].transaction.method).toEqual('route')
       expect(routes[1].transaction.params.plugins).toContain(plugins[blockchain].paymentFee.address)
-      expect(routes[1].transaction.params.amounts[0]).toEqual('11000000000000000000')
+      expect(routes[1].transaction.params.amounts[0]).toEqual('11055000000000000000')
       expect(routes[1].transaction.params.amounts[1]).toEqual('19700000000000000000')
       expect(routes[1].transaction.params.amounts[4]).toEqual('300000000000000000')
       expect(routes[1].transaction.params.addresses).toEqual([accounts[0], feeReceiver, toAddress])
@@ -180,7 +182,7 @@ describe('fee', ()=> {
       // swapped
       expect(routes[2].transaction.method).toEqual('route')
       expect(routes[2].transaction.params.plugins).toContain(plugins[blockchain].paymentFee.address)
-      expect(routes[2].transaction.params.amounts[0]).toEqual('300000000000000000')
+      expect(routes[2].transaction.params.amounts[0]).toEqual('301500000000000000')
       expect(routes[2].transaction.params.amounts[1]).toEqual('19700000000000000000')
       expect(routes[2].transaction.params.amounts[4]).toEqual('300000000000000000')
       expect(routes[2].transaction.params.addresses).toEqual([accounts[0], feeReceiver, toAddress])
@@ -201,14 +203,15 @@ describe('fee', ()=> {
         "type": "20"
       }]})
 
-      mockBasics({ provider: provider(blockchain), blockchain, api: Token[blockchain].DEFAULT, token: USDC, decimals: 6, name: 'USD Coin', symbol: 'USDC' })
-      mockPair(provider(blockchain), '0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc', [WETH, USDC])
-      mockPair(provider(blockchain), '0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5', [DAI, USDC])
-      mock({ provider: provider(blockchain), blockchain, balance: { for: fromAddress, return: '0' } })
-      mockBalance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: USDC, account: fromAddress, balance: '10000000' })
-      mockAllowance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: USDC, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
-      mockBalance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: WETH, account: fromAddress, balance: '0' })
-      mockBalance({ provider: provider(blockchain), blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, balance: '0' })
+      provider = await getProvider(blockchain)
+      mockBasics({ provider, blockchain, api: Token[blockchain].DEFAULT, token: USDC, decimals: 6, name: 'USD Coin', symbol: 'USDC' })
+      mockPair(provider, '0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc', [WETH, USDC])
+      mockPair(provider, '0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5', [DAI, USDC])
+      mock({ provider, blockchain, balance: { for: fromAddress, return: '0' } })
+      mockBalance({ provider, blockchain, api: Token[blockchain].ERC20, token: USDC, account: fromAddress, balance: '10000000' })
+      mockAllowance({ provider, blockchain, api: Token[blockchain].ERC20, token: USDC, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
+      mockBalance({ provider, blockchain, api: Token[blockchain].ERC20, token: WETH, account: fromAddress, balance: '0' })
+      mockBalance({ provider, blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, balance: '0' })
 
       let routes = await route({
         accept: [{
@@ -279,7 +282,7 @@ describe('fee', ()=> {
       expect(routes[1].transaction.method).toEqual('route')
       expect(routes[0].directTransfer).toEqual(false)
       expect(routes[1].transaction.params.plugins).toContain(plugins[blockchain].paymentFee.address)
-      expect(routes[1].transaction.params.amounts[0]).toEqual('11000000000000000000')
+      expect(routes[1].transaction.params.amounts[0]).toEqual('11055000000000000000')
       expect(routes[1].transaction.params.amounts[1]).toEqual('18200000000000000000')
       expect(routes[1].transaction.params.amounts[4]).toEqual('1800000000000000000')
       expect(routes[1].transaction.params.addresses).toEqual([accounts[0], feeReceiver, toAddress])
@@ -288,7 +291,7 @@ describe('fee', ()=> {
       expect(routes[2].transaction.method).toEqual('route')
       expect(routes[0].directTransfer).toEqual(false)
       expect(routes[2].transaction.params.plugins).toContain(plugins[blockchain].paymentFee.address)
-      expect(routes[2].transaction.params.amounts[0]).toEqual('300000000000000000')
+      expect(routes[2].transaction.params.amounts[0]).toEqual('301500000000000000')
       expect(routes[2].transaction.params.amounts[1]).toEqual('18200000000000000000')
       expect(routes[2].transaction.params.amounts[4]).toEqual('1800000000000000000')
       expect(routes[2].transaction.params.addresses).toEqual([accounts[0], feeReceiver, toAddress])
@@ -321,7 +324,7 @@ describe('fee', ()=> {
       // swapped
       expect(routes[1].transaction.method).toEqual('route')
       expect(routes[1].transaction.params.plugins).toContain(plugins[blockchain].paymentFee.address)
-      expect(routes[1].transaction.params.amounts[0]).toEqual('11000000000000000000')
+      expect(routes[1].transaction.params.amounts[0]).toEqual('11055000000000000000')
       expect(routes[1].transaction.params.amounts[1]).toEqual('18200000000000000000')
       expect(routes[1].transaction.params.amounts[4]).toEqual('1800000000000000000')
       expect(routes[1].transaction.params.addresses).toEqual([accounts[0], feeReceiver, toAddress])
@@ -329,7 +332,7 @@ describe('fee', ()=> {
       // swapped
       expect(routes[2].transaction.method).toEqual('route')
       expect(routes[2].transaction.params.plugins).toContain(plugins[blockchain].paymentFee.address)
-      expect(routes[2].transaction.params.amounts[0]).toEqual('300000000000000000')
+      expect(routes[2].transaction.params.amounts[0]).toEqual('301500000000000000')
       expect(routes[2].transaction.params.amounts[1]).toEqual('18200000000000000000')
       expect(routes[2].transaction.params.amounts[4]).toEqual('1800000000000000000')
       expect(routes[2].transaction.params.addresses).toEqual([accounts[0], feeReceiver, toAddress])
