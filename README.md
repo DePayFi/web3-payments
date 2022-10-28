@@ -26,6 +26,33 @@ let paymentRoutes = await route({
 })
 ```
 
+## Support
+
+This library supports the following blockchains:
+
+- [Ethereum](https://ethereum.org)
+- [Binance Smart Chain](https://www.binance.org/en/smartChain)
+- [Polygon](https://polygon.technology/)
+
+This library supports the following decentralized exchanges:
+
+Ethereum:
+- [Uniswap v2](https://uniswap.org)
+
+BNB Smart Chain:
+- [PancakeSwap v2](https://pancakeswap.info)
+
+Polygon:
+- [Quickswap](https://quickswap.exchange/#/)
+
+## Platform specific packaging
+
+In case you want to use and package only specific platforms, use the platform-specific package:
+
+```javascript
+import { route } from '@depay/web3-payments-evm'
+```
+
 ## Functionalities
 
 ### route
@@ -370,33 +397,6 @@ Payment routes are provided in the following structure:
 `directTransfer`: indicates if the payment does not require any swapping/exchanging.
 
 See [@depay/web3-wallets](https://github.com/DePayFi/web3-wallets#sendtransaction) for details about the transaction format.
-
-## Support
-
-This library supports the following blockchains:
-
-- [Ethereum](https://ethereum.org)
-- [Binance Smart Chain](https://www.binance.org/en/smartChain)
-- [Polygon](https://polygon.technology/)
-
-This library supports the following decentralized exchanges:
-
-Ethereum:
-- [Uniswap v2](https://uniswap.org)
-
-BNB Smart Chain:
-- [PancakeSwap v2](https://pancakeswap.info)
-
-Polygon:
-- [Quickswap](https://quickswap.exchange/#/)
-
-## Platform specific packaging
-
-In case you want to use and package only specific platforms, use the platform-specific package:
-
-```javascript
-import { route } from '@depay/web3-payments-evm'
-```
 
 ## Development
 
