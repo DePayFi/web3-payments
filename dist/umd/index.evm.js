@@ -1,8 +1,8 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@depay/web3-constants'), require('ethers'), require('@depay/web3-assets'), require('@depay/web3-exchanges'), require('@depay/web3-tokens')) :
-  typeof define === 'function' && define.amd ? define(['exports', '@depay/web3-constants', 'ethers', '@depay/web3-assets', '@depay/web3-exchanges', '@depay/web3-tokens'], factory) :
+  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@depay/web3-constants'), require('ethers'), require('@depay/web3-assets-evm'), require('@depay/web3-exchanges-evm'), require('@depay/web3-tokens-evm')) :
+  typeof define === 'function' && define.amd ? define(['exports', '@depay/web3-constants', 'ethers', '@depay/web3-assets-evm', '@depay/web3-exchanges-evm', '@depay/web3-tokens-evm'], factory) :
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.Web3Payments = {}, global.Web3Constants, global.ethers, global.Web3Assets, global.Web3Exchanges, global.Web3Tokens));
-})(this, (function (exports, web3Constants, ethers, web3Assets, web3Exchanges, web3Tokens) { 'use strict';
+})(this, (function (exports, web3Constants, ethers, web3AssetsEvm, web3ExchangesEvm, web3TokensEvm) { 'use strict';
 
   const prepareUniswapTransaction = (transaction)=>{
     transaction.params.path = transaction.params.path.filter((token, index, path)=>{
@@ -189,7 +189,7 @@
       if(paymentRoute.toToken.address == web3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
         return undefined
       } else {
-        return web3Tokens.Token[paymentRoute.blockchain].DEFAULT
+        return web3TokensEvm.Token[paymentRoute.blockchain].DEFAULT
       }
     } else {
       return routers[paymentRoute.blockchain].api
@@ -938,12 +938,12 @@
   function convertToRoutes({ assets, accept, from }) {
     return Promise.all(assets.map(async (asset)=>{
       let relevantConfigurations = accept.filter((configuration)=>(configuration.blockchain == asset.blockchain));
-      let fromToken = new web3Tokens.Token(asset);
+      let fromToken = new web3TokensEvm.Token(asset);
       return Promise.all(relevantConfigurations.map(async (configuration)=>{
         if(configuration.token && configuration.amount) {
           let blockchain = configuration.blockchain;
           let fromDecimals = asset.decimals;
-          let toToken = new web3Tokens.Token({ blockchain, address: configuration.token });
+          let toToken = new web3TokensEvm.Token({ blockchain, address: configuration.token });
           let toDecimals = await toToken.decimals();
           let toAmount = (await toToken.BigNumber(configuration.amount)).toString();
 
@@ -963,7 +963,7 @@
           let blockchain = configuration.blockchain;
           let fromAmount = (await fromToken.BigNumber(configuration.fromAmount)).toString();
           let fromDecimals = asset.decimals;
-          let toToken = new web3Tokens.Token({ blockchain, address: configuration.toToken });
+          let toToken = new web3TokensEvm.Token({ blockchain, address: configuration.toToken });
           let toDecimals = await toToken.decimals();
           
           return new PaymentRoute({
@@ -1026,7 +1026,7 @@
       }
       
       let drippedAssets = [];
-      const allAssets = await web3Assets.dripAssets({
+      const allAssets = await web3AssetsEvm.dripAssets({
         accounts: from,
         priority: priority,
         only: whitelist,
@@ -1065,7 +1065,7 @@
       routes.map((route) => {
         if(route.directTransfer) { return [] }
         if(route.toToken && route.toAmount) {
-          return web3Exchanges.route({
+          return web3ExchangesEvm.route({
             blockchain: route.blockchain,
             tokenIn: route.fromToken.address,
             tokenOut: route.toToken.address,
@@ -1074,7 +1074,7 @@
             toAddress: route.toAddress
           })
         } else if(route.fromToken && route.fromAmount) {
-          return web3Exchanges.route({
+          return web3ExchangesEvm.route({
             blockchain: route.blockchain,
             tokenIn: route.fromToken.address,
             tokenOut: route.toToken.address,
@@ -1139,7 +1139,7 @@
               routes[index].approvalTransaction = {
                 blockchain: route.blockchain,
                 to: route.fromToken.address,
-                api: web3Tokens.Token[route.blockchain].DEFAULT,
+                api: web3TokensEvm.Token[route.blockchain].DEFAULT,
                 method: 'approve',
                 params: [routers[route.blockchain].address, web3Constants.CONSTANTS[route.blockchain].MAXINT]
               };

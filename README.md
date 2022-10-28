@@ -390,6 +390,14 @@ BNB Smart Chain:
 Polygon:
 - [Quickswap](https://quickswap.exchange/#/)
 
+## Platform specific packaging
+
+In case you want to use and package only specific platforms, use the platform-specific package:
+
+```javascript
+import { route } from '@depay/web3-payments-evm'
+```
+
 ## Development
 
 ### Get started

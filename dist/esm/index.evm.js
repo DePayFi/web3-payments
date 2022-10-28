@@ -1,8 +1,8 @@
 import { CONSTANTS } from '@depay/web3-constants';
 import { ethers } from 'ethers';
-import { dripAssets } from '@depay/web3-assets';
-import { route as route$1 } from '@depay/web3-exchanges';
-import { Token } from '@depay/web3-tokens';
+import { dripAssets } from '@depay/web3-assets-evm';
+import { route as route$1 } from '@depay/web3-exchanges-evm';
+import { Token } from '@depay/web3-tokens-evm';
 
 const prepareUniswapTransaction = (transaction)=>{
   transaction.params.path = transaction.params.path.filter((token, index, path)=>{
