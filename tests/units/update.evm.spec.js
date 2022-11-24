@@ -18,10 +18,13 @@ describe('update', ()=> {
   let provider
   const blockchain = 'ethereum'
   const accounts = ['0xd8da6bf26964af9d7eed9e03e53415d37aa96045']
-  beforeEach(resetMocks)
-  beforeEach(()=>mock({ blockchain, accounts: { return: accounts } }))
-  beforeEach(resetCache)
-  beforeEach(()=>fetchMock.reset())
+  
+  beforeEach(()=>{
+    fetchMock.reset()
+    resetMocks()
+    resetCache()
+    mock({ blockchain, accounts: { return: accounts } })
+  })
 
   let fromAddress = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045'
   let toAddress = '0x65aBbdEd9B937E38480A50eca85A8E4D2c8350E4'
