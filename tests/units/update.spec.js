@@ -62,7 +62,7 @@ describe('update', ()=> {
 
     mock('ethereum')
 
-    mockAssets({ blockchain: 'ethereum', delay: 1000, account: fromAddress, assets: [
+    mockAssets({ blockchain: 'ethereum', delay: 1500, account: fromAddress, assets: [
       {
         "name": "Ether",
         "symbol": "ETH",
