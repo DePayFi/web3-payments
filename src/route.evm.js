@@ -86,10 +86,10 @@ function assetsToRoutes({ assets, blacklist, accept, from, event, fee }) {
     .then(filterExchangeRoutesWithoutPlugin)
     .then(filterNotRoutable)
     .then(filterInsufficientBalance)
-    .then(addApproval)
-    .then(sortPaymentRoutes)
     .then((routes)=>addTransactions({ routes, event, fee }))
     .then(addRouteAmounts)
+    .then(addApproval)
+    .then(sortPaymentRoutes)
     .then(filterDuplicateFromTokens)
 }
 
@@ -229,7 +229,7 @@ let addApproval = (routes) => {
         ) {
           routes[index].approvalRequired = false
         } else {
-          routes[index].approvalRequired = ethers.BigNumber.from(route.fromBalance).gte(ethers.BigNumber.from(allowances[index]))
+          routes[index].approvalRequired = ethers.BigNumber.from(route.fromAmount).gte(ethers.BigNumber.from(allowances[index]))
           if(routes[index].approvalRequired) {
             routes[index].approvalTransaction = {
               blockchain: route.blockchain,

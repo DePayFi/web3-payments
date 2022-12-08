@@ -17,7 +17,7 @@ let getTransaction = async({ paymentRoute, event, fee })=> {
   }
 
   if(exchangeRoute) {
-    if(paymentRoute.exchangePlugin) {
+    if(paymentRoute.exchangePlugin && paymentRoute.exchangePlugin.prepareTransaction) {
       transaction = paymentRoute.exchangePlugin.prepareTransaction(transaction)
     }
   }
@@ -94,11 +94,18 @@ let transactionPath = ({ paymentRoute, exchangeRoute })=> {
 let transactionAmounts = ({ paymentRoute, exchangeRoute, fee })=> {
   let amounts
   if(exchangeRoute) {
-    amounts = [
-      exchangeRoute.amountIn.toString(),
-      subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee }),
-      Math.round(Date.now() / 1000) + 30 * 60, // 30 minutes
-    ]
+    if(exchangeRoute && exchangeRoute.exchange.wrapper) {
+      amounts = [
+        exchangeRoute.amountIn.toString(),
+        subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee })
+      ]
+    } else {
+      amounts = [
+        exchangeRoute.amountIn.toString(),
+        subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee }),
+        Math.round(Date.now() / 1000) + 30 * 60, // 30 minutes
+      ]
+    }
   } else {
     amounts = [
       paymentRoute.toAmount, // from
@@ -148,7 +155,13 @@ let transactionPlugins = ({ paymentRoute, exchangeRoute, event, fee })=> {
 
   if(exchangeRoute) {
     paymentRoute.exchangePlugin = plugins[paymentRoute.blockchain][exchangeRoute.exchange.name]
-    paymentPlugins.push(paymentRoute.exchangePlugin.address)
+    if(paymentRoute.exchangePlugin.wrap && paymentRoute.fromToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
+      paymentPlugins.push(paymentRoute.exchangePlugin.wrap.address)
+    } else if(paymentRoute.exchangePlugin.wrap && paymentRoute.fromToken.address == CONSTANTS[paymentRoute.blockchain].WRAPPED) {
+      paymentPlugins.push(paymentRoute.exchangePlugin.unwrap.address)
+    } else {
+      paymentPlugins.push(paymentRoute.exchangePlugin.address)
+    }
   }
 
   if(paymentRoute.toContract) {

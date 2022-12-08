@@ -51,6 +51,10 @@ export default {
     payment: {
       address: '0x99F3F4685a7178F26EB4F4Ca8B75a1724F1577B9'
     },
+    weth: {
+      wrap: { address: '0xF4cc97D00dD0639c3e383D7CafB3d815616cbB2C' },
+      unwrap: { address: '0xf2b8f3B0f0Af68816107f53aaDbbF84525d3BeFe' },
+    },
     uniswap_v2: {
       address: '0xe04b08Dfc6CaA0F4Ec523a3Ae283Ece7efE00019',
       prepareTransaction: prepareUniswapTransaction
@@ -77,6 +81,10 @@ export default {
     payment: {
       address: '0x8B127D169D232D5F3ebE1C3D06CE343FD7C1AA11',
     },
+    wbnb: {
+      wrap: { address: '0xf361888459a4C863a8498ee344C2688C9196Be51' },
+      unwrap: { address: '0x271a502587c9b29f3348D92f74d6058AEf8F6A32' },
+    },
     pancakeswap: {
       address: '0xAC3Ec4e420DD78bA86d932501E1f3867dbbfb77B',
       prepareTransaction: prepareUniswapTransaction
@@ -102,6 +110,10 @@ export default {
   polygon: {
     payment: {
       address: '0x78C0F1c712A9AA2004C1F401A7307d8bCB62abBd'
+    },
+    wmatic: {
+      wrap: { address: '0x8B62F604499c1204573664447D445690E0A0011b' },
+      unwrap: { address: '0x864F165a58e74349cf9C7925217F10B58040db86' },
     },
     quickswap: {
       address: '0x0Dfb7137bC64b63F7a0de7Cb9CDa178702666220',
