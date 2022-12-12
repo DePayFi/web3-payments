@@ -117,19 +117,57 @@ describe('event', ()=> {
 
     // not swapped, no event
     expect(routes[0].transaction.method).toEqual('transfer')
-    expect(routes[0].event).toEqual(false)
 
     // swapped, event
     expect(routes[1].transaction.method).toEqual('route')
     expect(routes[1].transaction.params.plugins).toContain(plugins[blockchain].paymentWithEvent.address)
     expect(routes[1].transaction.params.plugins).not.toContain(plugins[blockchain].payment.address)
-    expect(routes[1].event).toEqual(true)
 
     // swapped, event
     expect(routes[2].transaction.method).toEqual('route')
     expect(routes[2].transaction.params.plugins).toContain(plugins[blockchain].paymentWithEvent.address)
     expect(routes[1].transaction.params.plugins).not.toContain(plugins[blockchain].payment.address)
-    expect(routes[2].event).toEqual(true)
 
-  });
+  })
+
+  it('`ifRoutedAndNative` emits an event for payment and fee if routed through the router and toToken is native', async ()=>{
+    let routes
+    
+    routes = await route({
+      accept: [{
+        toAddress,
+        blockchain,
+        token: CONSTANTS[blockchain].NATIVE,
+        amount: 0.0001
+      }],
+      event: 'ifRoutedAndNative',
+      from: { [blockchain]: fromAddress },
+      fee: {
+        receiver: '0x4e260bB2b25EC6F3A59B478fCDe5eD5B8D783B02',
+        amount: '1%'
+      }
+    })
+
+    expect(routes[0].transaction.params.plugins[0]).toEqual(plugins[blockchain].paymentWithEvent.address)
+    expect(routes[0].transaction.params.plugins[1]).toEqual(plugins[blockchain].paymentFeeWithEvent.address)
+
+    routes = await route({
+      accept: [{
+        toAddress,
+        blockchain,
+        token: CONSTANTS[blockchain].WRAPPED,
+        amount: 0.0001
+      }],
+      event: 'ifRoutedAndNative',
+      from: { [blockchain]: fromAddress },
+      fee: {
+        receiver: '0x4e260bB2b25EC6F3A59B478fCDe5eD5B8D783B02',
+        amount: '1%'
+      }
+    })
+
+    expect(routes[0].transaction.params.plugins[0]).not.toEqual(plugins[blockchain].paymentWithEvent.address)
+    expect(routes[0].transaction.params.plugins[1]).toEqual(plugins[blockchain].payment.address)
+    expect(routes[0].transaction.params.plugins[2]).toEqual(plugins[blockchain].paymentFee.address)
+  })
 })

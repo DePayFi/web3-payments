@@ -292,28 +292,14 @@ Allows to emit events as part of the payment transaction.
 
 Possible values:
 
+`ifRoutedAndNative`: Only emits an event if payment requires going through the payment router and toToken is the NATIVE token (to have an event for internal transfers).
 `ifSwapped`: Only emits an event if payment requires swap, otherwise no dedicated payment event is emited. Use classic transfer event in case of a direct payment (does not go through the DePay router).
 
 ```javascript
 let paymentRoutes = await route({
-  accept: [
-    {
-      blockchain: 'ethereum',
-      token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
-      amount: 20,
-      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
-    },{
-      blockchain: 'bsc',
-      token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
-      amount: 20,
-      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
-    }
-  ]
-  event: 'ifSwapped',
-  from: {
-    ethereum: '0x5Af489c8786A018EC4814194dC8048be1007e390',
-    bsc: '0x5Af489c8786A018EC4814194dC8048be1007e390'
-  }
+  accept: [...]
+  event: 'ifRoutedAndNative',
+  from: {...}
 })
 ```
 

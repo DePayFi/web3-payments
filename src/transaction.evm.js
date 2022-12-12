@@ -180,12 +180,18 @@ let transactionPlugins = ({ paymentRoute, exchangeRoute, event, fee })=> {
     }
   } else if(event == 'ifSwapped' && !paymentRoute.directTransfer) {
     paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address)
+  } else if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
+    paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address)
   } else {
     paymentPlugins.push(plugins[paymentRoute.blockchain].payment.address)
   }
 
   if(fee) {
-    paymentPlugins.push(plugins[paymentRoute.blockchain].paymentFee.address)
+    if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
+      paymentPlugins.push(plugins[paymentRoute.blockchain].paymentFeeWithEvent.address)
+    } else {
+      paymentPlugins.push(plugins[paymentRoute.blockchain].paymentFee.address)
+    }
   }
 
   return paymentPlugins

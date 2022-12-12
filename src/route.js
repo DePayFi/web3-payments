@@ -26,7 +26,6 @@ class PaymentRoute {
     this.approvalRequired = undefined
     this.approvalTransaction = undefined
     this.directTransfer = undefined
-    this.event = undefined
   }
 }
 
@@ -343,7 +342,6 @@ let sortPaymentRoutes = (routes) => {
 let addTransactions = ({ routes, event, fee }) => {
   return Promise.all(routes.map(async (route)=>{
     route.transaction = await getTransaction({ paymentRoute: route, event, fee })
-    route.event = !route.directTransfer
     route.fee = !!fee
     return route
   }))

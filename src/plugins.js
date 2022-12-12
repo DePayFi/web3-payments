@@ -42,10 +42,6 @@ const prepareContractCallAddressPassedAmountBooleanTransaction = (transaction, t
   return transaction
 }
 
-const preparePaymentFeeTransaction = (transaction)=> {
-
-}
-
 export default {
   ethereum: {
     payment: {
@@ -74,7 +70,9 @@ export default {
     },
     paymentFee: {
       address: '0x874Cb669D7BFff79d4A6A30F4ea52c5e413BD6A7',
-      prepareTransaction: preparePaymentFeeTransaction
+    },
+    paymentFeeWithEvent: {
+      address: '0x981cAd45c768d56136FDBb2C5E115F33D971bE6C'
     }
   },
   bsc: {
@@ -104,7 +102,9 @@ export default {
     },
     paymentFee: {
       address: '0xae33f10AD57A38113f74FCdc1ffA6B1eC47B94E3',
-      prepareTransaction: preparePaymentFeeTransaction
+    },
+    paymentFeeWithEvent: {
+      address: '0xF1a05D715AaBFA380543719F7bA8754d0331c5A9'
     }
   },
   polygon: {
@@ -120,7 +120,7 @@ export default {
       prepareTransaction: prepareUniswapTransaction
     },
     paymentWithEvent: {
-      address: ' 0xfAD2F276D464EAdB71435127BA2c2e9dDefb93a4'
+      address: '0xfAD2F276D464EAdB71435127BA2c2e9dDefb93a4'
     },
     contractCall: {
       approveAndCallContractAddressAmountBoolean: {
@@ -134,7 +134,9 @@ export default {
     },
     paymentFee: {
       address: '0xd625c7087E940b2A91ed8bD8db45cB24D3526B56',
-      prepareTransaction: preparePaymentFeeTransaction
+    },
+    paymentFeeWithEvent: {
+      address: '0xBC56ED8E32b64a33f64Ed7A5fF9EACdFC117e07a'
     }
   },
 }

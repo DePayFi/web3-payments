@@ -46,10 +46,6 @@ const prepareContractCallAddressPassedAmountBooleanTransaction = (transaction, t
   return transaction
 };
 
-const preparePaymentFeeTransaction = (transaction)=> {
-
-};
-
 var plugins = {
   ethereum: {
     payment: {
@@ -78,7 +74,9 @@ var plugins = {
     },
     paymentFee: {
       address: '0x874Cb669D7BFff79d4A6A30F4ea52c5e413BD6A7',
-      prepareTransaction: preparePaymentFeeTransaction
+    },
+    paymentFeeWithEvent: {
+      address: '0x981cAd45c768d56136FDBb2C5E115F33D971bE6C'
     }
   },
   bsc: {
@@ -108,7 +106,9 @@ var plugins = {
     },
     paymentFee: {
       address: '0xae33f10AD57A38113f74FCdc1ffA6B1eC47B94E3',
-      prepareTransaction: preparePaymentFeeTransaction
+    },
+    paymentFeeWithEvent: {
+      address: '0xF1a05D715AaBFA380543719F7bA8754d0331c5A9'
     }
   },
   polygon: {
@@ -124,7 +124,7 @@ var plugins = {
       prepareTransaction: prepareUniswapTransaction
     },
     paymentWithEvent: {
-      address: ' 0xfAD2F276D464EAdB71435127BA2c2e9dDefb93a4'
+      address: '0xfAD2F276D464EAdB71435127BA2c2e9dDefb93a4'
     },
     contractCall: {
       approveAndCallContractAddressAmountBoolean: {
@@ -138,7 +138,9 @@ var plugins = {
     },
     paymentFee: {
       address: '0xd625c7087E940b2A91ed8bD8db45cB24D3526B56',
-      prepareTransaction: preparePaymentFeeTransaction
+    },
+    paymentFeeWithEvent: {
+      address: '0xBC56ED8E32b64a33f64Ed7A5fF9EACdFC117e07a'
     }
   },
 };
@@ -335,12 +337,18 @@ let transactionPlugins = ({ paymentRoute, exchangeRoute, event, fee })=> {
     }
   } else if(event == 'ifSwapped' && !paymentRoute.directTransfer) {
     paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address);
+  } else if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
+    paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address);
   } else {
     paymentPlugins.push(plugins[paymentRoute.blockchain].payment.address);
   }
 
   if(fee) {
-    paymentPlugins.push(plugins[paymentRoute.blockchain].paymentFee.address);
+    if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
+      paymentPlugins.push(plugins[paymentRoute.blockchain].paymentFeeWithEvent.address);
+    } else {
+      paymentPlugins.push(plugins[paymentRoute.blockchain].paymentFee.address);
+    }
   }
 
   return paymentPlugins
@@ -956,7 +964,6 @@ class PaymentRoute {
     this.approvalRequired = undefined;
     this.approvalTransaction = undefined;
     this.directTransfer = undefined;
-    this.event = undefined;
   }
 }
 
@@ -1270,7 +1277,6 @@ let sortPaymentRoutes = (routes) => {
 let addTransactions = ({ routes, event, fee }) => {
   return Promise.all(routes.map(async (route)=>{
     route.transaction = await getTransaction({ paymentRoute: route, event, fee });
-    route.event = !route.directTransfer;
     route.fee = !!fee;
     return route
   }))
