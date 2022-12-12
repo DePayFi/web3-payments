@@ -1,7 +1,7 @@
 {
   "name": "@depay/web3-payments-evm",
   "moduleName": "Web3Payments",
-  "version": "10.10.0",
+  "version": "10.10.1",
   "description": "JavaScript library to scan crypto wallets for liquefiable assets and calculate most cost-effective payment routing.",
   "main": "dist/umd/index.evm.js",
   "module": "dist/esm/index.evm.js",
@@ -27,9 +27,9 @@
   "private": false,
   "dependencies": {},
   "peerDependencies": {
-    "@depay/web3-assets-evm": "^6.6.1",
+    "@depay/web3-assets-evm": "^6.6.2",
     "@depay/web3-constants": "^6.3.2",
-    "@depay/web3-exchanges-evm": "^11.3.2",
+    "@depay/web3-exchanges-evm": "^11.3.3",
     "@depay/web3-tokens-evm": "^9.12.8",
     "ethers": "^5.7.1"
   },
