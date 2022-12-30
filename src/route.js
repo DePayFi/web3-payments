@@ -328,6 +328,13 @@ let sortPaymentRoutes = (routes) => {
       return aWins
     }
 
+    if (JSON.stringify([a.fromToken.address.toLowerCase(), a.toToken.address.toLowerCase()].sort()) == JSON.stringify([CONSTANTS[a.blockchain].NATIVE.toLowerCase(), CONSTANTS[a.blockchain].WRAPPED.toLowerCase()].sort())) {
+      return aWins
+    }
+    if (JSON.stringify([b.fromToken.address.toLowerCase(), b.toToken.address.toLowerCase()].sort()) == JSON.stringify([CONSTANTS[b.blockchain].NATIVE.toLowerCase(), CONSTANTS[b.blockchain].WRAPPED.toLowerCase()].sort())) {
+      return bWins
+    }
+
     if (a.fromToken.address.toLowerCase() == CONSTANTS[a.blockchain].NATIVE.toLowerCase()) {
       return aWins
     }

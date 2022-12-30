@@ -53,7 +53,7 @@
       },
       weth: {
         wrap: { address: '0xF4cc97D00dD0639c3e383D7CafB3d815616cbB2C' },
-        unwrap: { address: '0xf2b8f3B0f0Af68816107f53aaDbbF84525d3BeFe' },
+        unwrap: { address: '0xcA575c6C5305e8127F3D376bb22776eAD370De4a' },
       },
       uniswap_v2: {
         address: '0xe04b08Dfc6CaA0F4Ec523a3Ae283Ece7efE00019',
@@ -85,7 +85,7 @@
       },
       wbnb: {
         wrap: { address: '0xf361888459a4C863a8498ee344C2688C9196Be51' },
-        unwrap: { address: '0x271a502587c9b29f3348D92f74d6058AEf8F6A32' },
+        unwrap: { address: '0x65693291C20271f5e5030261766D1D6b3AC9d44E' },
       },
       pancakeswap: {
         address: '0xAC3Ec4e420DD78bA86d932501E1f3867dbbfb77B',
@@ -117,7 +117,7 @@
       },
       wmatic: {
         wrap: { address: '0x8B62F604499c1204573664447D445690E0A0011b' },
-        unwrap: { address: '0x864F165a58e74349cf9C7925217F10B58040db86' },
+        unwrap: { address: '0x2fd0a07a4F73285d0eBa8176426BF9B8c0121206' },
       },
       quickswap: {
         address: '0x0Dfb7137bC64b63F7a0de7Cb9CDa178702666220',
@@ -1261,6 +1261,13 @@
       }
       if (b.approvalRequired && !a.approvalRequired) {
         return aWins
+      }
+
+      if (JSON.stringify([a.fromToken.address.toLowerCase(), a.toToken.address.toLowerCase()].sort()) == JSON.stringify([web3Constants.CONSTANTS[a.blockchain].NATIVE.toLowerCase(), web3Constants.CONSTANTS[a.blockchain].WRAPPED.toLowerCase()].sort())) {
+        return aWins
+      }
+      if (JSON.stringify([b.fromToken.address.toLowerCase(), b.toToken.address.toLowerCase()].sort()) == JSON.stringify([web3Constants.CONSTANTS[b.blockchain].NATIVE.toLowerCase(), web3Constants.CONSTANTS[b.blockchain].WRAPPED.toLowerCase()].sort())) {
+        return bWins
       }
 
       if (a.fromToken.address.toLowerCase() == web3Constants.CONSTANTS[a.blockchain].NATIVE.toLowerCase()) {

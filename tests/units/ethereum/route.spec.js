@@ -332,6 +332,134 @@ describe('route', ()=> {
     expect(routes.map((route)=>route.directTransfer)).toEqual([true, false, false, false])
   })
 
+  it('sorts WRAPPED->NATIVE payments higher as swaps', async ()=>{
+
+    let USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+    let USDCAmountInBN = ethers.BigNumber.from('300000000000000000')
+    
+    mockAssets({ blockchain, account: fromAddress, assets: [
+      {
+        "name": "Ether",
+        "symbol": "ETH",
+        "address": ETH,
+        "type": "NATIVE"
+      }, {
+        "name": "Dai Stablecoin",
+        "symbol": "DAI",
+        "address": DAI,
+        "type": "20"
+      }, {
+        "name": "DePay",
+        "symbol": "DEPAY",
+        "address": DEPAY,
+        "type": "20"
+      },{
+        "name": "USD Coin",
+        "symbol": "USDC",
+        "address": USDC,
+        "type": "20"
+      },{
+        "name": "Wrapped Ether",
+        "symbol": "WETH",
+        "address": WETH,
+        "type": "20"
+      }
+    ]})
+
+    provider = await getProvider(blockchain)
+    mockDecimals({ provider, blockchain, api: Token[blockchain].ERC20, token: USDC, decimals: 18 })
+    mockPair(provider, '0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc', [USDC, WETH])
+    mockPair(provider, CONSTANTS[blockchain].ZERO, [USDC, DEPAY])
+    mockAmounts({ provider, method: 'getAmountsIn', params: [tokenAmountOutBN, [USDC, WETH]], amounts: [USDCAmountInBN, WETHAmountInBN, tokenAmountOutBN] })
+    mockAmounts({ provider, method: 'getAmountsIn', params: [tokenAmountOutBN, [DEPAY, WETH]], amounts: [USDCAmountInBN, WETHAmountInBN, tokenAmountOutBN] })
+    mockAmounts({ provider, method: 'getAmountsIn', params: [tokenAmountOutBN, [DAI, WETH]], amounts: [USDCAmountInBN, WETHAmountInBN, tokenAmountOutBN] })
+    mockBalance({ provider, blockchain, api: Token[blockchain].ERC20, token: USDC, account: fromAddress, balance: ethers.BigNumber.from('310000000000000000')})
+    mockBalance({ provider, blockchain, api: Token[blockchain].ERC20, token: WETH, account: fromAddress, balance: ethers.BigNumber.from('6000000000000000000000')})
+    mock({ blockchain, balance: { for: fromAddress, return: '100000000000000000000' } })
+
+    mockAllowance({ provider, blockchain, api: Token[blockchain].ERC20, token: WETH, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
+    mockAllowance({ provider, blockchain, api: Token[blockchain].ERC20, token: USDC, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
+    mockAllowance({ provider, blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, spender: routers[blockchain].address, allowance: ethers.BigNumber.from('0') })
+
+    let routes = await route({
+      accept: [{
+        blockchain,
+        token: ETH,
+        amount: tokenAmountOut,
+        toAddress,
+      }],
+      from: { [blockchain]: fromAddress }
+    })
+
+    expect(routes.map((route)=>route.fromToken.address)).toEqual([ETH, WETH, USDC, DEPAY, DAI])
+    expect(routes.map((route)=>route.approvalRequired)).toEqual([false, false, false, false, true])
+    expect(routes.map((route)=>route.directTransfer)).toEqual([true, false, false, false, false])
+  })
+
+  it('sorts NATIVE->WRAPPED payments higher as swaps', async ()=>{
+
+    let USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+    let USDCAmountInBN = ethers.BigNumber.from('300000000000000000')
+    
+    mockAssets({ blockchain, account: fromAddress, assets: [
+      {
+        "name": "Ether",
+        "symbol": "ETH",
+        "address": ETH,
+        "type": "NATIVE"
+      }, {
+        "name": "Dai Stablecoin",
+        "symbol": "DAI",
+        "address": DAI,
+        "type": "20"
+      }, {
+        "name": "DePay",
+        "symbol": "DEPAY",
+        "address": DEPAY,
+        "type": "20"
+      },{
+        "name": "USD Coin",
+        "symbol": "USDC",
+        "address": USDC,
+        "type": "20"
+      },{
+        "name": "Wrapped Ether",
+        "symbol": "WETH",
+        "address": WETH,
+        "type": "20"
+      }
+    ]})
+
+    provider = await getProvider(blockchain)
+    mockDecimals({ provider, blockchain, api: Token[blockchain].ERC20, token: USDC, decimals: 18 })
+    mockPair(provider, '0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc', [USDC, WETH])
+    mockPair(provider, CONSTANTS[blockchain].ZERO, [USDC, DEPAY])
+    mockAmounts({ provider, method: 'getAmountsIn', params: [tokenAmountOutBN, [USDC, WETH]], amounts: [USDCAmountInBN, WETHAmountInBN, tokenAmountOutBN] })
+    mockAmounts({ provider, method: 'getAmountsIn', params: [tokenAmountOutBN, [DEPAY, WETH]], amounts: [USDCAmountInBN, WETHAmountInBN, tokenAmountOutBN] })
+    mockAmounts({ provider, method: 'getAmountsIn', params: [tokenAmountOutBN, [DAI, WETH]], amounts: [USDCAmountInBN, WETHAmountInBN, tokenAmountOutBN] })
+    mockBalance({ provider, blockchain, api: Token[blockchain].ERC20, token: USDC, account: fromAddress, balance: ethers.BigNumber.from('310000000000000000')})
+    mockBalance({ provider, blockchain, api: Token[blockchain].ERC20, token: WETH, account: fromAddress, balance: ethers.BigNumber.from('6000000000000000000000')})
+    mock({ blockchain, balance: { for: fromAddress, return: '100000000000000000000' } })
+
+    mockAllowance({ provider, blockchain, api: Token[blockchain].ERC20, token: WETH, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
+    mockAllowance({ provider, blockchain, api: Token[blockchain].ERC20, token: USDC, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
+    mockAllowance({ provider, blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, spender: routers[blockchain].address, allowance: ethers.BigNumber.from('0') })
+
+    let routes = await route({
+      accept: [{
+        blockchain,
+        token: WETH,
+        amount: tokenAmountOut,
+        toAddress,
+      }],
+      from: { [blockchain]: fromAddress }
+    })
+
+    expect(routes.map((route)=>route.fromToken.address)).toEqual([WETH, ETH, USDC, DEPAY, DAI])
+    expect(routes.map((route)=>route.approvalRequired)).toEqual([false, false, false, false, true])
+    expect(routes.map((route)=>route.directTransfer)).toEqual([true, false, false, false, false])
+  })
+
   describe('transaction', ()=> {
 
     it('performs direct TOKEN payments if it is the best option', async ()=>{
