@@ -25,27 +25,6 @@ const prepareUniswapTransaction = (transaction)=>{
   return transaction
 };
 
-const prepareContractCallAddressAmountBooleanTransaction = (transaction, toContract)=> {
-  transaction.params.data = [
-    toContract.signature,
-    toContract.params[0]
-  ];
-  return transaction
-};
-
-const prepareContractCallAddressPassedAmountBooleanTransaction = (transaction, toContract)=> {
-  transaction.params.data = [
-    toContract.signature,
-    toContract.params[1]
-  ];
-  if(!transaction.params.amounts[1]) { transaction.params.amounts[1] = '0'; }
-  if(!transaction.params.amounts[2]) { transaction.params.amounts[2] = '0'; }
-  if(!transaction.params.amounts[3]) { transaction.params.amounts[3] = '0'; }
-  if(!transaction.params.amounts[4]) { transaction.params.amounts[4] = '0'; }
-  transaction.params.amounts[5] = toContract.params[0];
-  return transaction
-};
-
 var plugins = {
   ethereum: {
     payment: {
@@ -61,16 +40,6 @@ var plugins = {
     },
     paymentWithEvent: {
       address: '0xD8fBC10787b019fE4059Eb5AA5fB11a5862229EF'
-    },
-    contractCall: {
-      approveAndCallContractAddressAmountBoolean: {
-        address: '0xF984eb8b466AD6c728E0aCc7b69Af6f69B32437F',
-        prepareTransaction: prepareContractCallAddressAmountBooleanTransaction
-      },
-      approveAndCallContractAddressPassedAmountBoolean: {
-        address: '0x2D18c5A46cc1780d2460DD51B5d0996e55Fd2446',
-        prepareTransaction: prepareContractCallAddressPassedAmountBooleanTransaction
-      }
     },
     paymentFee: {
       address: '0x874Cb669D7BFff79d4A6A30F4ea52c5e413BD6A7',
@@ -94,16 +63,6 @@ var plugins = {
     paymentWithEvent: {
       address: '0x1869E236c03eE67B9FfEd3aCA139f4AeBA79Dc21'
     },
-    contractCall: {
-      approveAndCallContractAddressAmountBoolean: {
-        address: '0xd73dFeF8F9c213b449fB39B84c2b33FBBc2C8eD3',
-        prepareTransaction: prepareContractCallAddressAmountBooleanTransaction
-      },
-      approveAndCallContractAddressPassedAmountBoolean: {
-        address: '0x7E655088214d0657251A51aDccE9109CFd23B5B5',
-        prepareTransaction: prepareContractCallAddressPassedAmountBooleanTransaction
-      }
-    },
     paymentFee: {
       address: '0xae33f10AD57A38113f74FCdc1ffA6B1eC47B94E3',
     },
@@ -125,16 +84,6 @@ var plugins = {
     },
     paymentWithEvent: {
       address: '0xfAD2F276D464EAdB71435127BA2c2e9dDefb93a4'
-    },
-    contractCall: {
-      approveAndCallContractAddressAmountBoolean: {
-        address: '0x8698E529E9867eEbcC68b4792daC627cd8870736',
-        prepareTransaction: prepareContractCallAddressAmountBooleanTransaction
-      },
-      approveAndCallContractAddressPassedAmountBoolean: {
-        address: '0xAB305eaDf5FB15AF6370106B231C67d103bBbbbC',
-        prepareTransaction: prepareContractCallAddressPassedAmountBooleanTransaction
-      }
     },
     paymentFee: {
       address: '0xd625c7087E940b2A91ed8bD8db45cB24D3526B56',
@@ -160,7 +109,6 @@ var routers = {
   }
 };
 
-function _optionalChain$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 let getTransaction = async({ paymentRoute, event, fee })=> {
   let exchangeRoute = paymentRoute.exchangeRoutes[0];
 
@@ -177,10 +125,6 @@ let getTransaction = async({ paymentRoute, event, fee })=> {
     if(paymentRoute.exchangePlugin && paymentRoute.exchangePlugin.prepareTransaction) {
       transaction = paymentRoute.exchangePlugin.prepareTransaction(transaction);
     }
-  }
-
-  if(paymentRoute.contractCallPlugin) {
-    transaction = paymentRoute.contractCallPlugin.prepareTransaction(transaction, paymentRoute.toContract);
   }
 
   return transaction
@@ -321,21 +265,7 @@ let transactionPlugins = ({ paymentRoute, exchangeRoute, event, fee })=> {
     }
   }
 
-  if(paymentRoute.toContract) {
-    let signature = paymentRoute.toContract.signature.match(/\(.*\)/);
-    if(signature && _optionalChain$1([signature, 'optionalAccess', _ => _.length])) {
-      signature = signature[0].replace(/[\(\)]/g, '');
-      let splitSignature = signature.split(',');
-      if(splitSignature[0] == 'address' && splitSignature[1].match('uint') && splitSignature[2] == 'bool' && Number.isNaN(parseInt(paymentRoute.toContract.params[0]))) {
-        paymentRoute.contractCallPlugin = plugins[paymentRoute.blockchain].contractCall.approveAndCallContractAddressAmountBoolean;
-      } else if(splitSignature[0] == 'address' && splitSignature[1].match('uint') && splitSignature[2] == 'bool' && !Number.isNaN(parseInt(paymentRoute.toContract.params[0]))) {
-        paymentRoute.contractCallPlugin = plugins[paymentRoute.blockchain].contractCall.approveAndCallContractAddressPassedAmountBoolean;
-      } else {
-        throw(signature)
-      }
-      paymentPlugins.push(paymentRoute.contractCallPlugin.address);
-    }
-  } else if(event == 'ifSwapped' && !paymentRoute.directTransfer) {
+  if(event == 'ifSwapped' && !paymentRoute.directTransfer) {
     paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address);
   } else if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
     paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address);
@@ -947,7 +877,7 @@ var throttle_1 = throttle;
 
 function _optionalChain(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 class PaymentRoute {
-  constructor({ blockchain, fromAddress, fromToken, fromDecimals, fromAmount, fromBalance, toToken, toDecimals, toAmount, toAddress, toContract }) {
+  constructor({ blockchain, fromAddress, fromToken, fromDecimals, fromAmount, fromBalance, toToken, toDecimals, toAmount, toAddress }) {
     this.blockchain = blockchain;
     this.fromAddress = fromAddress;
     this.fromToken = fromToken;
@@ -958,7 +888,6 @@ class PaymentRoute {
     this.toAmount = _optionalChain([toAmount, 'optionalAccess', _3 => _3.toString, 'call', _4 => _4()]);
     this.toDecimals = toDecimals;
     this.toAddress = toAddress;
-    this.toContract = toContract;
     this.exchangeRoutes = [];
     this.transaction = undefined;
     this.approvalRequired = undefined;
@@ -989,7 +918,6 @@ function convertToRoutes({ assets, accept, from }) {
           fromBalance: asset.balance,
           fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
-          toContract: configuration.toContract
         })
       } else if(configuration.fromToken && configuration.fromAmount && fromToken.address.toLowerCase() == configuration.fromToken.toLowerCase()) {
         let blockchain = configuration.blockchain;
@@ -1008,7 +936,6 @@ function convertToRoutes({ assets, accept, from }) {
           fromBalance: asset.balance,
           fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
-          toContract: configuration.toContract
         })
       }
     }))
@@ -1162,7 +1089,7 @@ let addApproval = (routes) => {
           (
             route.directTransfer ||
             route.fromToken.address.toLowerCase() == CONSTANTS[route.blockchain].NATIVE.toLowerCase()
-          ) && route.toContract == undefined
+          )
         ) {
           routes[index].approvalRequired = false;
         } else {
@@ -1185,7 +1112,7 @@ let addApproval = (routes) => {
 
 let addDirectTransferStatus = ({ routes, fee }) => {
   return routes.map((route)=>{
-    route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && route.toContract == undefined && fee == undefined;
+    route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && fee == undefined;
     return route
   })
 };
