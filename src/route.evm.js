@@ -9,7 +9,7 @@ import { Token } from '@depay/web3-tokens-evm'
 import throttle from 'lodash/throttle'
 
 class PaymentRoute {
-  constructor({ blockchain, fromAddress, fromToken, fromDecimals, fromAmount, fromBalance, toToken, toDecimals, toAmount, toAddress, toContract }) {
+  constructor({ blockchain, fromAddress, fromToken, fromDecimals, fromAmount, fromBalance, toToken, toDecimals, toAmount, toAddress }) {
     this.blockchain = blockchain
     this.fromAddress = fromAddress
     this.fromToken = fromToken
@@ -20,7 +20,6 @@ class PaymentRoute {
     this.toAmount = toAmount?.toString()
     this.toDecimals = toDecimals
     this.toAddress = toAddress
-    this.toContract = toContract
     this.exchangeRoutes = []
     this.transaction = undefined
     this.approvalRequired = undefined
@@ -51,7 +50,6 @@ function convertToRoutes({ assets, accept, from }) {
           fromBalance: asset.balance,
           fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
-          toContract: configuration.toContract
         })
       } else if(configuration.fromToken && configuration.fromAmount && fromToken.address.toLowerCase() == configuration.fromToken.toLowerCase()) {
         let blockchain = configuration.blockchain
@@ -70,7 +68,6 @@ function convertToRoutes({ assets, accept, from }) {
           fromBalance: asset.balance,
           fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
-          toContract: configuration.toContract
         })
       }
     }))
@@ -224,7 +221,7 @@ let addApproval = (routes) => {
           (
             route.directTransfer ||
             route.fromToken.address.toLowerCase() == CONSTANTS[route.blockchain].NATIVE.toLowerCase()
-          ) && route.toContract == undefined
+          )
         ) {
           routes[index].approvalRequired = false
         } else {
@@ -247,7 +244,7 @@ let addApproval = (routes) => {
 
 let addDirectTransferStatus = ({ routes, fee }) => {
   return routes.map((route)=>{
-    route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && route.toContract == undefined && fee == undefined
+    route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && fee == undefined
     return route
   })
 }

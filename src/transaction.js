@@ -22,10 +22,6 @@ let getTransaction = async({ paymentRoute, event, fee })=> {
     }
   }
 
-  if(paymentRoute.contractCallPlugin) {
-    transaction = paymentRoute.contractCallPlugin.prepareTransaction(transaction, paymentRoute.toContract)
-  }
-
   return transaction
 }
 
@@ -164,21 +160,7 @@ let transactionPlugins = ({ paymentRoute, exchangeRoute, event, fee })=> {
     }
   }
 
-  if(paymentRoute.toContract) {
-    let signature = paymentRoute.toContract.signature.match(/\(.*\)/)
-    if(signature && signature?.length) {
-      signature = signature[0].replace(/[\(\)]/g, '')
-      let splitSignature = signature.split(',')
-      if(splitSignature[0] == 'address' && splitSignature[1].match('uint') && splitSignature[2] == 'bool' && Number.isNaN(parseInt(paymentRoute.toContract.params[0]))) {
-        paymentRoute.contractCallPlugin = plugins[paymentRoute.blockchain].contractCall.approveAndCallContractAddressAmountBoolean
-      } else if(splitSignature[0] == 'address' && splitSignature[1].match('uint') && splitSignature[2] == 'bool' && !Number.isNaN(parseInt(paymentRoute.toContract.params[0]))) {
-        paymentRoute.contractCallPlugin = plugins[paymentRoute.blockchain].contractCall.approveAndCallContractAddressPassedAmountBoolean
-      } else {
-        throw('No payment plugins exists to pay into contract with signature:', signature)
-      }
-      paymentPlugins.push(paymentRoute.contractCallPlugin.address)
-    }
-  } else if(event == 'ifSwapped' && !paymentRoute.directTransfer) {
+  if(event == 'ifSwapped' && !paymentRoute.directTransfer) {
     paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address)
   } else if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
     paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address)
