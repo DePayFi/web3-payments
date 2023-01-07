@@ -1,8 +1,8 @@
 {
   "name": "@depay/web3-payments",
   "moduleName": "Web3Payments",
-  "version": "11.0.0",
-  "description": "JavaScript library to scan crypto wallets for liquefiable assets and calculate most cost-effective payment routing.",
+  "version": "11.0.1",
+  "description": "JavaScript library to scan crypto wallets for liquefiable assets and perform cost-effective, auto-converted payments on-chain.",
   "main": "dist/umd/index.js",
   "module": "dist/esm/index.js",
   "source": "src/index.js",
