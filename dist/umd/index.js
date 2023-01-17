@@ -1143,7 +1143,8 @@
       let otherMoreEfficientRoute = routes.find((routeB, indexB)=>{
         if(routeA.fromToken.address != routeB.fromToken.address) { return false }
         if(routeA.fromToken.blockchain != routeB.fromToken.blockchain) { return false }
-        if(ethers.ethers.BigNumber.from(routeB.fromAmount).lt(ethers.ethers.BigNumber.from(routeA.fromAmount))) { return true }
+        if(routeB.directTransfer && !routeA.directTransfer) { return true }
+        if(ethers.ethers.BigNumber.from(routeB.fromAmount).lt(ethers.ethers.BigNumber.from(routeA.fromAmount)) && !routeA.directTransfer) { return true }
         if(routeB.fromAmount == routeA.fromAmount && indexB < indexA) { return true }
       });
 
