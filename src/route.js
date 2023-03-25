@@ -1,12 +1,29 @@
-import plugins from './plugins'
-import routers from './routers'
-import { CONSTANTS } from '@depay/web3-constants'
-import { ethers } from 'ethers'
+/*#if _EVM
+
+import { dripAssets } from '@depay/web3-assets-evm'
+import { route as exchangeRoute } from '@depay/web3-exchanges-evm'
+import { Token } from '@depay/web3-tokens-evm'
+
+/*#elif _SOLANA
+
+import { dripAssets } from '@depay/web3-assets-solana'
+import { route as exchangeRoute } from '@depay/web3-exchanges-solana'
+import { Token } from '@depay/web3-tokens-solana'
+
+//#else */
+
 import { dripAssets } from '@depay/web3-assets'
 import { route as exchangeRoute } from '@depay/web3-exchanges'
-import { getTransaction } from './transaction'
 import { Token } from '@depay/web3-tokens'
+
+//#endif
+
+import Blockchains from '@depay/web3-blockchains'
+import plugins from './plugins'
+import routers from './routers'
 import throttle from 'lodash/throttle'
+import { ethers } from 'ethers'
+import { getTransaction } from './transaction'
 
 class PaymentRoute {
   constructor({ blockchain, fromAddress, fromToken, fromDecimals, fromAmount, fromBalance, toToken, toDecimals, toAmount, toAddress }) {
@@ -220,7 +237,7 @@ let addApproval = (routes) => {
         if(
           (
             route.directTransfer ||
-            route.fromToken.address.toLowerCase() == CONSTANTS[route.blockchain].NATIVE.toLowerCase()
+            route.fromToken.address.toLowerCase() == Blockchains[route.blockchain].currency.address.toLowerCase()
           )
         ) {
           routes[index].approvalRequired = false
@@ -232,7 +249,7 @@ let addApproval = (routes) => {
               to: route.fromToken.address,
               api: Token[route.blockchain].DEFAULT,
               method: 'approve',
-              params: [routers[route.blockchain].address, CONSTANTS[route.blockchain].MAXINT]
+              params: [routers[route.blockchain].address, Blockchains[route.blockchain].maxInt]
             }
           }
         }
@@ -252,7 +269,7 @@ let addDirectTransferStatus = ({ routes, fee }) => {
 let addRouteAmounts = (routes)=> {
   return routes.map((route)=>{
     if(route.directTransfer && !route.fee) {
-      if(route.fromToken.address.toLowerCase() == CONSTANTS[route.blockchain].NATIVE.toLowerCase()) {
+      if(route.fromToken.address.toLowerCase() == Blockchains[route.blockchain].currency.address.toLowerCase()) {
         route.fromAmount = route.transaction.value
         route.toAmount = route.transaction.value
       } else {
@@ -326,17 +343,17 @@ let sortPaymentRoutes = (routes) => {
       return aWins
     }
 
-    if (JSON.stringify([a.fromToken.address.toLowerCase(), a.toToken.address.toLowerCase()].sort()) == JSON.stringify([CONSTANTS[a.blockchain].NATIVE.toLowerCase(), CONSTANTS[a.blockchain].WRAPPED.toLowerCase()].sort())) {
+    if (JSON.stringify([a.fromToken.address.toLowerCase(), a.toToken.address.toLowerCase()].sort()) == JSON.stringify([Blockchains[a.blockchain].currency.address.toLowerCase(), Blockchains[a.blockchain].wrapped.address.toLowerCase()].sort())) {
       return aWins
     }
-    if (JSON.stringify([b.fromToken.address.toLowerCase(), b.toToken.address.toLowerCase()].sort()) == JSON.stringify([CONSTANTS[b.blockchain].NATIVE.toLowerCase(), CONSTANTS[b.blockchain].WRAPPED.toLowerCase()].sort())) {
+    if (JSON.stringify([b.fromToken.address.toLowerCase(), b.toToken.address.toLowerCase()].sort()) == JSON.stringify([Blockchains[b.blockchain].currency.address.toLowerCase(), Blockchains[b.blockchain].wrapped.address.toLowerCase()].sort())) {
       return bWins
     }
 
-    if (a.fromToken.address.toLowerCase() == CONSTANTS[a.blockchain].NATIVE.toLowerCase()) {
+    if (a.fromToken.address.toLowerCase() == Blockchains[a.blockchain].currency.address.toLowerCase()) {
       return aWins
     }
-    if (b.fromToken.address.toLowerCase() == CONSTANTS[b.blockchain].NATIVE.toLowerCase()) {
+    if (b.fromToken.address.toLowerCase() == Blockchains[b.blockchain].currency.address.toLowerCase()) {
       return bWins
     }
 

@@ -1,21 +1,25 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@depay/web3-constants'), require('ethers'), require('@depay/web3-assets'), require('@depay/web3-exchanges'), require('@depay/web3-tokens')) :
-  typeof define === 'function' && define.amd ? define(['exports', '@depay/web3-constants', 'ethers', '@depay/web3-assets', '@depay/web3-exchanges', '@depay/web3-tokens'], factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.Web3Payments = {}, global.Web3Constants, global.ethers, global.Web3Assets, global.Web3Exchanges, global.Web3Tokens));
-})(this, (function (exports, web3Constants, ethers, web3Assets, web3Exchanges, web3Tokens) { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@depay/web3-blockchains'), require('@depay/web3-assets'), require('@depay/web3-exchanges'), require('@depay/web3-tokens'), require('ethers')) :
+  typeof define === 'function' && define.amd ? define(['exports', '@depay/web3-blockchains', '@depay/web3-assets', '@depay/web3-exchanges', '@depay/web3-tokens', 'ethers'], factory) :
+  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.Web3Payments = {}, global.Web3Blockchains, global.Web3Assets, global.Web3Exchanges, global.Web3Tokens, global.ethers));
+})(this, (function (exports, Blockchains, web3Assets, web3Exchanges, web3Tokens, ethers) { 'use strict';
+
+  function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
+
+  var Blockchains__default = /*#__PURE__*/_interopDefaultLegacy(Blockchains);
 
   const prepareUniswapTransaction = (transaction)=>{
     transaction.params.path = transaction.params.path.filter((token, index, path)=>{
       if(
         index == 1 &&
-        token == web3Constants.CONSTANTS[transaction.blockchain].WRAPPED &&
-        path[0] == web3Constants.CONSTANTS[transaction.blockchain].NATIVE
+        token == Blockchains__default["default"][transaction.blockchain].wrapped.address &&
+        path[0] == Blockchains__default["default"][transaction.blockchain].currency.address
       ) { 
         return false
       } else if (
         index == path.length-2 &&
-        token == web3Constants.CONSTANTS[transaction.blockchain].WRAPPED &&
-        path[path.length-1] == web3Constants.CONSTANTS[transaction.blockchain].NATIVE
+        token == Blockchains__default["default"][transaction.blockchain].wrapped.address &&
+        path[path.length-1] == Blockchains__default["default"][transaction.blockchain].currency.address
       ) {
         return false
       } else {
@@ -106,193 +110,6 @@
     polygon: {
       address: '0x2CA727BC33915823e3D05fe043d310B8c5b2dC5b',
       api: [{"inputs":[{"internalType":"address","name":"_configuration","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"ETH","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"configuration","outputs":[{"internalType":"contract DePayRouterV1Configuration","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"pluginAddress","type":"address"}],"name":"isApproved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"uint256[]","name":"amounts","type":"uint256[]"},{"internalType":"address[]","name":"addresses","type":"address[]"},{"internalType":"address[]","name":"plugins","type":"address[]"},{"internalType":"string[]","name":"data","type":"string[]"}],"name":"route","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdraw","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}]
-    }
-  };
-
-  let getTransaction = async({ paymentRoute, event, fee })=> {
-    let exchangeRoute = paymentRoute.exchangeRoutes[0];
-
-    let transaction = {
-      blockchain: paymentRoute.blockchain,
-      to: transactionAddress({ paymentRoute, fee }),
-      api: transactionApi({ paymentRoute, fee }),
-      method: transactionMethod({ paymentRoute, fee }),
-      params: transactionParams({ paymentRoute, exchangeRoute, event, fee }),
-      value: transactionValue({ paymentRoute, exchangeRoute })
-    };
-
-    if(exchangeRoute) {
-      if(paymentRoute.exchangePlugin && paymentRoute.exchangePlugin.prepareTransaction) {
-        transaction = paymentRoute.exchangePlugin.prepareTransaction(transaction);
-      }
-    }
-
-    return transaction
-  };
-
-  let transactionAddress = ({ paymentRoute, fee })=> {
-    if(paymentRoute.directTransfer && !fee) {
-      if(paymentRoute.toToken.address == web3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
-        return paymentRoute.toAddress
-      } else {
-        return paymentRoute.toToken.address
-      }
-    } else {
-      return routers[paymentRoute.blockchain].address
-    }
-  };
-
-  let transactionApi = ({ paymentRoute, fee })=> {
-    if(paymentRoute.directTransfer && !fee) {
-      if(paymentRoute.toToken.address == web3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
-        return undefined
-      } else {
-        return web3Tokens.Token[paymentRoute.blockchain].DEFAULT
-      }
-    } else {
-      return routers[paymentRoute.blockchain].api
-    }
-  };
-
-  let transactionMethod = ({ paymentRoute, fee })=> {
-    if(paymentRoute.directTransfer && !fee) {
-      if(paymentRoute.toToken.address == web3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
-        return undefined
-      } else {
-        return 'transfer'
-      }
-    } else {
-      return 'route'
-    }
-  };
-
-  let transactionParams = ({ paymentRoute, exchangeRoute, event, fee })=> {
-    if(paymentRoute.directTransfer && !fee) {
-      if(paymentRoute.toToken.address == web3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
-        return undefined
-      } else {
-        return [paymentRoute.toAddress, paymentRoute.toAmount]
-      }
-    } else {
-      return {
-        path: transactionPath({ paymentRoute, exchangeRoute }),
-        amounts: transactionAmounts({ paymentRoute, exchangeRoute, fee }),
-        addresses: transactionAddresses({ paymentRoute, fee }),
-        plugins: transactionPlugins({ paymentRoute, exchangeRoute, event, fee }),
-        data: []
-      }
-    }
-  };
-
-  let transactionPath = ({ paymentRoute, exchangeRoute })=> {
-    if(exchangeRoute) {
-      return exchangeRoute.path
-    } else {
-      return [paymentRoute.toToken.address]
-    }
-  };
-
-  let transactionAmounts = ({ paymentRoute, exchangeRoute, fee })=> {
-    let amounts;
-    if(exchangeRoute) {
-      if(exchangeRoute && exchangeRoute.exchange.wrapper) {
-        amounts = [
-          exchangeRoute.amountIn.toString(),
-          subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee })
-        ];
-      } else {
-        amounts = [
-          exchangeRoute.amountIn.toString(),
-          subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee }),
-          Math.round(Date.now() / 1000) + 30 * 60, // 30 minutes
-        ];
-      }
-    } else {
-      amounts = [
-        paymentRoute.toAmount, // from
-        subtractFee({ amount: paymentRoute.toAmount, paymentRoute, fee }) // to
-      ];
-    }
-    if(fee){
-      amounts[4] = transactionFeeAmount({ paymentRoute, fee });
-    }
-    for(var i = 0; i < amounts.length; i++) {
-      if(amounts[i] == undefined){ amounts[i] = '0'; }
-    }
-    return amounts
-  };
-
-  let subtractFee = ({ amount, paymentRoute, fee })=> {
-    if(fee) {
-      let feeAmount = transactionFeeAmount({ paymentRoute, fee });
-      return ethers.ethers.BigNumber.from(amount).sub(feeAmount).toString()
-    } else {
-      return amount
-    }
-  };
-
-  let transactionFeeAmount = ({ paymentRoute, fee })=> {
-    if(typeof fee.amount == 'string' && fee.amount.match('%')) {
-      return ethers.ethers.BigNumber.from(paymentRoute.toAmount).mul(parseFloat(fee.amount)*10).div(1000).toString()
-    } else if(typeof fee.amount == 'string') {
-      return fee.amount
-    } else if(typeof fee.amount == 'number') {
-      return ethers.ethers.utils.parseUnits(fee.amount.toString(), paymentRoute.toDecimals).toString()
-    } else {
-      throw('Unknown fee amount type!')
-    }
-  };
-
-  let transactionAddresses = ({ paymentRoute, fee })=> {
-    if(fee) {
-      return [paymentRoute.fromAddress, fee.receiver, paymentRoute.toAddress]
-    } else {
-      return [paymentRoute.fromAddress, paymentRoute.toAddress]
-    }
-  };
-
-  let transactionPlugins = ({ paymentRoute, exchangeRoute, event, fee })=> {
-    let paymentPlugins = [];
-
-    if(exchangeRoute) {
-      paymentRoute.exchangePlugin = plugins[paymentRoute.blockchain][exchangeRoute.exchange.name];
-      if(paymentRoute.exchangePlugin.wrap && paymentRoute.fromToken.address == web3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
-        paymentPlugins.push(paymentRoute.exchangePlugin.wrap.address);
-      } else if(paymentRoute.exchangePlugin.wrap && paymentRoute.fromToken.address == web3Constants.CONSTANTS[paymentRoute.blockchain].WRAPPED) {
-        paymentPlugins.push(paymentRoute.exchangePlugin.unwrap.address);
-      } else {
-        paymentPlugins.push(paymentRoute.exchangePlugin.address);
-      }
-    }
-
-    if(event == 'ifSwapped' && !paymentRoute.directTransfer) {
-      paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address);
-    } else if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == web3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
-      paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address);
-    } else {
-      paymentPlugins.push(plugins[paymentRoute.blockchain].payment.address);
-    }
-
-    if(fee) {
-      if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == web3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
-        paymentPlugins.push(plugins[paymentRoute.blockchain].paymentFeeWithEvent.address);
-      } else {
-        paymentPlugins.push(plugins[paymentRoute.blockchain].paymentFee.address);
-      }
-    }
-
-    return paymentPlugins
-  };
-
-  let transactionValue = ({ paymentRoute, exchangeRoute })=> {
-    if(paymentRoute.fromToken.address == web3Constants.CONSTANTS[paymentRoute.blockchain].NATIVE) {
-      if(exchangeRoute) {
-        return exchangeRoute.amountIn.toString()
-      } else { // direct payment
-        return paymentRoute.toAmount.toString()
-      }
-    } else {
-      return ethers.ethers.BigNumber.from('0').toString()
     }
   };
 
@@ -875,7 +692,195 @@
 
   var throttle_1 = throttle;
 
+  let getTransaction = async({ paymentRoute, event, fee })=> {
+    let exchangeRoute = paymentRoute.exchangeRoutes[0];
+
+    let transaction = {
+      blockchain: paymentRoute.blockchain,
+      to: transactionAddress({ paymentRoute, fee }),
+      api: transactionApi({ paymentRoute, fee }),
+      method: transactionMethod({ paymentRoute, fee }),
+      params: transactionParams({ paymentRoute, exchangeRoute, event, fee }),
+      value: transactionValue({ paymentRoute, exchangeRoute })
+    };
+
+    if(exchangeRoute) {
+      if(paymentRoute.exchangePlugin && paymentRoute.exchangePlugin.prepareTransaction) {
+        transaction = paymentRoute.exchangePlugin.prepareTransaction(transaction);
+      }
+    }
+
+    return transaction
+  };
+
+  let transactionAddress = ({ paymentRoute, fee })=> {
+    if(paymentRoute.directTransfer && !fee) {
+      if(paymentRoute.toToken.address == Blockchains__default["default"][paymentRoute.blockchain].currency.address) {
+        return paymentRoute.toAddress
+      } else {
+        return paymentRoute.toToken.address
+      }
+    } else {
+      return routers[paymentRoute.blockchain].address
+    }
+  };
+
+  let transactionApi = ({ paymentRoute, fee })=> {
+    if(paymentRoute.directTransfer && !fee) {
+      if(paymentRoute.toToken.address == Blockchains__default["default"][paymentRoute.blockchain].currency.address) {
+        return undefined
+      } else {
+        return web3Tokens.Token[paymentRoute.blockchain].DEFAULT
+      }
+    } else {
+      return routers[paymentRoute.blockchain].api
+    }
+  };
+
+  let transactionMethod = ({ paymentRoute, fee })=> {
+    if(paymentRoute.directTransfer && !fee) {
+      if(paymentRoute.toToken.address == Blockchains__default["default"][paymentRoute.blockchain].currency.address) {
+        return undefined
+      } else {
+        return 'transfer'
+      }
+    } else {
+      return 'route'
+    }
+  };
+
+  let transactionParams = ({ paymentRoute, exchangeRoute, event, fee })=> {
+    if(paymentRoute.directTransfer && !fee) {
+      if(paymentRoute.toToken.address == Blockchains__default["default"][paymentRoute.blockchain].currency.address) {
+        return undefined
+      } else {
+        return [paymentRoute.toAddress, paymentRoute.toAmount]
+      }
+    } else {
+      return {
+        path: transactionPath({ paymentRoute, exchangeRoute }),
+        amounts: transactionAmounts({ paymentRoute, exchangeRoute, fee }),
+        addresses: transactionAddresses({ paymentRoute, fee }),
+        plugins: transactionPlugins({ paymentRoute, exchangeRoute, event, fee }),
+        data: []
+      }
+    }
+  };
+
+  let transactionPath = ({ paymentRoute, exchangeRoute })=> {
+    if(exchangeRoute) {
+      return exchangeRoute.path
+    } else {
+      return [paymentRoute.toToken.address]
+    }
+  };
+
+  let transactionAmounts = ({ paymentRoute, exchangeRoute, fee })=> {
+    let amounts;
+    if(exchangeRoute) {
+      if(exchangeRoute && exchangeRoute.exchange.wrapper) {
+        amounts = [
+          exchangeRoute.amountIn.toString(),
+          subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee })
+        ];
+      } else {
+        amounts = [
+          exchangeRoute.amountIn.toString(),
+          subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee }),
+          Math.round(Date.now() / 1000) + 30 * 60, // 30 minutes
+        ];
+      }
+    } else {
+      amounts = [
+        paymentRoute.toAmount, // from
+        subtractFee({ amount: paymentRoute.toAmount, paymentRoute, fee }) // to
+      ];
+    }
+    if(fee){
+      amounts[4] = transactionFeeAmount({ paymentRoute, fee });
+    }
+    for(var i = 0; i < amounts.length; i++) {
+      if(amounts[i] == undefined){ amounts[i] = '0'; }
+    }
+    return amounts
+  };
+
+  let subtractFee = ({ amount, paymentRoute, fee })=> {
+    if(fee) {
+      let feeAmount = transactionFeeAmount({ paymentRoute, fee });
+      return ethers.ethers.BigNumber.from(amount).sub(feeAmount).toString()
+    } else {
+      return amount
+    }
+  };
+
+  let transactionFeeAmount = ({ paymentRoute, fee })=> {
+    if(typeof fee.amount == 'string' && fee.amount.match('%')) {
+      return ethers.ethers.BigNumber.from(paymentRoute.toAmount).mul(parseFloat(fee.amount)*10).div(1000).toString()
+    } else if(typeof fee.amount == 'string') {
+      return fee.amount
+    } else if(typeof fee.amount == 'number') {
+      return ethers.ethers.utils.parseUnits(fee.amount.toString(), paymentRoute.toDecimals).toString()
+    } else {
+      throw('Unknown fee amount type!')
+    }
+  };
+
+  let transactionAddresses = ({ paymentRoute, fee })=> {
+    if(fee) {
+      return [paymentRoute.fromAddress, fee.receiver, paymentRoute.toAddress]
+    } else {
+      return [paymentRoute.fromAddress, paymentRoute.toAddress]
+    }
+  };
+
+  let transactionPlugins = ({ paymentRoute, exchangeRoute, event, fee })=> {
+    let paymentPlugins = [];
+
+    if(exchangeRoute) {
+      paymentRoute.exchangePlugin = plugins[paymentRoute.blockchain][exchangeRoute.exchange.name];
+      if(paymentRoute.exchangePlugin.wrap && paymentRoute.fromToken.address == Blockchains__default["default"][paymentRoute.blockchain].currency.address) {
+        paymentPlugins.push(paymentRoute.exchangePlugin.wrap.address);
+      } else if(paymentRoute.exchangePlugin.wrap && paymentRoute.fromToken.address == Blockchains__default["default"][paymentRoute.blockchain].wrapped.address) {
+        paymentPlugins.push(paymentRoute.exchangePlugin.unwrap.address);
+      } else {
+        paymentPlugins.push(paymentRoute.exchangePlugin.address);
+      }
+    }
+
+    if(event == 'ifSwapped' && !paymentRoute.directTransfer) {
+      paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address);
+    } else if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == Blockchains__default["default"][paymentRoute.blockchain].currency.address) {
+      paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address);
+    } else {
+      paymentPlugins.push(plugins[paymentRoute.blockchain].payment.address);
+    }
+
+    if(fee) {
+      if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == Blockchains__default["default"][paymentRoute.blockchain].currency.address) {
+        paymentPlugins.push(plugins[paymentRoute.blockchain].paymentFeeWithEvent.address);
+      } else {
+        paymentPlugins.push(plugins[paymentRoute.blockchain].paymentFee.address);
+      }
+    }
+
+    return paymentPlugins
+  };
+
+  let transactionValue = ({ paymentRoute, exchangeRoute })=> {
+    if(paymentRoute.fromToken.address == Blockchains__default["default"][paymentRoute.blockchain].currency.address) {
+      if(exchangeRoute) {
+        return exchangeRoute.amountIn.toString()
+      } else { // direct payment
+        return paymentRoute.toAmount.toString()
+      }
+    } else {
+      return ethers.ethers.BigNumber.from('0').toString()
+    }
+  };
+
   function _optionalChain(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+
   class PaymentRoute {
     constructor({ blockchain, fromAddress, fromToken, fromDecimals, fromAmount, fromBalance, toToken, toDecimals, toAmount, toAddress }) {
       this.blockchain = blockchain;
@@ -1088,7 +1093,7 @@
           if(
             (
               route.directTransfer ||
-              route.fromToken.address.toLowerCase() == web3Constants.CONSTANTS[route.blockchain].NATIVE.toLowerCase()
+              route.fromToken.address.toLowerCase() == Blockchains__default["default"][route.blockchain].currency.address.toLowerCase()
             )
           ) {
             routes[index].approvalRequired = false;
@@ -1100,7 +1105,7 @@
                 to: route.fromToken.address,
                 api: web3Tokens.Token[route.blockchain].DEFAULT,
                 method: 'approve',
-                params: [routers[route.blockchain].address, web3Constants.CONSTANTS[route.blockchain].MAXINT]
+                params: [routers[route.blockchain].address, Blockchains__default["default"][route.blockchain].maxInt]
               };
             }
           }
@@ -1120,7 +1125,7 @@
   let addRouteAmounts = (routes)=> {
     return routes.map((route)=>{
       if(route.directTransfer && !route.fee) {
-        if(route.fromToken.address.toLowerCase() == web3Constants.CONSTANTS[route.blockchain].NATIVE.toLowerCase()) {
+        if(route.fromToken.address.toLowerCase() == Blockchains__default["default"][route.blockchain].currency.address.toLowerCase()) {
           route.fromAmount = route.transaction.value;
           route.toAmount = route.transaction.value;
         } else {
@@ -1191,17 +1196,17 @@
         return aWins
       }
 
-      if (JSON.stringify([a.fromToken.address.toLowerCase(), a.toToken.address.toLowerCase()].sort()) == JSON.stringify([web3Constants.CONSTANTS[a.blockchain].NATIVE.toLowerCase(), web3Constants.CONSTANTS[a.blockchain].WRAPPED.toLowerCase()].sort())) {
+      if (JSON.stringify([a.fromToken.address.toLowerCase(), a.toToken.address.toLowerCase()].sort()) == JSON.stringify([Blockchains__default["default"][a.blockchain].currency.address.toLowerCase(), Blockchains__default["default"][a.blockchain].wrapped.address.toLowerCase()].sort())) {
         return aWins
       }
-      if (JSON.stringify([b.fromToken.address.toLowerCase(), b.toToken.address.toLowerCase()].sort()) == JSON.stringify([web3Constants.CONSTANTS[b.blockchain].NATIVE.toLowerCase(), web3Constants.CONSTANTS[b.blockchain].WRAPPED.toLowerCase()].sort())) {
+      if (JSON.stringify([b.fromToken.address.toLowerCase(), b.toToken.address.toLowerCase()].sort()) == JSON.stringify([Blockchains__default["default"][b.blockchain].currency.address.toLowerCase(), Blockchains__default["default"][b.blockchain].wrapped.address.toLowerCase()].sort())) {
         return bWins
       }
 
-      if (a.fromToken.address.toLowerCase() == web3Constants.CONSTANTS[a.blockchain].NATIVE.toLowerCase()) {
+      if (a.fromToken.address.toLowerCase() == Blockchains__default["default"][a.blockchain].currency.address.toLowerCase()) {
         return aWins
       }
-      if (b.fromToken.address.toLowerCase() == web3Constants.CONSTANTS[b.blockchain].NATIVE.toLowerCase()) {
+      if (b.fromToken.address.toLowerCase() == Blockchains__default["default"][b.blockchain].currency.address.toLowerCase()) {
         return bWins
       }
 

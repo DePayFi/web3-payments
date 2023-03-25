@@ -1,4 +1,4 @@
-import { routers } from 'src/index.evm'
+import { routers } from 'dist/esm/index.evm'
 
 describe('routers', ()=> {
 

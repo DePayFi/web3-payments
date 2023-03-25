@@ -1,14 +1,11 @@
+import Blockchains from '@depay/web3-blockchains'
 import fetchMock from 'fetch-mock'
-import plugins from 'src/plugins.js'
-import routers from 'src/routers.js'
-import { Blockchain } from '@depay/web3-blockchains'
-import { CONSTANTS } from '@depay/web3-constants'
 import { ethers } from 'ethers'
 import { mock, resetMocks } from '@depay/web3-mock'
 import { mockAssets } from 'tests/mocks/api'
 import { mockBasics, mockDecimals, mockBalance, mockAllowance } from 'tests/mocks/tokens'
 import { resetCache, getProvider } from '@depay/web3-client-evm'
-import { route } from 'src/index.evm'
+import { route, plugins, routers } from 'dist/esm/index.evm'
 import { Token } from '@depay/web3-tokens-evm'
 
 describe('route wrapped', ()=> {
@@ -17,8 +14,8 @@ describe('route wrapped', ()=> {
   const accounts = ['0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045']
   const fromAddress = accounts[0]
   const toAddress = '0x65aBbdEd9B937E38480A50eca85A8E4D2c8350E4'
-  const WRAPPED = CONSTANTS[blockchain].WRAPPED
-  const NATIVE = CONSTANTS[blockchain].NATIVE
+  const WRAPPED = Blockchains[blockchain].wrapped.address
+  const NATIVE = Blockchains[blockchain].currency.address
 
   let provider, balanceBN, tokenAmountOut, tokenAmountOutBN
   
@@ -32,7 +29,7 @@ describe('route wrapped', ()=> {
     tokenAmountOut = 0.0001
     tokenAmountOutBN = ethers.utils.parseUnits(tokenAmountOut.toString())
 
-    Blockchain.findByName(blockchain).tokens.forEach((token)=>{
+    Blockchains.findByName(blockchain).tokens.forEach((token)=>{
       if(token.type == '20') {
         mock({ request: { return: '0', to: token.address, api: Token[blockchain].DEFAULT, method: 'balanceOf', params: accounts[0] }, provider, blockchain })
       }
@@ -125,6 +122,6 @@ describe('route wrapped', ()=> {
     expect(routes[0].approvalRequired).toEqual(true)
     expect(routes[0].approvalTransaction.to).toEqual(WRAPPED)
     expect(routes[0].approvalTransaction.method).toEqual('approve')
-    expect(routes[0].approvalTransaction.params).toEqual([routers[blockchain].address, CONSTANTS[blockchain].MAXINT])
+    expect(routes[0].approvalTransaction.params).toEqual([routers[blockchain].address, Blockchains[blockchain].maxInt])
   });
 })

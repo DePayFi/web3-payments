@@ -1,4 +1,4 @@
-import { plugins } from 'src/index.evm'
+import { plugins } from 'dist/esm/index.evm'
 
 describe('plugins', ()=> {
 

@@ -43,19 +43,10 @@ let paymentRoutes = await route({
 This library supports the following blockchains:
 
 - [Ethereum](https://ethereum.org)
-- [Binance Smart Chain](https://www.binance.org/en/smartChain)
-- [Polygon](https://polygon.technology/)
-
-This library supports the following decentralized exchanges:
-
-Ethereum:
-- [Uniswap v2](https://uniswap.org)
-
-BNB Smart Chain:
-- [PancakeSwap v2](https://pancakeswap.info)
-
-Polygon:
-- [Quickswap](https://quickswap.exchange/#/)
+- [BNB Smart Chain](https://www.binance.org/smartChain)
+- [Polygon](https://polygon.technology)
+- [Fantom](https://fantom.foundation)
+- [Velas](https://velas.com)
 
 ## Platform specific packaging
 

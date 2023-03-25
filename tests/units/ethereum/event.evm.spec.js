@@ -1,15 +1,12 @@
+import Blockchains from '@depay/web3-blockchains'
 import fetchMock from 'fetch-mock'
-import plugins from 'src/plugins'
-import routers from 'src/routers'
-import { Blockchain } from '@depay/web3-blockchains'
-import { CONSTANTS } from '@depay/web3-constants'
 import { ethers } from 'ethers'
 import { mock, resetMocks, anything } from '@depay/web3-mock'
 import { mockAssets } from 'tests/mocks/api'
 import { mockBasics, mockDecimals, mockBalance, mockAllowance } from 'tests/mocks/tokens'
 import { mockPair, mockAmounts } from 'tests/mocks/UniswapV2'
 import { resetCache, getProvider } from '@depay/web3-client-evm'
-import { route } from 'src/index.evm'
+import { route, plugins, routers } from 'dist/esm/index.evm'
 import { Token } from '@depay/web3-tokens-evm'
 
 describe('event', ()=> {
@@ -24,9 +21,9 @@ describe('event', ()=> {
 
   let DAI = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
   let DEPAY = "0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb"
-  let WETH = CONSTANTS[blockchain].WRAPPED
-  let ETH = CONSTANTS[blockchain].NATIVE
-  let MAXINTBN = ethers.BigNumber.from(CONSTANTS[blockchain].MAXINT)
+  let WETH = Blockchains[blockchain].wrapped.address
+  let ETH = Blockchains[blockchain].currency.address
+  let MAXINTBN = ethers.BigNumber.from(Blockchains[blockchain].maxInt)
   let etherBalanceBN
   let DAIBalanceBN
   let DEPAYBalanceBN
@@ -75,7 +72,7 @@ describe('event', ()=> {
     ]})
 
     provider = await getProvider(blockchain)
-    Blockchain.findByName(blockchain).tokens.forEach((token)=>{
+    Blockchains.findByName(blockchain).tokens.forEach((token)=>{
       if(token.type == '20') {
         mock({ request: { return: '0', to: token.address, api: Token[blockchain].DEFAULT, method: 'balanceOf', params: accounts[0] }, provider, blockchain })
       }
@@ -88,7 +85,7 @@ describe('event', ()=> {
     mockPair(provider, '0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d', [WETH, DEPAY])
     mockPair(provider, '0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d', [DEPAY, WETH])
     mockPair(provider, '0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11', [DAI, WETH])
-    mockPair(provider, CONSTANTS[blockchain].ZERO, [DAI, DEPAY])
+    mockPair(provider, Blockchains[blockchain].zero, [DAI, DEPAY])
 
     mockAmounts({ provider, method: 'getAmountsIn', params: [tokenAmountOutBN, [WETH, DEPAY]], amounts: [WETHAmountInBN, tokenAmountOutBN] })
     mockAmounts({ provider, method: 'getAmountsIn', params: [tokenAmountOutBN, [DAI, WETH, DEPAY]], amounts: [DAIAmountInBN, WETHAmountInBN, tokenAmountOutBN] })
@@ -137,7 +134,7 @@ describe('event', ()=> {
       accept: [{
         toAddress,
         blockchain,
-        token: CONSTANTS[blockchain].NATIVE,
+        token: Blockchains[blockchain].currency.address,
         amount: 0.0001
       }],
       event: 'ifRoutedAndNative',
@@ -155,7 +152,7 @@ describe('event', ()=> {
       accept: [{
         toAddress,
         blockchain,
-        token: CONSTANTS[blockchain].WRAPPED,
+        token: Blockchains[blockchain].wrapped.address,
         amount: 0.0001
       }],
       event: 'ifRoutedAndNative',

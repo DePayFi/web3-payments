@@ -1,17 +1,17 @@
-import { CONSTANTS } from '@depay/web3-constants'
+import Blockchains from '@depay/web3-blockchains'
 
 const prepareUniswapTransaction = (transaction)=>{
   transaction.params.path = transaction.params.path.filter((token, index, path)=>{
     if(
       index == 1 &&
-      token == CONSTANTS[transaction.blockchain].WRAPPED &&
-      path[0] == CONSTANTS[transaction.blockchain].NATIVE
+      token == Blockchains[transaction.blockchain].wrapped.address &&
+      path[0] == Blockchains[transaction.blockchain].currency.address
     ) { 
       return false
     } else if (
       index == path.length-2 &&
-      token == CONSTANTS[transaction.blockchain].WRAPPED &&
-      path[path.length-1] == CONSTANTS[transaction.blockchain].NATIVE
+      token == Blockchains[transaction.blockchain].wrapped.address &&
+      path[path.length-1] == Blockchains[transaction.blockchain].currency.address
     ) {
       return false
     } else {

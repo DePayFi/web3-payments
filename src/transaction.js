@@ -1,8 +1,21 @@
+/*#if _EVM
+
+import { Token } from '@depay/web3-tokens-evm'
+
+/*#elif _SOLANA
+
+import { Token } from '@depay/web3-tokens-solana'
+
+//#else */
+
+import { Token } from '@depay/web3-tokens'
+
+//#endif
+
+import Blockchains from '@depay/web3-blockchains'
 import plugins from './plugins'
 import routers from './routers'
-import { CONSTANTS } from '@depay/web3-constants'
 import { ethers } from 'ethers'
-import { Token } from '@depay/web3-tokens'
 
 let getTransaction = async({ paymentRoute, event, fee })=> {
   let exchangeRoute = paymentRoute.exchangeRoutes[0]
@@ -27,7 +40,7 @@ let getTransaction = async({ paymentRoute, event, fee })=> {
 
 let transactionAddress = ({ paymentRoute, fee })=> {
   if(paymentRoute.directTransfer && !fee) {
-    if(paymentRoute.toToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
+    if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return paymentRoute.toAddress
     } else {
       return paymentRoute.toToken.address
@@ -39,7 +52,7 @@ let transactionAddress = ({ paymentRoute, fee })=> {
 
 let transactionApi = ({ paymentRoute, fee })=> {
   if(paymentRoute.directTransfer && !fee) {
-    if(paymentRoute.toToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
+    if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
     } else {
       return Token[paymentRoute.blockchain].DEFAULT
@@ -51,7 +64,7 @@ let transactionApi = ({ paymentRoute, fee })=> {
 
 let transactionMethod = ({ paymentRoute, fee })=> {
   if(paymentRoute.directTransfer && !fee) {
-    if(paymentRoute.toToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
+    if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
     } else {
       return 'transfer'
@@ -63,7 +76,7 @@ let transactionMethod = ({ paymentRoute, fee })=> {
 
 let transactionParams = ({ paymentRoute, exchangeRoute, event, fee })=> {
   if(paymentRoute.directTransfer && !fee) {
-    if(paymentRoute.toToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
+    if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
     } else {
       return [paymentRoute.toAddress, paymentRoute.toAmount]
@@ -151,9 +164,9 @@ let transactionPlugins = ({ paymentRoute, exchangeRoute, event, fee })=> {
 
   if(exchangeRoute) {
     paymentRoute.exchangePlugin = plugins[paymentRoute.blockchain][exchangeRoute.exchange.name]
-    if(paymentRoute.exchangePlugin.wrap && paymentRoute.fromToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
+    if(paymentRoute.exchangePlugin.wrap && paymentRoute.fromToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       paymentPlugins.push(paymentRoute.exchangePlugin.wrap.address)
-    } else if(paymentRoute.exchangePlugin.wrap && paymentRoute.fromToken.address == CONSTANTS[paymentRoute.blockchain].WRAPPED) {
+    } else if(paymentRoute.exchangePlugin.wrap && paymentRoute.fromToken.address == Blockchains[paymentRoute.blockchain].wrapped.address) {
       paymentPlugins.push(paymentRoute.exchangePlugin.unwrap.address)
     } else {
       paymentPlugins.push(paymentRoute.exchangePlugin.address)
@@ -162,14 +175,14 @@ let transactionPlugins = ({ paymentRoute, exchangeRoute, event, fee })=> {
 
   if(event == 'ifSwapped' && !paymentRoute.directTransfer) {
     paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address)
-  } else if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
+  } else if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
     paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address)
   } else {
     paymentPlugins.push(plugins[paymentRoute.blockchain].payment.address)
   }
 
   if(fee) {
-    if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
+    if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       paymentPlugins.push(plugins[paymentRoute.blockchain].paymentFeeWithEvent.address)
     } else {
       paymentPlugins.push(plugins[paymentRoute.blockchain].paymentFee.address)
@@ -180,7 +193,7 @@ let transactionPlugins = ({ paymentRoute, exchangeRoute, event, fee })=> {
 }
 
 let transactionValue = ({ paymentRoute, exchangeRoute })=> {
-  if(paymentRoute.fromToken.address == CONSTANTS[paymentRoute.blockchain].NATIVE) {
+  if(paymentRoute.fromToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
     if(exchangeRoute) {
       return exchangeRoute.amountIn.toString()
     } else { // direct payment
