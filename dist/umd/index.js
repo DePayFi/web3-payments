@@ -29,7 +29,7 @@
     return transaction
   };
 
-  var plugins = {
+  var plugins$1 = {
     ethereum: {
       payment: {
         address: '0x99F3F4685a7178F26EB4F4Ca8B75a1724F1577B9'
@@ -98,7 +98,34 @@
     },
   };
 
-  var routers = {
+  var solanaPlugins = {
+    solana: {
+      payment: {
+        address: '0x99F3F4685a7178F26EB4F4Ca8B75a1724F1577B9'
+      },
+      weth: {
+        wrap: { address: '0xF4cc97D00dD0639c3e383D7CafB3d815616cbB2C' },
+        unwrap: { address: '0xcA575c6C5305e8127F3D376bb22776eAD370De4a' },
+      },
+      uniswap_v2: {
+        address: '0xe04b08Dfc6CaA0F4Ec523a3Ae283Ece7efE00019',
+        prepareTransaction: ()=>{}
+      },
+      paymentWithEvent: {
+        address: '0xD8fBC10787b019fE4059Eb5AA5fB11a5862229EF'
+      },
+      paymentFee: {
+        address: '0x874Cb669D7BFff79d4A6A30F4ea52c5e413BD6A7',
+      },
+      paymentFeeWithEvent: {
+        address: '0x981cAd45c768d56136FDBb2C5E115F33D971bE6C'
+      }
+    },
+  };
+
+  var plugins = {... plugins$1, solanaPlugins};
+
+  var routers$1 = {
     ethereum: {
       address: '0xae60aC8e69414C2Dc362D0e6a03af643d1D85b92',
       api: [{"inputs":[{"internalType":"address","name":"_configuration","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"ETH","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"configuration","outputs":[{"internalType":"contract DePayRouterV1Configuration","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"pluginAddress","type":"address"}],"name":"isApproved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"uint256[]","name":"amounts","type":"uint256[]"},{"internalType":"address[]","name":"addresses","type":"address[]"},{"internalType":"address[]","name":"plugins","type":"address[]"},{"internalType":"string[]","name":"data","type":"string[]"}],"name":"route","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdraw","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}]
@@ -112,6 +139,15 @@
       api: [{"inputs":[{"internalType":"address","name":"_configuration","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"ETH","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"configuration","outputs":[{"internalType":"contract DePayRouterV1Configuration","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"pluginAddress","type":"address"}],"name":"isApproved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"uint256[]","name":"amounts","type":"uint256[]"},{"internalType":"address[]","name":"addresses","type":"address[]"},{"internalType":"address[]","name":"plugins","type":"address[]"},{"internalType":"string[]","name":"data","type":"string[]"}],"name":"route","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdraw","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}]
     }
   };
+
+  var solanaRouters = {
+    solana: {
+      address: '0xae60aC8e69414C2Dc362D0e6a03af643d1D85b92',
+      api: []
+    },
+  };
+
+  var routers = {... routers$1, solanaRouters};
 
   /**
    * Checks if `value` is the
@@ -692,7 +728,7 @@
 
   var throttle_1 = throttle;
 
-  let getTransaction = async({ paymentRoute, event, fee })=> {
+  let getTransaction$2 = async({ paymentRoute, event, fee })=> {
     let exchangeRoute = paymentRoute.exchangeRoutes[0];
 
     let transaction = {
@@ -721,7 +757,7 @@
         return paymentRoute.toToken.address
       }
     } else {
-      return routers[paymentRoute.blockchain].address
+      return routers$1[paymentRoute.blockchain].address
     }
   };
 
@@ -733,7 +769,7 @@
         return web3Tokens.Token[paymentRoute.blockchain].DEFAULT
       }
     } else {
-      return routers[paymentRoute.blockchain].api
+      return routers$1[paymentRoute.blockchain].api
     }
   };
 
@@ -838,7 +874,7 @@
     let paymentPlugins = [];
 
     if(exchangeRoute) {
-      paymentRoute.exchangePlugin = plugins[paymentRoute.blockchain][exchangeRoute.exchange.name];
+      paymentRoute.exchangePlugin = plugins$1[paymentRoute.blockchain][exchangeRoute.exchange.name];
       if(paymentRoute.exchangePlugin.wrap && paymentRoute.fromToken.address == Blockchains__default["default"][paymentRoute.blockchain].currency.address) {
         paymentPlugins.push(paymentRoute.exchangePlugin.wrap.address);
       } else if(paymentRoute.exchangePlugin.wrap && paymentRoute.fromToken.address == Blockchains__default["default"][paymentRoute.blockchain].wrapped.address) {
@@ -849,18 +885,18 @@
     }
 
     if(event == 'ifSwapped' && !paymentRoute.directTransfer) {
-      paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address);
+      paymentPlugins.push(plugins$1[paymentRoute.blockchain].paymentWithEvent.address);
     } else if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == Blockchains__default["default"][paymentRoute.blockchain].currency.address) {
-      paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address);
+      paymentPlugins.push(plugins$1[paymentRoute.blockchain].paymentWithEvent.address);
     } else {
-      paymentPlugins.push(plugins[paymentRoute.blockchain].payment.address);
+      paymentPlugins.push(plugins$1[paymentRoute.blockchain].payment.address);
     }
 
     if(fee) {
       if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == Blockchains__default["default"][paymentRoute.blockchain].currency.address) {
-        paymentPlugins.push(plugins[paymentRoute.blockchain].paymentFeeWithEvent.address);
+        paymentPlugins.push(plugins$1[paymentRoute.blockchain].paymentFeeWithEvent.address);
       } else {
-        paymentPlugins.push(plugins[paymentRoute.blockchain].paymentFee.address);
+        paymentPlugins.push(plugins$1[paymentRoute.blockchain].paymentFee.address);
       }
     }
 
@@ -876,6 +912,24 @@
       }
     } else {
       return ethers.ethers.BigNumber.from('0').toString()
+    }
+  };
+
+  let getTransaction$1 = async({ paymentRoute, event, fee })=> {
+    return
+  };
+
+  let supported = ['ethereum', 'bsc', 'polygon', 'solana'];
+  supported.evm = ['ethereum', 'bsc', 'polygon'];
+  supported.solana = ['solana'];
+
+  const getTransaction = ({ paymentRoute, event, fee })=>{
+    if(supported.evm.includes(paymentRoute.blockchain)) {
+      return getTransaction$2({ paymentRoute, event, fee })
+    } else if(supported.solana.includes(paymentRoute.blockchain)) {
+      return getTransaction$1({ paymentRoute, event, fee })
+    } else {
+      throw('Blockchain not supported!')
     }
   };
 

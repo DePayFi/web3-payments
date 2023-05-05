@@ -45,12 +45,13 @@ This library supports the following blockchains:
 - [Ethereum](https://ethereum.org)
 - [BNB Smart Chain](https://www.binance.org/smartChain)
 - [Polygon](https://polygon.technology)
-- [Fantom](https://fantom.foundation)
-- [Velas](https://velas.com)
+- [Solana](https://fantom.foundation)
 
 ## Platform specific packaging
 
 In case you want to use and package only specific platforms, use the platform-specific package:
+
+### EVM platform specific packaging
 
 ```javascript
 import { route } from '@depay/web3-payments-evm'
@@ -59,13 +60,31 @@ import { route } from '@depay/web3-payments-evm'
 Make sure you install all required dependencies for evm specific packaging too:
 
 ```
-yarn add @depay/web3-assets-evm @depay/web3-constants @depay/web3-exchanges-evm @depay/web3-tokens-evm ethers
+yarn add @depay/web3-blockchains @depay/web3-assets-evm @depay/web3-exchanges-evm @depay/web3-tokens-evm ethers
 ```
 
 or if you use npm
 
 ```
-npm i @depay/web3-assets-evm @depay/web3-constants @depay/web3-exchanges-evm @depay/web3-tokens-evm ethers
+npm i @depay/web3-blockchains @depay/web3-assets-evm @depay/web3-exchanges-evm @depay/web3-tokens-evm ethers
+```
+
+### Solana platform specific packaging
+
+```javascript
+import { route } from '@depay/web3-payments-solana'
+```
+
+Make sure you install all required dependencies for solana specific packaging too:
+
+```
+yarn add @depay/web3-blockchains @depay/web3-assets-solana @depay/web3-exchanges-solana @depay/web3-tokens-solana @depay/solana-web3.js
+```
+
+or if you use npm
+
+```
+npm i @depay/web3-blockchains @depay/web3-assets-solana @depay/web3-exchanges-solana @depay/web3-tokens-solana @depay/solana-web3.js
 ```
 
 ## Functionalities
