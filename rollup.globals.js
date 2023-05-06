@@ -7,5 +7,6 @@ export default {
   '@depay/web3-exchanges-evm': 'Web3Exchanges',
   '@depay/web3-tokens': 'Web3Tokens',
   '@depay/web3-tokens-evm': 'Web3Tokens',
+  '@depay/solana-web3.js': 'SolanaWeb3js',
   'ethers': 'ethers',
 }

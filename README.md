@@ -315,21 +315,23 @@ Payment routes are provided in the following structure:
 ```
 {
   blockchain: String (e.g. ethereum)
-  fromToken: Token (see @depay/web3-tokens)
-  fromBalance: BigNumber (e.g. <BigNumber '10000000000000000000'>)
   fromAddress: String (e.g. '0xd8da6bf26964af9d7eed9e03e53415d37aa96045')
+  fromToken: Token (see @depay/web3-tokens)
   fromAmount: BigNumber (e.g. <BigNumber '31000000000000000000'>)
   fromDecimals: number (e.g. 18)
+  fromBalance: BigNumber (e.g. <BigNumber '10000000000000000000'>)
   toToken: Token (see @depay/web3-tokens)
   toAmount: BigNumber (e.g. <BigNumber '21000000000000000000'>)
-  feeAmount: BigNumber (e.g. <BigNumber '2100000000000000000'>)
   toDecimals: number (e.g. 18)
   toAddress: String (e.g. '0x65aBbdEd9B937E38480A50eca85A8E4D2c8350E4')
+  fee: Object (e.g. undefined or fee object)
+  feeAmount: BigNumber (e.g. <BigNumber '2100000000000000000'>)
   exchangeRoutes: Array (list of exchange routes offering to convert )
-  transaction: Transaction (see @depay/web3-wallets for details)
   approvalRequired: Boolean (e.g. true)
   approvalTransaction: Transaction (to approve the fromToken being used from the payment router to perform the payment)
   directTransfer: Boolean (e.g. true)
+  event: String (e.g. 'ifSwapped')
+  getTransaction: async => Transaction (see @depay/web3-wallets for details)
 }
 ```
 

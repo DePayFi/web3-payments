@@ -94,10 +94,7 @@ var plugins$1 = {
   },
 };
 
-let solanaPlugins = {};
-
-
-var plugins = {... plugins$1, solanaPlugins};
+var plugins = {... plugins$1};
 
 var routers$1 = {
   ethereum: {
@@ -765,7 +762,7 @@ let transactionParams = ({ paymentRoute, exchangeRoute, event, fee })=> {
   } else {
     return {
       path: transactionPath({ paymentRoute, exchangeRoute }),
-      amounts: transactionAmounts({ paymentRoute, exchangeRoute, fee }),
+      amounts: getTransactionAmounts({ paymentRoute, exchangeRoute, fee }),
       addresses: transactionAddresses({ paymentRoute, fee }),
       plugins: transactionPlugins({ paymentRoute, exchangeRoute, event, fee }),
       data: []
@@ -781,55 +778,28 @@ let transactionPath = ({ paymentRoute, exchangeRoute })=> {
   }
 };
 
-let transactionAmounts = ({ paymentRoute, exchangeRoute, fee })=> {
+let getTransactionAmounts = ({ paymentRoute, exchangeRoute, fee })=> {
   let amounts;
   if(exchangeRoute) {
     if(exchangeRoute && exchangeRoute.exchange.wrapper) {
-      amounts = [
-        exchangeRoute.amountIn.toString(),
-        subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee })
-      ];
+      amounts = [ paymentRoute.fromAmount, paymentRoute.toAmount ];
     } else {
       amounts = [
-        exchangeRoute.amountIn.toString(),
-        subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee }),
+        paymentRoute.fromAmount,
+        paymentRoute.toAmount,
         Math.round(Date.now() / 1000) + 30 * 60, // 30 minutes
       ];
     }
   } else {
-    amounts = [
-      paymentRoute.toAmount, // from
-      subtractFee({ amount: paymentRoute.toAmount, paymentRoute, fee }) // to
-    ];
+    amounts = [ paymentRoute.fromAmount, paymentRoute.toAmount ];
   }
   if(fee){
-    amounts[4] = transactionFeeAmount({ paymentRoute, fee });
+    amounts[4] = paymentRoute.feeAmount;
   }
   for(var i = 0; i < amounts.length; i++) {
     if(amounts[i] == undefined){ amounts[i] = '0'; }
   }
   return amounts
-};
-
-let subtractFee = ({ amount, paymentRoute, fee })=> {
-  if(fee) {
-    let feeAmount = transactionFeeAmount({ paymentRoute, fee });
-    return ethers.BigNumber.from(amount).sub(feeAmount).toString()
-  } else {
-    return amount
-  }
-};
-
-let transactionFeeAmount = ({ paymentRoute, fee })=> {
-  if(typeof fee.amount == 'string' && fee.amount.match('%')) {
-    return ethers.BigNumber.from(paymentRoute.toAmount).mul(parseFloat(fee.amount)*10).div(1000).toString()
-  } else if(typeof fee.amount == 'string') {
-    return fee.amount
-  } else if(typeof fee.amount == 'number') {
-    return ethers.utils.parseUnits(fee.amount.toString(), paymentRoute.toDecimals).toString()
-  } else {
-    throw('Unknown fee amount type!')
-  }
 };
 
 let transactionAddresses = ({ paymentRoute, fee })=> {
@@ -904,26 +874,47 @@ const getTransaction = ({ paymentRoute, event, fee })=>{
 function _optionalChain(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 
 class PaymentRoute {
-  constructor({ blockchain, fromAddress, fromToken, fromDecimals, fromAmount, fromBalance, toToken, toDecimals, toAmount, toAddress }) {
+  constructor({
+    blockchain,
+    fromAddress,
+    fromToken,
+    fromAmount,
+    fromDecimals,
+    fromBalance,
+    toToken,
+    toAmount,
+    toDecimals,
+    toAddress,
+    fee,
+    feeAmount,
+    exchangeRoutes,
+    approvalRequired,
+    approvalTransaction,
+    directTransfer,
+    event,
+  }) {
     this.blockchain = blockchain;
     this.fromAddress = fromAddress;
     this.fromToken = fromToken;
-    this.fromAmount = _optionalChain([fromAmount, 'optionalAccess', _ => _.toString, 'call', _2 => _2()]);
+    this.fromAmount = _optionalChain([(fromAmount || toAmount), 'optionalAccess', _ => _.toString, 'call', _2 => _2()]);
     this.fromDecimals = fromDecimals;
     this.fromBalance = fromBalance;
     this.toToken = toToken;
     this.toAmount = _optionalChain([toAmount, 'optionalAccess', _3 => _3.toString, 'call', _4 => _4()]);
     this.toDecimals = toDecimals;
     this.toAddress = toAddress;
-    this.exchangeRoutes = [];
-    this.transaction = undefined;
-    this.approvalRequired = undefined;
-    this.approvalTransaction = undefined;
-    this.directTransfer = undefined;
+    this.fee = fee;
+    this.feeAmount = feeAmount;
+    this.exchangeRoutes = exchangeRoutes || [];
+    this.approvalRequired = approvalRequired;
+    this.approvalTransaction = approvalTransaction;
+    this.directTransfer = directTransfer;
+    this.event = event;
+    this.getTransaction = async ()=> await getTransaction({ paymentRoute: this, event, fee });
   }
 }
 
-function convertToRoutes({ assets, accept, from }) {
+function convertToRoutes({ assets, accept, from, fee, event }) {
   return Promise.all(assets.map(async (asset)=>{
     let relevantConfigurations = accept.filter((configuration)=>(configuration.blockchain == asset.blockchain));
     let fromToken = new Token(asset);
@@ -945,6 +936,8 @@ function convertToRoutes({ assets, accept, from }) {
           fromBalance: asset.balance,
           fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
+          fee,
+          event
         })
       } else if(configuration.fromToken && configuration.fromAmount && fromToken.address.toLowerCase() == configuration.fromToken.toLowerCase()) {
         let blockchain = configuration.blockchain;
@@ -963,6 +956,8 @@ function convertToRoutes({ assets, accept, from }) {
           fromBalance: asset.balance,
           fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
+          fee,
+          event
         })
       }
     }))
@@ -971,17 +966,17 @@ function convertToRoutes({ assets, accept, from }) {
 
 function assetsToRoutes({ assets, blacklist, accept, from, event, fee }) {
   return Promise.resolve(filterBlacklistedAssets({ assets, blacklist }))
-    .then((assets) => convertToRoutes({ assets, accept, from }))
+    .then((assets) => convertToRoutes({ assets, accept, from, fee, event }))
     .then((routes) => addDirectTransferStatus({ routes, fee }))
     .then(addExchangeRoutes)
     .then(filterExchangeRoutesWithoutPlugin)
     .then(filterNotRoutable)
     .then(filterInsufficientBalance)
-    .then((routes)=>addTransactions({ routes, event, fee }))
-    .then(addRouteAmounts)
+    .then((routes)=>addRouteAmounts({ routes, fee }))
     .then(addApproval)
     .then(sortPaymentRoutes)
     .then(filterDuplicateFromTokens)
+    .then((routes)=>routes.map((route)=>new PaymentRoute(route)))
 }
 
 function route({ accept, from, whitelist, blacklist, event, fee, update }) {
@@ -1080,7 +1075,8 @@ let addExchangeRoutes = async (routes) => {
 
 let filterExchangeRoutesWithoutPlugin = (routes) => {
   return routes.filter((route)=>{
-    if(route.exchangeRoutes.length == 0) { return true }
+    if(route.exchangeRoutes.length === 0) { return true }
+    if(route.blockchain === 'solana') { return true }
     return plugins[route.blockchain][route.exchangeRoutes[0].exchange.name] != undefined
   })
 };
@@ -1108,14 +1104,21 @@ let filterInsufficientBalance = async(routes) => {
 
 let addApproval = (routes) => {
   return Promise.all(routes.map(
-    (route) => route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address)
+    (route) => {
+      if(route.blockchain === 'solana') {
+        return Promise.resolve(Blockchains.solana.maxInt)
+      } else {
+        return route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address)
+      }
+    }
   )).then(
     (allowances) => {
-      routes.forEach((route, index) => {
+      routes.map((route, index) => {
         if(
           (
             route.directTransfer ||
-            route.fromToken.address.toLowerCase() == Blockchains[route.blockchain].currency.address.toLowerCase()
+            route.fromToken.address.toLowerCase() == Blockchains[route.blockchain].currency.address.toLowerCase() ||
+            route.blockchain === 'solana'
           )
         ) {
           routes[index].approvalRequired = false;
@@ -1144,23 +1147,70 @@ let addDirectTransferStatus = ({ routes, fee }) => {
   })
 };
 
-let addRouteAmounts = (routes)=> {
-  return routes.map((route)=>{
-    if(route.directTransfer && !route.fee) {
-      if(route.fromToken.address.toLowerCase() == Blockchains[route.blockchain].currency.address.toLowerCase()) {
-        route.fromAmount = route.transaction.value;
-        route.toAmount = route.transaction.value;
-      } else {
-        route.fromAmount = route.transaction.params[1];
-        route.toAmount = route.transaction.params[1];
-      }
+let calculateAmounts = ({ paymentRoute, exchangeRoute, fee })=>{
+  let fromAmount;
+  let toAmount;
+  let feeAmount;
+  if(exchangeRoute) {
+    if(exchangeRoute && exchangeRoute.exchange.wrapper) {
+      fromAmount = exchangeRoute.amountIn.toString();
+      toAmount = subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee });
     } else {
-      route.fromAmount = route.transaction.params.amounts[0];
-      route.toAmount = route.transaction.params.amounts[1];
-      if(route.fee){
-        route.feeAmount = route.transaction.params.amounts[4];
-      }
+      fromAmount = exchangeRoute.amountIn.toString();
+      toAmount = subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee });
     }
+  } else {
+    fromAmount = paymentRoute.fromAmount;
+    toAmount = subtractFee({ amount: paymentRoute.fromAmount, paymentRoute, fee });
+  }
+  if(fee){
+    feeAmount = getFeeAmount({ paymentRoute, fee });
+  }
+  return { fromAmount, toAmount, feeAmount }
+};
+
+let subtractFee = ({ amount, paymentRoute, fee })=> {
+  if(fee) {
+    let feeAmount = getFeeAmount({ paymentRoute, fee });
+    return ethers.BigNumber.from(amount).sub(feeAmount).toString()
+  } else {
+    return amount
+  }
+};
+
+let getFeeAmount = ({ paymentRoute, fee })=> {
+  if(typeof fee.amount == 'string' && fee.amount.match('%')) {
+    return ethers.BigNumber.from(paymentRoute.toAmount).mul(parseFloat(fee.amount)*10).div(1000).toString()
+  } else if(typeof fee.amount == 'string') {
+    return fee.amount
+  } else if(typeof fee.amount == 'number') {
+    return ethers.utils.parseUnits(fee.amount.toString(), paymentRoute.toDecimals).toString()
+  } else {
+    throw('Unknown fee amount type!')
+  }
+};
+
+let addRouteAmounts = ({ routes, fee })=> {
+  return routes.map((route)=>{
+
+    if(supported.evm.includes(route.blockchain)) {
+
+      if(route.directTransfer && !route.fee) {
+        route.fromAmount = route.toAmount;
+      } else {
+        let { fromAmount, toAmount, feeAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0], fee });
+        route.fromAmount = fromAmount;
+        route.toAmount = toAmount;
+        if(route.fee){
+          route.feeAmount = feeAmount;
+        }
+      }
+    } else if (supported.solana.includes(route.blockchain)) {
+
+      console.log('add route amounts solana!!!');
+
+    }
+    
     return route
   })
 };
@@ -1181,10 +1231,12 @@ let filterDuplicateFromTokens = (routes) => {
 
 let scoreBlockchainCost = (blockchain) => {
   switch(blockchain) {
+    case 'solana':
+      return 10
     case 'polygon':
-      return 50
+      return 30
     case 'bsc':
-      return 90
+      return 70
     case 'ethereum':
       return 99
     default:
@@ -1234,14 +1286,6 @@ let sortPaymentRoutes = (routes) => {
 
     return equal
   })
-};
-
-let addTransactions = ({ routes, event, fee }) => {
-  return Promise.all(routes.map(async (route)=>{
-    route.transaction = await getTransaction({ paymentRoute: route, event, fee });
-    route.fee = !!fee;
-    return route
-  }))
 };
 
 export { plugins, route, routers };

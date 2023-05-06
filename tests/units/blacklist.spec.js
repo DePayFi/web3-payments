@@ -79,6 +79,7 @@ describe('route', ()=> {
   let WETH_DAI_ethereum_amountIn = '5850357640672031'
   let WETH_DAI_ethereum_amountInSlippage = '29251788203360'
   let DAI_ethereum_amountIn = '20163901534128454768'
+  let transaction
 
   it('blacklists fromTokens and only calculates routes for all the others', async ()=>{
 
@@ -160,18 +161,19 @@ describe('route', ()=> {
     expect(routes[0].fromBalance.toString()).toEqual(BNB_balance.toString())
     expect(routes[0].toToken.address).toEqual(USDT_bsc)
     expect(routes[0].toAmount.toString()).toEqual(USDT_bsc_amount.toString())
-    expect(routes[0].transaction.blockchain).toEqual('bsc')
-    expect(routes[0].transaction.to).toEqual(routers.bsc.address)
-    expect(routes[0].transaction.method).toEqual('route')
-    expect(routes[0].transaction.params.path).toEqual([Blockchains.bsc.currency.address, USDT_bsc])
-    expect(routes[0].transaction.params.amounts[0].toString()).toEqual(
+    transaction = await routes[0].getTransaction()
+    expect(transaction.blockchain).toEqual('bsc')
+    expect(transaction.to).toEqual(routers.bsc.address)
+    expect(transaction.method).toEqual('route')
+    expect(transaction.params.path).toEqual([Blockchains.bsc.currency.address, USDT_bsc])
+    expect(transaction.params.amounts[0].toString()).toEqual(
       ethers.BigNumber.from(WBNB_USDT_bsc_amountIn).add(ethers.BigNumber.from(WBNB_USDT_bsc_amountInSlippage)).toString()
     )
-    expect(routes[0].transaction.params.amounts[1].toString()).toEqual(USDT_bsc_amount.toString())
-    expect(routes[0].transaction.params.addresses[0]).toEqual(fromAddress)
-    expect(routes[0].transaction.params.addresses[1]).toEqual(toAddress)
-    expect(routes[0].transaction.params.plugins[0]).toEqual(plugins.bsc.pancakeswap.address)
-    expect(routes[0].transaction.params.plugins[1]).toEqual(plugins.bsc.payment.address)
+    expect(transaction.params.amounts[1].toString()).toEqual(USDT_bsc_amount.toString())
+    expect(transaction.params.addresses[0]).toEqual(fromAddress)
+    expect(transaction.params.addresses[1]).toEqual(toAddress)
+    expect(transaction.params.plugins[0]).toEqual(plugins.bsc.pancakeswap.address)
+    expect(transaction.params.plugins[1]).toEqual(plugins.bsc.payment.address)
     expect(routes[0].approvalRequired).toEqual(false)
     expect(routes[0].approvalTransaction).toEqual(undefined)
     expect(routes[0].directTransfer).toEqual(false)
@@ -184,18 +186,19 @@ describe('route', ()=> {
     expect(routes[1].fromBalance.toString()).toEqual(ETH_balance.toString())
     expect(routes[1].toToken.address).toEqual(DAI_ethereum)
     expect(routes[1].toAmount.toString()).toEqual(DAI_ethereum_amount.toString())
-    expect(routes[1].transaction.blockchain).toEqual('ethereum')
-    expect(routes[1].transaction.to).toEqual(routers.ethereum.address)
-    expect(routes[1].transaction.method).toEqual('route')
-    expect(routes[1].transaction.params.path).toEqual([Blockchains.ethereum.currency.address, DAI_ethereum])
-    expect(routes[1].transaction.params.amounts[0].toString()).toEqual(
+    transaction = await routes[1].getTransaction()
+    expect(transaction.blockchain).toEqual('ethereum')
+    expect(transaction.to).toEqual(routers.ethereum.address)
+    expect(transaction.method).toEqual('route')
+    expect(transaction.params.path).toEqual([Blockchains.ethereum.currency.address, DAI_ethereum])
+    expect(transaction.params.amounts[0].toString()).toEqual(
       ethers.BigNumber.from(WETH_DAI_ethereum_amountIn).add(ethers.BigNumber.from(WETH_DAI_ethereum_amountInSlippage)).toString()
     )
-    expect(routes[1].transaction.params.amounts[1].toString()).toEqual(DAI_ethereum_amount.toString())
-    expect(routes[1].transaction.params.addresses[0]).toEqual(fromAddress)
-    expect(routes[1].transaction.params.addresses[1]).toEqual(toAddress)
-    expect(routes[1].transaction.params.plugins[0]).toEqual(plugins.ethereum.uniswap_v2.address)
-    expect(routes[1].transaction.params.plugins[1]).toEqual(plugins.ethereum.payment.address)
+    expect(transaction.params.amounts[1].toString()).toEqual(DAI_ethereum_amount.toString())
+    expect(transaction.params.addresses[0]).toEqual(fromAddress)
+    expect(transaction.params.addresses[1]).toEqual(toAddress)
+    expect(transaction.params.plugins[0]).toEqual(plugins.ethereum.uniswap_v2.address)
+    expect(transaction.params.plugins[1]).toEqual(plugins.ethereum.payment.address)
     expect(routes[1].approvalRequired).toEqual(false)
     expect(routes[1].approvalTransaction).toEqual(undefined)
     expect(routes[1].directTransfer).toEqual(false)

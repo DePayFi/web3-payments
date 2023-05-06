@@ -6,6 +6,7 @@ let solanaGetTransaction = ()=>{}
 /*#elif _SOLANA
 
 let evmGetTransaction = ()=>{}
+let evmGetTransactionAmounts = ()=>{}
 import { getTransaction as solanaGetTransaction} from './platforms/solana/transaction'
 
 //#else */

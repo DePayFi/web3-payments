@@ -82,7 +82,7 @@ let transactionParams = ({ paymentRoute, exchangeRoute, event, fee })=> {
   } else {
     return {
       path: transactionPath({ paymentRoute, exchangeRoute }),
-      amounts: transactionAmounts({ paymentRoute, exchangeRoute, fee }),
+      amounts: getTransactionAmounts({ paymentRoute, exchangeRoute, fee }),
       addresses: transactionAddresses({ paymentRoute, fee }),
       plugins: transactionPlugins({ paymentRoute, exchangeRoute, event, fee }),
       data: []
@@ -98,55 +98,28 @@ let transactionPath = ({ paymentRoute, exchangeRoute })=> {
   }
 }
 
-let transactionAmounts = ({ paymentRoute, exchangeRoute, fee })=> {
+let getTransactionAmounts = ({ paymentRoute, exchangeRoute, fee })=> {
   let amounts
   if(exchangeRoute) {
     if(exchangeRoute && exchangeRoute.exchange.wrapper) {
-      amounts = [
-        exchangeRoute.amountIn.toString(),
-        subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee })
-      ]
+      amounts = [ paymentRoute.fromAmount, paymentRoute.toAmount ]
     } else {
       amounts = [
-        exchangeRoute.amountIn.toString(),
-        subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee }),
+        paymentRoute.fromAmount,
+        paymentRoute.toAmount,
         Math.round(Date.now() / 1000) + 30 * 60, // 30 minutes
       ]
     }
   } else {
-    amounts = [
-      paymentRoute.toAmount, // from
-      subtractFee({ amount: paymentRoute.toAmount, paymentRoute, fee }) // to
-    ]
+    amounts = [ paymentRoute.fromAmount, paymentRoute.toAmount ]
   }
   if(fee){
-    amounts[4] = transactionFeeAmount({ paymentRoute, fee })
+    amounts[4] = paymentRoute.feeAmount
   }
   for(var i = 0; i < amounts.length; i++) {
     if(amounts[i] == undefined){ amounts[i] = '0' }
   }
   return amounts
-}
-
-let subtractFee = ({ amount, paymentRoute, fee })=> {
-  if(fee) {
-    let feeAmount = transactionFeeAmount({ paymentRoute, fee })
-    return ethers.BigNumber.from(amount).sub(feeAmount).toString()
-  } else {
-    return amount
-  }
-}
-
-let transactionFeeAmount = ({ paymentRoute, fee })=> {
-  if(typeof fee.amount == 'string' && fee.amount.match('%')) {
-    return ethers.BigNumber.from(paymentRoute.toAmount).mul(parseFloat(fee.amount)*10).div(1000).toString()
-  } else if(typeof fee.amount == 'string') {
-    return fee.amount
-  } else if(typeof fee.amount == 'number') {
-    return ethers.utils.parseUnits(fee.amount.toString(), paymentRoute.toDecimals).toString()
-  } else {
-    throw('Unknown fee amount type!')
-  }
 }
 
 let transactionAddresses = ({ paymentRoute, fee })=> {
@@ -203,5 +176,6 @@ let transactionValue = ({ paymentRoute, exchangeRoute })=> {
 }
 
 export {
-  getTransaction
+  getTransaction,
+  getTransactionAmounts
 }
