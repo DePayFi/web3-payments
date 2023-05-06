@@ -27,10 +27,10 @@
   "dependencies": {},
   "peerDependencies": {
     "@depay/solana-web3.js": "^1.21.2",
-    "@depay/web3-assets-solana": "^6.8.0",
+    "@depay/web3-assets-solana": "^6.9.0",
     "@depay/web3-blockchains": "^8.0.1",
-    "@depay/web3-exchanges-solana": "^12.1.0",
-    "@depay/web3-tokens-solana": "^9.18.0",
+    "@depay/web3-exchanges-solana": "^12.2.0",
+    "@depay/web3-tokens-solana": "^9.19.0",
     "ethers": "^5.7.1"
   },
   "engines": {
