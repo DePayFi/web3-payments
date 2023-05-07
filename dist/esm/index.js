@@ -2,7 +2,7 @@ import Blockchains from '@depay/web3-blockchains';
 import { dripAssets } from '@depay/web3-assets';
 import { route as route$1 } from '@depay/web3-exchanges';
 import { Token } from '@depay/web3-tokens';
-import { BN, struct, u64, u128, bool } from '@depay/solana-web3.js';
+import { BN, struct, u64, u128, bool, ACCOUNT_LAYOUT, PublicKey, Connection, SystemProgram, Buffer, TransactionInstruction } from '@depay/solana-web3.js';
 import { ethers } from 'ethers';
 
 const prepareUniswapTransaction = (transaction)=>{
@@ -97,7 +97,7 @@ var plugins$1 = {
 
 var plugins = {... plugins$1};
 
-var routers$1 = {
+var routers$2 = {
   ethereum: {
     address: '0xae60aC8e69414C2Dc362D0e6a03af643d1D85b92',
     api: [{"inputs":[{"internalType":"address","name":"_configuration","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"ETH","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"configuration","outputs":[{"internalType":"contract DePayRouterV1Configuration","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"pluginAddress","type":"address"}],"name":"isApproved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"uint256[]","name":"amounts","type":"uint256[]"},{"internalType":"address[]","name":"addresses","type":"address[]"},{"internalType":"address[]","name":"plugins","type":"address[]"},{"internalType":"string[]","name":"data","type":"string[]"}],"name":"route","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdraw","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}]
@@ -112,7 +112,7 @@ var routers$1 = {
   }
 };
 
-var solanaRouters = {
+var routers$1 = {
   solana: {
     address: 'DePayRG7ZySPWzeK9Kvq7aPeif7sdbBZNh6DHcvNj7F7',
     api: {
@@ -178,7 +178,7 @@ var solanaRouters = {
   },
 };
 
-var routers = {... routers$1, solanaRouters};
+var routers = {... routers$2, solanaRouters: routers$1};
 
 /**
  * Checks if `value` is the
@@ -759,15 +759,15 @@ function throttle(func, wait, options) {
 
 var throttle_1 = throttle;
 
-let getTransaction$2 = async({ paymentRoute, event, fee })=> {
+let getTransaction$2 = async({ paymentRoute, event })=> {
   let exchangeRoute = paymentRoute.exchangeRoutes[0];
 
   let transaction = {
     blockchain: paymentRoute.blockchain,
-    to: transactionAddress({ paymentRoute, fee }),
-    api: transactionApi({ paymentRoute, fee }),
-    method: transactionMethod({ paymentRoute, fee }),
-    params: transactionParams({ paymentRoute, exchangeRoute, event, fee }),
+    to: transactionAddress({ paymentRoute }),
+    api: transactionApi({ paymentRoute }),
+    method: transactionMethod({ paymentRoute }),
+    params: transactionParams({ paymentRoute, exchangeRoute, event }),
     value: transactionValue({ paymentRoute, exchangeRoute })
   };
 
@@ -780,32 +780,32 @@ let getTransaction$2 = async({ paymentRoute, event, fee })=> {
   return transaction
 };
 
-let transactionAddress = ({ paymentRoute, fee })=> {
-  if(paymentRoute.directTransfer && !fee) {
+let transactionAddress = ({ paymentRoute })=> {
+  if(paymentRoute.directTransfer && !paymentRoute.fee) {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return paymentRoute.toAddress
     } else {
       return paymentRoute.toToken.address
     }
   } else {
-    return routers$1[paymentRoute.blockchain].address
+    return routers$2[paymentRoute.blockchain].address
   }
 };
 
-let transactionApi = ({ paymentRoute, fee })=> {
-  if(paymentRoute.directTransfer && !fee) {
+let transactionApi = ({ paymentRoute })=> {
+  if(paymentRoute.directTransfer && !paymentRoute.fee) {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
     } else {
       return Token[paymentRoute.blockchain].DEFAULT
     }
   } else {
-    return routers$1[paymentRoute.blockchain].api
+    return routers$2[paymentRoute.blockchain].api
   }
 };
 
-let transactionMethod = ({ paymentRoute, fee })=> {
-  if(paymentRoute.directTransfer && !fee) {
+let transactionMethod = ({ paymentRoute })=> {
+  if(paymentRoute.directTransfer && !paymentRoute.fee) {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
     } else {
@@ -816,8 +816,8 @@ let transactionMethod = ({ paymentRoute, fee })=> {
   }
 };
 
-let transactionParams = ({ paymentRoute, exchangeRoute, event, fee })=> {
-  if(paymentRoute.directTransfer && !fee) {
+let transactionParams = ({ paymentRoute, exchangeRoute, event })=> {
+  if(paymentRoute.directTransfer && !paymentRoute.fee) {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
     } else {
@@ -826,9 +826,9 @@ let transactionParams = ({ paymentRoute, exchangeRoute, event, fee })=> {
   } else {
     return {
       path: transactionPath({ paymentRoute, exchangeRoute }),
-      amounts: getTransactionAmounts({ paymentRoute, exchangeRoute, fee }),
-      addresses: transactionAddresses({ paymentRoute, fee }),
-      plugins: transactionPlugins({ paymentRoute, exchangeRoute, event, fee }),
+      amounts: getTransactionAmounts({ paymentRoute, exchangeRoute }),
+      addresses: transactionAddresses({ paymentRoute }),
+      plugins: transactionPlugins({ paymentRoute, exchangeRoute, event }),
       data: []
     }
   }
@@ -842,7 +842,7 @@ let transactionPath = ({ paymentRoute, exchangeRoute })=> {
   }
 };
 
-let getTransactionAmounts = ({ paymentRoute, exchangeRoute, fee })=> {
+let getTransactionAmounts = ({ paymentRoute, exchangeRoute })=> {
   let amounts;
   if(exchangeRoute) {
     if(exchangeRoute && exchangeRoute.exchange.wrapper) {
@@ -857,7 +857,7 @@ let getTransactionAmounts = ({ paymentRoute, exchangeRoute, fee })=> {
   } else {
     amounts = [ paymentRoute.fromAmount, paymentRoute.toAmount ];
   }
-  if(fee){
+  if(paymentRoute.fee){
     amounts[4] = paymentRoute.feeAmount;
   }
   for(var i = 0; i < amounts.length; i++) {
@@ -866,15 +866,15 @@ let getTransactionAmounts = ({ paymentRoute, exchangeRoute, fee })=> {
   return amounts
 };
 
-let transactionAddresses = ({ paymentRoute, fee })=> {
-  if(fee) {
-    return [paymentRoute.fromAddress, fee.receiver, paymentRoute.toAddress]
+let transactionAddresses = ({ paymentRoute })=> {
+  if(paymentRoute.fee) {
+    return [paymentRoute.fromAddress, paymentRoute.fee.receiver, paymentRoute.toAddress]
   } else {
     return [paymentRoute.fromAddress, paymentRoute.toAddress]
   }
 };
 
-let transactionPlugins = ({ paymentRoute, exchangeRoute, event, fee })=> {
+let transactionPlugins = ({ paymentRoute, exchangeRoute, event })=> {
   let paymentPlugins = [];
 
   if(exchangeRoute) {
@@ -896,7 +896,7 @@ let transactionPlugins = ({ paymentRoute, exchangeRoute, event, fee })=> {
     paymentPlugins.push(plugins$1[paymentRoute.blockchain].payment.address);
   }
 
-  if(fee) {
+  if(paymentRoute.fee) {
     if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       paymentPlugins.push(plugins$1[paymentRoute.blockchain].paymentFeeWithEvent.address);
     } else {
@@ -919,17 +919,988 @@ let transactionValue = ({ paymentRoute, exchangeRoute })=> {
   }
 };
 
+let _window;
+
+let getWindow = () => {
+  if(_window) { return _window }
+  if (typeof global == 'object') {
+    _window = global;
+  } else {
+    _window = window;
+  }
+  return _window
+};
+
+const getConfiguration = () =>{
+  if(getWindow()._Web3ClientConfiguration === undefined) {
+    getWindow()._Web3ClientConfiguration = {};
+  }
+  return getWindow()._Web3ClientConfiguration
+};
+
+const BATCH_INTERVAL$1 = 10;
+const CHUNK_SIZE$1 = 99;
+
+class StaticJsonRpcBatchProvider extends ethers.providers.JsonRpcProvider {
+
+  constructor(url, network, endpoints, failover) {
+    super(url);
+    this._network = network;
+    this._endpoint = url;
+    this._endpoints = endpoints;
+    this._failover = failover;
+    this._pendingBatch = [];
+  }
+
+  detectNetwork() {
+    return Promise.resolve(Blockchains.findByName(this._network).id)
+  }
+
+  requestChunk(chunk, endpoint) {
+    
+    const request = chunk.map((inflight) => inflight.request);
+
+    return ethers.utils.fetchJson(endpoint, JSON.stringify(request))
+      .then((result) => {
+        // For each result, feed it to the correct Promise, depending
+        // on whether it was a success or error
+        chunk.forEach((inflightRequest, index) => {
+          const payload = result[index];
+          if (payload.error) {
+            const error = new Error(payload.error.message);
+            error.code = payload.error.code;
+            error.data = payload.error.data;
+            inflightRequest.reject(error);
+          }
+          else {
+            inflightRequest.resolve(payload.result);
+          }
+        });
+      }).catch((error) => {
+        if(error && error.code == 'SERVER_ERROR') {
+          const index = this._endpoints.indexOf(this._endpoint)+1;
+          this._failover();
+          this._endpoint = index >= this._endpoints.length ? this._endpoints[0] : this._endpoints[index];
+          this.requestChunk(chunk, this._endpoint);
+        } else {
+          chunk.forEach((inflightRequest) => {
+            inflightRequest.reject(error);
+          });
+        }
+      })
+  }
+    
+  send(method, params) {
+
+    const request = {
+      method: method,
+      params: params,
+      id: (this._nextId++),
+      jsonrpc: "2.0"
+    };
+
+    if (this._pendingBatch == null) {
+      this._pendingBatch = [];
+    }
+
+    const inflightRequest = { request, resolve: null, reject: null };
+
+    const promise = new Promise((resolve, reject) => {
+      inflightRequest.resolve = resolve;
+      inflightRequest.reject = reject;
+    });
+
+    this._pendingBatch.push(inflightRequest);
+
+    if (!this._pendingBatchAggregator) {
+      // Schedule batch for next event loop + short duration
+      this._pendingBatchAggregator = setTimeout(() => {
+        // Get the current batch and clear it, so new requests
+        // go into the next batch
+        const batch = this._pendingBatch;
+        this._pendingBatch = [];
+        this._pendingBatchAggregator = null;
+        // Prepare Chunks of CHUNK_SIZE
+        const chunks = [];
+        for (let i = 0; i < Math.ceil(batch.length / CHUNK_SIZE$1); i++) {
+          chunks[i] = batch.slice(i*CHUNK_SIZE$1, (i+1)*CHUNK_SIZE$1);
+        }
+        chunks.forEach((chunk)=>{
+          // Get the request as an array of requests
+          chunk.map((inflight) => inflight.request);
+          return this.requestChunk(chunk, this._endpoint)
+        });
+      }, getConfiguration().batchInterval || BATCH_INTERVAL$1);
+    }
+
+    return promise
+  }
+
+}
+
+const getAllProviders$1 = ()=> {
+  if(getWindow()._Web3ClientProviders == undefined) {
+    getWindow()._Web3ClientProviders = {};
+  }
+  return getWindow()._Web3ClientProviders
+};
+
+const setProvider$2 = (blockchain, provider)=> {
+  if(getAllProviders$1()[blockchain] === undefined) { getAllProviders$1()[blockchain] = []; }
+  const index = getAllProviders$1()[blockchain].indexOf(provider);
+  if(index > -1) {
+    getAllProviders$1()[blockchain].splice(index, 1);
+  }
+  getAllProviders$1()[blockchain].unshift(provider);
+};
+
+const setProviderEndpoints$2 = async (blockchain, endpoints, detectFastest = true)=> {
+  
+  getAllProviders$1()[blockchain] = endpoints.map((endpoint, index)=>
+    new StaticJsonRpcBatchProvider(endpoint, blockchain, endpoints, ()=>{
+      if(getAllProviders$1()[blockchain].length === 1) {
+        setProviderEndpoints$2(blockchain, endpoints, detectFastest);
+      } else {
+        getAllProviders$1()[blockchain].splice(index, 1);
+      }
+    })
+  );
+  
+  let provider;
+  let window = getWindow();
+
+  if(
+    window.fetch == undefined ||
+    (typeof process != 'undefined' && process['env'] && process['env']['NODE_ENV'] == 'test') ||
+    (typeof window.cy != 'undefined') ||
+    detectFastest === false
+  ) {
+    provider = getAllProviders$1()[blockchain][0];
+  } else {
+    
+    let responseTimes = await Promise.all(endpoints.map((endpoint)=>{
+      return new Promise(async (resolve)=>{
+        let timeout = 900;
+        let before = new Date().getTime();
+        setTimeout(()=>resolve(timeout), timeout);
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ method: 'net_version', id: 1, jsonrpc: '2.0' })
+        });
+        if(!response.ok) { return resolve(999) }
+        let after = new Date().getTime();
+        resolve(after-before);
+      })
+    }));
+
+    const fastestResponse = Math.min(...responseTimes);
+    const fastestIndex = responseTimes.indexOf(fastestResponse);
+    provider = getAllProviders$1()[blockchain][fastestIndex];
+  }
+  
+  setProvider$2(blockchain, provider);
+};
+
+const getProvider$2 = async (blockchain)=> {
+
+  let providers = getAllProviders$1();
+  if(providers && providers[blockchain]){ return providers[blockchain][0] }
+  
+  let window = getWindow();
+  if(window._Web3ClientGetProviderPromise && window._Web3ClientGetProviderPromise[blockchain]) { return await window._Web3ClientGetProviderPromise[blockchain] }
+
+  if(!window._Web3ClientGetProviderPromise){ window._Web3ClientGetProviderPromise = {}; }
+  window._Web3ClientGetProviderPromise[blockchain] = new Promise(async(resolve)=> {
+    await setProviderEndpoints$2(blockchain, Blockchains[blockchain].endpoints);
+    resolve(getWindow()._Web3ClientProviders[blockchain][0]);
+  });
+
+  return await window._Web3ClientGetProviderPromise[blockchain]
+};
+
+const getProviders$2 = async(blockchain)=>{
+
+  let providers = getAllProviders$1();
+  if(providers && providers[blockchain]){ return providers[blockchain] }
+  
+  let window = getWindow();
+  if(window._Web3ClientGetProvidersPromise && window._Web3ClientGetProvidersPromise[blockchain]) { return await window._Web3ClientGetProvidersPromise[blockchain] }
+
+  if(!window._Web3ClientGetProvidersPromise){ window._Web3ClientGetProvidersPromise = {}; }
+  window._Web3ClientGetProvidersPromise[blockchain] = new Promise(async(resolve)=> {
+    await setProviderEndpoints$2(blockchain, Blockchains[blockchain].endpoints);
+    resolve(getWindow()._Web3ClientProviders[blockchain]);
+  });
+
+  return await window._Web3ClientGetProvidersPromise[blockchain]
+};
+
+var EVM = {
+  getProvider: getProvider$2,
+  getProviders: getProviders$2,
+  setProviderEndpoints: setProviderEndpoints$2,
+  setProvider: setProvider$2,
+};
+
+const BATCH_INTERVAL = 10;
+const CHUNK_SIZE = 99;
+
+class StaticJsonRpcSequentialProvider extends Connection {
+
+  constructor(url, network, endpoints, failover) {
+    super(url);
+    this._provider = new Connection(url);
+    this._network = network;
+    this._endpoint = url;
+    this._endpoints = endpoints;
+    this._failover = failover;
+    this._pendingBatch = [];
+    this._rpcRequest = this._rpcRequestReplacement.bind(this);
+  }
+
+  requestChunk(chunk) {
+
+    const batch = chunk.map((inflight) => inflight.request);
+
+    return this._provider._rpcBatchRequest(batch)
+      .then((result) => {
+        // For each result, feed it to the correct Promise, depending
+        // on whether it was a success or error
+        chunk.forEach((inflightRequest, index) => {
+          const payload = result[index];
+          if (payload.error) {
+            const error = new Error(payload.error.message);
+            error.code = payload.error.code;
+            error.data = payload.error.data;
+            inflightRequest.reject(error);
+          } else {
+            inflightRequest.resolve(payload);
+          }
+        });
+      }).catch((error) => {
+        if(error && [
+          'Failed to fetch', '504', '503', '502', '500', '429', '426', '422', '413', '409', '408', '406', '405', '404', '403', '402', '401', '400'
+        ].some((errorType)=>error.toString().match(errorType))) {
+          const index = this._endpoints.indexOf(this._endpoint)+1;
+          this._endpoint = index >= this._endpoints.length ? this._endpoints[0] : this._endpoints[index];
+          this._provider = new Connection(this._endpoint);
+          this.requestChunk(chunk);
+        } else {
+          chunk.forEach((inflightRequest) => {
+            inflightRequest.reject(error);
+          });
+        }
+      })
+  }
+    
+  _rpcRequestReplacement(methodName, args) {
+
+    const request = { methodName, args };
+
+    if (this._pendingBatch == null) {
+      this._pendingBatch = [];
+    }
+
+    const inflightRequest = { request, resolve: null, reject: null };
+
+    const promise = new Promise((resolve, reject) => {
+      inflightRequest.resolve = resolve;
+      inflightRequest.reject = reject;
+    });
+
+    this._pendingBatch.push(inflightRequest);
+
+    if (!this._pendingBatchAggregator) {
+      // Schedule batch for next event loop + short duration
+      this._pendingBatchAggregator = setTimeout(() => {
+        // Get the current batch and clear it, so new requests
+        // go into the next batch
+        const batch = this._pendingBatch;
+        this._pendingBatch = [];
+        this._pendingBatchAggregator = null;
+        // Prepare Chunks of CHUNK_SIZE
+        const chunks = [];
+        for (let i = 0; i < Math.ceil(batch.length / CHUNK_SIZE); i++) {
+          chunks[i] = batch.slice(i*CHUNK_SIZE, (i+1)*CHUNK_SIZE);
+        }
+        chunks.forEach((chunk)=>{
+          // Get the request as an array of requests
+          chunk.map((inflight) => inflight.request);
+          return this.requestChunk(chunk)
+        });
+      }, getConfiguration().batchInterval || BATCH_INTERVAL);
+    }
+
+    return promise
+  }
+}
+
+const getAllProviders = ()=> {
+  if(getWindow()._Web3ClientProviders == undefined) {
+    getWindow()._Web3ClientProviders = {};
+  }
+  return getWindow()._Web3ClientProviders
+};
+
+const setProvider$1 = (blockchain, provider)=> {
+  if(getAllProviders()[blockchain] === undefined) { getAllProviders()[blockchain] = []; }
+  const index = getAllProviders()[blockchain].indexOf(provider);
+  if(index > -1) {
+    getAllProviders()[blockchain].splice(index, 1);
+  }
+  getAllProviders()[blockchain].unshift(provider);
+};
+
+const setProviderEndpoints$1 = async (blockchain, endpoints, detectFastest = true)=> {
+  
+  getAllProviders()[blockchain] = endpoints.map((endpoint, index)=>
+    new StaticJsonRpcSequentialProvider(endpoint, blockchain, endpoints, ()=>{
+      if(getAllProviders()[blockchain].length === 1) {
+        setProviderEndpoints$1(blockchain, endpoints, detectFastest);
+      } else {
+        getAllProviders()[blockchain].splice(index, 1);
+      }
+    })
+  );
+
+  let provider;
+  let window = getWindow();
+
+  if(
+    window.fetch == undefined ||
+    (typeof process != 'undefined' && process['env'] && process['env']['NODE_ENV'] == 'test') ||
+    (typeof window.cy != 'undefined') ||
+    detectFastest === false
+  ) {
+    provider = getAllProviders()[blockchain][0];
+  } else {
+    
+    let responseTimes = await Promise.all(endpoints.map((endpoint)=>{
+      return new Promise(async (resolve)=>{
+        let timeout = 900;
+        let before = new Date().getTime();
+        setTimeout(()=>resolve(timeout), timeout);
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ method: 'getIdentity', id: 1, jsonrpc: '2.0' })
+        });
+        if(!response.ok) { return resolve(999) }
+        let after = new Date().getTime();
+        resolve(after-before);
+      })
+    }));
+
+    const fastestResponse = Math.min(...responseTimes);
+    const fastestIndex = responseTimes.indexOf(fastestResponse);
+    provider = getAllProviders()[blockchain][fastestIndex];
+  }
+  
+  setProvider$1(blockchain, provider);
+};
+
+const getProvider$1 = async (blockchain)=> {
+
+  let providers = getAllProviders();
+  if(providers && providers[blockchain]){ return providers[blockchain][0] }
+  
+  let window = getWindow();
+  if(window._Web3ClientGetProviderPromise && window._Web3ClientGetProviderPromise[blockchain]) { return await window._Web3ClientGetProviderPromise[blockchain] }
+
+  if(!window._Web3ClientGetProviderPromise){ window._Web3ClientGetProviderPromise = {}; }
+  window._Web3ClientGetProviderPromise[blockchain] = new Promise(async(resolve)=> {
+    await setProviderEndpoints$1(blockchain, Blockchains[blockchain].endpoints);
+    resolve(getWindow()._Web3ClientProviders[blockchain][0]);
+  });
+
+  return await window._Web3ClientGetProviderPromise[blockchain]
+};
+
+const getProviders$1 = async(blockchain)=>{
+
+  let providers = getAllProviders();
+  if(providers && providers[blockchain]){ return providers[blockchain] }
+  
+  let window = getWindow();
+  if(window._Web3ClientGetProvidersPromise && window._Web3ClientGetProvidersPromise[blockchain]) { return await window._Web3ClientGetProvidersPromise[blockchain] }
+
+  if(!window._Web3ClientGetProvidersPromise){ window._Web3ClientGetProvidersPromise = {}; }
+  window._Web3ClientGetProvidersPromise[blockchain] = new Promise(async(resolve)=> {
+    await setProviderEndpoints$1(blockchain, Blockchains[blockchain].endpoints);
+    resolve(getWindow()._Web3ClientProviders[blockchain]);
+  });
+
+  return await window._Web3ClientGetProvidersPromise[blockchain]
+};
+
+var Solana = {
+  getProvider: getProvider$1,
+  getProviders: getProviders$1,
+  setProviderEndpoints: setProviderEndpoints$1,
+  setProvider: setProvider$1,
+};
+
+let supported$1 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'velas'];
+supported$1.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'velas'];
+supported$1.solana = ['solana'];
+
+function _optionalChain$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+let getCacheStore = () => {
+  if (getWindow()._Web3ClientCacheStore == undefined) {
+    getWindow()._Web3ClientCacheStore = {};
+  }
+  return getWindow()._Web3ClientCacheStore
+};
+
+let getPromiseStore = () => {
+  if (getWindow()._Web3ClientPromiseStore == undefined) {
+    getWindow()._Web3ClientPromiseStore = {};
+  }
+  return getWindow()._Web3ClientPromiseStore
+};
+
+let set = function ({ key, value, expires }) {
+  getCacheStore()[key] = {
+    expiresAt: Date.now() + expires,
+    value,
+  };
+};
+
+let get = function ({ key, expires }) {
+  let cachedEntry = getCacheStore()[key];
+  if (_optionalChain$1([cachedEntry, 'optionalAccess', _ => _.expiresAt]) > Date.now()) {
+    return cachedEntry.value
+  }
+};
+
+let getPromise = function({ key }) {
+  return getPromiseStore()[key]
+};
+
+let setPromise = function({ key, promise }) {
+  getPromiseStore()[key] = promise;
+  return promise
+};
+
+let deletePromise = function({ key }) {
+  getPromiseStore()[key] = undefined; 
+};
+
+let cache = function ({ call, key, expires = 0 }) {
+  return new Promise((resolve, reject)=>{
+    let value;
+    key = JSON.stringify(key);
+    
+    // get existing promise (of a previous pending request asking for the exact same thing)
+    let existingPromise = getPromise({ key });
+    if(existingPromise) { 
+      return existingPromise
+        .then(resolve)
+        .catch(reject)
+    }
+
+    setPromise({ key, promise: new Promise((resolveQueue, rejectQueue)=>{
+      if (expires === 0) {
+        return call()
+          .then((value)=>{
+            resolve(value);
+            resolveQueue(value);
+          })
+          .catch((error)=>{
+            reject(error);
+            rejectQueue(error);
+          })
+      }
+      
+      // get cached value
+      value = get({ key, expires });
+      if (value) {
+        resolve(value);
+        resolveQueue(value);
+        return value
+      }
+
+      // set new cache value
+      call()
+        .then((value)=>{
+          if (value) {
+            set({ key, value, expires });
+          }
+          resolve(value);
+          resolveQueue(value);
+        })
+        .catch((error)=>{
+          reject(error);
+          rejectQueue(error);
+        });
+      })
+    }).then(()=>{
+      deletePromise({ key });
+    }).catch(()=>{
+      deletePromise({ key });
+    });
+  })
+};
+
+let paramsToContractArgs = ({ contract, method, params }) => {
+  let fragment = contract.interface.fragments.find((fragment) => {
+    return fragment.name == method
+  });
+
+  return fragment.inputs.map((input, index) => {
+    if (Array.isArray(params)) {
+      return params[index]
+    } else {
+      return params[input.name]
+    }
+  })
+};
+
+const contractCall = ({ address, api, method, params, provider, block }) => {
+  let contract = new ethers.Contract(address, api, provider);
+  let args = paramsToContractArgs({ contract, method, params });
+  return contract[method](...args, { blockTag: block })
+};
+
+const balance$1 = ({ address, provider }) => {
+  return provider.getBalance(address)
+};
+
+const transactionCount = ({ address, provider }) => {
+  return provider.getTransactionCount(address)
+};
+
+const singleRequest$1 = ({ blockchain, address, api, method, params, block, provider }) =>{
+  if (api) {
+    return contractCall({ address, api, method, params, provider, block })
+  } else if (method === 'latestBlockNumber') {
+    return provider.getBlockNumber()
+  } else if (method === 'balance') {
+    return balance$1({ address, provider })
+  } else if (method === 'transactionCount') {
+    return transactionCount({ address, provider })
+  }
+};
+
+var requestEVM = async ({ blockchain, address, api, method, params, block, timeout, strategy }) => {
+
+  strategy = strategy ? strategy : (getConfiguration().strategy || 'failover');
+  timeout = timeout ? timeout : (getConfiguration().timeout || undefined);
+
+  if(strategy === 'fastest') {
+
+    return Promise.race((await EVM.getProviders(blockchain)).map((provider)=>{
+
+      const request = singleRequest$1({ blockchain, address, api, method, params, block, provider });
+    
+      if(timeout) {
+        const timeoutPromise = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout));
+        return Promise.race([request, timeoutPromise])
+      } else {
+        return request
+      }
+    }))
+
+  } else { // failover
+
+    const provider = await EVM.getProvider(blockchain);
+    const request = singleRequest$1({ blockchain, address, api, method, params, block, provider });
+    
+    if(timeout) {
+      timeout = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout));
+      return Promise.race([request, timeout])
+    } else {
+      return request
+    }
+  }
+};
+
+const accountInfo = async ({ address, api, method, params, provider, block }) => {
+  const info = await provider.getAccountInfo(new PublicKey(address));
+  if(!info || !info.data) { return }
+  return api.decode(info.data)
+};
+
+const balance = ({ address, provider }) => {
+  return provider.getBalance(new PublicKey(address))
+};
+
+const singleRequest = async({ blockchain, address, api, method, params, block, provider, providers })=> {
+
+  try {
+
+    if(method == undefined || method === 'getAccountInfo') {
+      if(api == undefined) {
+        api = ACCOUNT_LAYOUT; 
+      }
+      return await accountInfo({ address, api, method, params, provider, block })
+    } else if(method === 'getProgramAccounts') {
+      return await provider.getProgramAccounts(new PublicKey(address), params).then((accounts)=>{
+        if(api){
+          return accounts.map((account)=>{
+            account.data = api.decode(account.account.data);
+            return account
+          })
+        } else {
+          return accounts
+        }
+      })
+    } else if(method === 'getTokenAccountBalance') {
+      return await provider.getTokenAccountBalance(new PublicKey(address))
+    } else if (method === 'latestBlockNumber') {
+      return await provider.getBlockHeight()  
+    } else if (method === 'balance') {
+      return await balance({ address, provider })
+    }
+
+  } catch (error){
+    if(providers && error && [
+      'Failed to fetch', '504', '503', '502', '500', '429', '426', '422', '413', '409', '408', '406', '405', '404', '403', '402', '401', '400'
+    ].some((errorType)=>error.toString().match(errorType))) {
+      let nextProvider = providers[providers.indexOf(provider)+1] || providers[0];
+      return singleRequest({ blockchain, address, api, method, params, block, provider: nextProvider, providers })
+    } else {
+      throw error
+    }
+  }
+};
+
+var requestSolana = async ({ blockchain, address, api, method, params, block, timeout, strategy }) => {
+
+  strategy = strategy ? strategy : (getConfiguration().strategy || 'failover');
+  timeout = timeout ? timeout : (getConfiguration().timeout || undefined);
+
+  const providers = await Solana.getProviders(blockchain);
+
+  if(strategy === 'fastest') {
+
+    return Promise.race(providers.map((provider)=>{
+
+      const succeedingRequest = new Promise((resolve)=>{
+        singleRequest({ blockchain, address, api, method, params, block, provider }).then(resolve);
+      }); // failing requests are ignored during race/fastest
+    
+      const timeoutPromise = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout || 10000));
+        
+      return Promise.race([succeedingRequest, timeoutPromise])
+    }))
+    
+  } else { // failover
+
+    const provider = await Solana.getProvider(blockchain);
+    const request = singleRequest({ blockchain, address, api, method, params, block, provider, providers });
+
+    if(timeout) {
+      timeout = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout));
+      return Promise.race([request, timeout])
+    } else {
+      return request
+    }
+  }
+};
+
+var parseUrl = (url) => {
+  if (typeof url == 'object') {
+    return url
+  }
+  let deconstructed = url.match(/(?<blockchain>\w+):\/\/(?<part1>[\w\d]+)(\/(?<part2>[\w\d]+)*)?/);
+
+  if(deconstructed.groups.part2 == undefined) {
+    if(deconstructed.groups.part1.match(/\d/)) {
+      return {
+        blockchain: deconstructed.groups.blockchain,
+        address: deconstructed.groups.part1
+      }
+    } else {
+      return {
+        blockchain: deconstructed.groups.blockchain,
+        method: deconstructed.groups.part1
+      }
+    }
+  } else {
+    return {
+      blockchain: deconstructed.groups.blockchain,
+      address: deconstructed.groups.part1,
+      method: deconstructed.groups.part2
+    }
+  }
+};
+
+const request = async function (url, options) {
+  
+  const { blockchain, address, method } = parseUrl(url);
+  const { api, params, cache: cache$1, block, timeout, strategy } = (typeof(url) == 'object' ? url : options) || {};
+
+  return await cache({
+    expires: cache$1 || 0,
+    key: [blockchain, address, method, params, block],
+    call: async()=>{
+      if(supported$1.evm.includes(blockchain)) {
+
+
+        return await requestEVM({ blockchain, address, api, method, params, block, strategy, timeout })
+
+
+      } else if(supported$1.solana.includes(blockchain)) {
+
+
+        return await requestSolana({ blockchain, address, api, method, params, block, strategy, timeout })
+
+
+      } else {
+        throw 'Unknown blockchain: ' + blockchain
+      }  
+    }
+  })
+};
+
+const getPaymentsAccountAddress = async({ from })=>{
+  let seeds = [Buffer.from("payments"), new PublicKey(from).toBuffer()];
+
+  let [ pdaPublicKey ] = await PublicKey.findProgramAddress(
+    seeds, new PublicKey(routers$1.solana.address)
+  );
+
+  return pdaPublicKey
+};
+
+const getPaymentsAccountData = async({ from })=>{
+  let address = (await getPaymentsAccountAddress({ from })).toString();
+  console.log('address', address);
+  return await request({
+    blockchain: 'solana',
+    address,
+    api: struct([u64('anchorDiscriminator'), u64('nonce')]),
+    cache: 1000 
+  })
+};
+
 const createPaymentsAccount = async({ from })=> {
+  console.log('createPaymentsAccount');
+
+  let paymentsAccountData = await getPaymentsAccountData({ from });
+  if(paymentsAccountData) { 
+    console.log('NOT NEEDED');
+    return
+  }
+  console.log('CREATE');
+
+  const keys = [
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(from), isSigner: true, isWritable: true },
+    { pubkey: pdaPublicKey, isSigner: false, isWritable: true },
+  ];
+
+  const data = Buffer.alloc(routers$1.solana.api.createPaymentsAccount.layout.span);
+  routers$1.solana.api.createPaymentsAccount.layout.encode({
+    anchorDiscriminator: routers$1.solana.api.createPaymentsAccount.anchorDiscriminator
+  }, data);
+  
+  return new TransactionInstruction({ 
+    keys,
+    programId: new PublicKey(routers$1.solana.address),
+    data
+  })
+};
+
+const getPaymentSenderTokenAccountAddress = async ({ paymentRoute })=> {
+
+  return await Token.solana.findProgramAddress({
+    token: paymentRoute.fromToken.address,
+    owner: paymentRoute.fromAddress
+  })
+};
+
+const getPaymentReceiverTokenAccountAddress = async ({ paymentRoute })=> {
+
+  return await Token.solana.findProgramAddress({
+    token: paymentRoute.toToken.address,
+    owner: paymentRoute.toAddress
+  })
+};
+
+const getPaymentReceiverTokenAccount = async ({ paymentRoute })=> {
+
+  return await Token.solana.findAccount({
+    token: paymentRoute.toToken.address,
+    owner: paymentRoute.toAddress
+  })  
+};
+
+const createSenderTokenAccount = async({ paymentRoute })=> {
+  console.log('createSenderTokenAccount');
+  if(
+    paymentRoute.fromToken.address === Blockchains.solana.currency.address &&
+    paymentRoute.toToken.address === Blockchains.solana.currency.address
+  ){ // SOL <> SOL
+    console.log('NOT NEEDED');
+    return
+  } else if (
+    paymentRoute.fromToken.address === Blockchains.solana.currency.address
+  ) {
+    console.log('NEEDED');
+  }
+};
+
+const createPaymentReceiverTokenAccount = async({ paymentRoute })=> {
+  console.log('createPaymentReceiverTokenAccount');
+  
+  if(
+    paymentRoute.fromToken.address === Blockchains.solana.currency.address &&
+    paymentRoute.toToken.address === Blockchains.solana.currency.address
+  ){ // SOL <> SOL
+    console.log('NOT NEEDED');
+    return
+  } else {
+
+    const token = paymentRoute.toToken.address === Blockchains.solana.currency.address ? Blockchains.solana.wrapped.address : paymentRoute.toToken.address;
+
+    const paymentReceiverTokenAccount = await getPaymentReceiverTokenAccount({ paymentRoute });
+    if(paymentReceiverTokenAccount) {
+      console.log('NOT NEEDED');
+      return
+    }
+
+    console.log('NEEDED');
+    return Token.solana.createAssociatedTokenAccountInstruction({
+      token,
+      owner: paymentRoute.toAddress,
+      payer: paymentRoute.fromAddress,
+    })
+  }
+};
+
+const getFeeReceiverTokenAccountAddress = async ({ paymentRoute })=> {
+
+  return await Token.solana.findProgramAddress({
+    token: paymentRoute.toToken.address,
+    owner: paymentRoute.fee.address
+  })  
+};
+
+const createFeeReceiverTokenAccount = async({ paymentRoute })=> {
+  console.log('createFeeReceiverTokenAccount');
+  
+  if(
+    paymentRoute.fromToken.address === Blockchains.solana.currency.address &&
+    paymentRoute.toToken.address === Blockchains.solana.currency.address
+  ){
+    console.log('NOT NEEDED');
+    return
+  }
 
 };
 
-const getTransaction$1 = async({ paymentRoute, event, fee })=> {
+const getPaymentMethod = ({ paymentRoute })=>{
+  
+  if(
+    paymentRoute.fromToken.address === Blockchains.solana.currency.address &&
+    paymentRoute.toToken.address === Blockchains.solana.currency.address
+  ){
 
-  console.log('paymentRoute', paymentRoute);
+    return 'routeSol'
+
+  } else if (
+    paymentRoute.fromToken.address !== Blockchains.solana.currency.address &&
+    paymentRoute.toToken.address !== Blockchains.solana.currency.address &&
+    paymentRoute.exchangeRoutes.length === 0
+  ) {
+
+    return 'routeToken'
+
+  }
+};
+
+const routeSol = async({ paymentRoute, paymentsAccountData }) =>{
+  console.log('routeSol');
+  const keys = [
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
+    { pubkey: await getPaymentsAccountAddress({ from: paymentRoute.fromAddress }), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(paymentRoute.toAddress), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(paymentRoute.toAddress), isSigner: false, isWritable: true },
+  ];
+
+  const data = Buffer.alloc(routers$1.solana.api.routeSol.layout.span);
+  routers$1.solana.api.routeSol.layout.encode({
+    anchorDiscriminator: routers$1.solana.api.routeSol.anchorDiscriminator,
+    nonce: paymentsAccountData.nonce,
+    paymentAmount: new BN(paymentRoute.toAmount.toString()),
+    feeAmount: new BN((paymentRoute.feeAmount || '0').toString())
+  }, data);
+  
+  return new TransactionInstruction({ 
+    keys,
+    programId: new PublicKey(routers$1.solana.address),
+    data 
+  })    
+};
+
+const routeToken = async({ paymentRoute, paymentsAccountData }) =>{
+  console.log('routeToken');
+
+  const senderTokenAccountAddress = await getPaymentSenderTokenAccountAddress({ paymentRoute });
+  const paymentReceiverTokenAccountAddress = await getPaymentReceiverTokenAccountAddress({ paymentRoute });
+  const feeReceiverTokenAccountAddress = paymentRoute.fee ? await getFeeReceiverTokenAccountAddress({ paymentRoute }) : paymentReceiverTokenAccountAddress;
+
+  const keys = [
+    { pubkey: new PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
+    { pubkey: await getPaymentsAccountAddress({ from: paymentRoute.fromAddress }), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(senderTokenAccountAddress), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(paymentReceiverTokenAccountAddress), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(feeReceiverTokenAccountAddress), isSigner: false, isWritable: true },
+  ];
+
+  const data = Buffer.alloc(routers$1.solana.api.routeToken.layout.span);
+  routers$1.solana.api.routeToken.layout.encode({
+    anchorDiscriminator: routers$1.solana.api.routeToken.anchorDiscriminator,
+    nonce: paymentsAccountData.nonce,
+    paymentAmount: new BN(paymentRoute.toAmount.toString()),
+    feeAmount: new BN((paymentRoute.feeAmount || '0').toString())
+  }, data);
+  
+  return new TransactionInstruction({ 
+    keys,
+    programId: new PublicKey(routers$1.solana.address),
+    data 
+  })    
+};
+
+const payment = async({ paymentRoute })=> {
+
+  const paymentsAccountData = await getPaymentsAccountData({ from: paymentRoute.fromAddress });
+  const paymentMethod = getPaymentMethod({ paymentRoute });
+
+  switch(paymentMethod){
+    
+    case 'routeSol':
+    return await routeSol({ paymentRoute, paymentsAccountData });
+    
+    case 'routeToken':
+    return await routeToken({ paymentRoute, paymentsAccountData });
+  }
+
+};
+
+const getTransaction$1 = async({ paymentRoute })=> {
 
   let instructions = [
-    await createPaymentsAccount({ from: paymentRoute.fromAddress })
-  ].filter(Boolean);
+    await createPaymentsAccount({ from: paymentRoute.fromAddress }),
+    await createSenderTokenAccount({ paymentRoute }),
+    await createPaymentReceiverTokenAccount({ paymentRoute }),
+    await createFeeReceiverTokenAccount({ paymentRoute }),
+    await payment({ paymentRoute }),
+  ].filter(Boolean).flat();
+
+  console.log('instructions.length', instructions.length);
 
   return {
     blockchain: paymentRoute.blockchain,
@@ -990,11 +1961,11 @@ class PaymentRoute {
     this.approvalTransaction = approvalTransaction;
     this.directTransfer = directTransfer;
     this.event = event;
-    this.getTransaction = async ()=> await getTransaction({ paymentRoute: this, event, fee });
+    this.getTransaction = async ()=> await getTransaction({ paymentRoute: this, event });
   }
 }
 
-function convertToRoutes({ assets, accept, from, fee, event }) {
+function convertToRoutes({ assets, accept, from, event }) {
   return Promise.all(assets.map(async (asset)=>{
     let relevantConfigurations = accept.filter((configuration)=>(configuration.blockchain == asset.blockchain));
     let fromToken = new Token(asset);
@@ -1016,7 +1987,7 @@ function convertToRoutes({ assets, accept, from, fee, event }) {
           fromBalance: asset.balance,
           fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
-          fee,
+          fee: configuration.fee,
           event
         })
       } else if(configuration.fromToken && configuration.fromAmount && fromToken.address.toLowerCase() == configuration.fromToken.toLowerCase()) {
@@ -1036,7 +2007,7 @@ function convertToRoutes({ assets, accept, from, fee, event }) {
           fromBalance: asset.balance,
           fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
-          fee,
+          fee: configuration.fee,
           event
         })
       }
@@ -1044,23 +2015,23 @@ function convertToRoutes({ assets, accept, from, fee, event }) {
   })).then((routes)=> routes.flat().filter(el => el))
 }
 
-function assetsToRoutes({ assets, blacklist, accept, from, event, fee }) {
+function assetsToRoutes({ assets, blacklist, accept, from, event }) {
   return Promise.resolve(filterBlacklistedAssets({ assets, blacklist }))
-    .then((assets) => convertToRoutes({ assets, accept, from, fee, event }))
-    .then((routes) => addDirectTransferStatus({ routes, fee }))
+    .then((assets) => convertToRoutes({ assets, accept, from, event }))
+    .then((routes) => addDirectTransferStatus({ routes }))
     .then(addExchangeRoutes)
     .then(filterExchangeRoutesWithoutPlugin)
     .then(filterNotRoutable)
     .then(filterInsufficientBalance)
-    .then((routes)=>addRouteAmounts({ routes, fee }))
+    .then((routes)=>addRouteAmounts({ routes }))
     .then(addApproval)
     .then(sortPaymentRoutes)
     .then(filterDuplicateFromTokens)
     .then((routes)=>routes.map((route)=>new PaymentRoute(route)))
 }
 
-function route({ accept, from, whitelist, blacklist, event, fee, update }) {
-  if(fee && fee.amount && typeof(fee.amount) == 'string' && fee.amount.match(/\.\d\d+\%/)) {
+function route({ accept, from, whitelist, blacklist, event, update }) {
+  if(accept.some((accept)=>{ return accept && accept.fee && typeof(accept.fee.amount) == 'string' && accept.fee.amount.match(/\.\d\d+\%/) })) {
     throw('Only up to 1 decimal is supported for fee amounts!')
   }
 
@@ -1081,8 +2052,8 @@ function route({ accept, from, whitelist, blacklist, event, fee, update }) {
 
     let throttledUpdate;
     if(update) {
-      throttledUpdate = throttle_1(async ({ assets, blacklist, accept, from, event, fee })=>{
-        update.callback(await assetsToRoutes({ assets, blacklist, accept, from, event, fee }));
+      throttledUpdate = throttle_1(async ({ assets, blacklist, accept, from, event })=>{
+        update.callback(await assetsToRoutes({ assets, blacklist, accept, from, event }));
       }, update.every);
     }
     
@@ -1095,12 +2066,12 @@ function route({ accept, from, whitelist, blacklist, event, fee, update }) {
       drip: (asset)=>{
         if(update) {
           drippedAssets.push(asset);
-          throttledUpdate({ assets: drippedAssets, blacklist, accept, from, event, fee });
+          throttledUpdate({ assets: drippedAssets, blacklist, accept, from, event });
         }
       }
     });
 
-    let allPaymentRoutes = await assetsToRoutes({ assets: allAssets, blacklist, accept, from, event, fee });
+    let allPaymentRoutes = await assetsToRoutes({ assets: allAssets, blacklist, accept, from, event });
     resolveAll(allPaymentRoutes);
   })
 }
@@ -1220,57 +2191,57 @@ let addApproval = (routes) => {
   )
 };
 
-let addDirectTransferStatus = ({ routes, fee }) => {
+let addDirectTransferStatus = ({ routes }) => {
   return routes.map((route)=>{
-    route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && fee == undefined;
+    route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && route.fee == undefined;
     return route
   })
 };
 
-let calculateAmounts = ({ paymentRoute, exchangeRoute, fee })=>{
+let calculateAmounts = ({ paymentRoute, exchangeRoute })=>{
   let fromAmount;
   let toAmount;
   let feeAmount;
   if(exchangeRoute) {
     if(exchangeRoute && exchangeRoute.exchange.wrapper) {
       fromAmount = exchangeRoute.amountIn.toString();
-      toAmount = subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee });
+      toAmount = subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute });
     } else {
       fromAmount = exchangeRoute.amountIn.toString();
-      toAmount = subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee });
+      toAmount = subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute });
     }
   } else {
     fromAmount = paymentRoute.fromAmount;
-    toAmount = subtractFee({ amount: paymentRoute.fromAmount, paymentRoute, fee });
+    toAmount = subtractFee({ amount: paymentRoute.fromAmount, paymentRoute });
   }
-  if(fee){
-    feeAmount = getFeeAmount({ paymentRoute, fee });
+  if(paymentRoute.fee){
+    feeAmount = getFeeAmount({ paymentRoute });
   }
   return { fromAmount, toAmount, feeAmount }
 };
 
-let subtractFee = ({ amount, paymentRoute, fee })=> {
-  if(fee) {
-    let feeAmount = getFeeAmount({ paymentRoute, fee });
+let subtractFee = ({ amount, paymentRoute })=> {
+  if(paymentRoute.fee) {
+    let feeAmount = getFeeAmount({ paymentRoute });
     return ethers.BigNumber.from(amount).sub(feeAmount).toString()
   } else {
     return amount
   }
 };
 
-let getFeeAmount = ({ paymentRoute, fee })=> {
-  if(typeof fee.amount == 'string' && fee.amount.match('%')) {
-    return ethers.BigNumber.from(paymentRoute.toAmount).mul(parseFloat(fee.amount)*10).div(1000).toString()
-  } else if(typeof fee.amount == 'string') {
-    return fee.amount
-  } else if(typeof fee.amount == 'number') {
-    return ethers.utils.parseUnits(fee.amount.toString(), paymentRoute.toDecimals).toString()
+let getFeeAmount = ({ paymentRoute })=> {
+  if(typeof paymentRoute.fee.amount == 'string' && paymentRoute.fee.amount.match('%')) {
+    return ethers.BigNumber.from(paymentRoute.toAmount).mul(parseFloat(paymentRoute.fee.amount)*10).div(1000).toString()
+  } else if(typeof paymentRoute.fee.amount == 'string') {
+    return paymentRoute.fee.amount
+  } else if(typeof paymentRoute.fee.amount == 'number') {
+    return ethers.utils.parseUnits(paymentRoute.fee.amount.toString(), paymentRoute.toDecimals).toString()
   } else {
     throw('Unknown fee amount type!')
   }
 };
 
-let addRouteAmounts = ({ routes, fee })=> {
+let addRouteAmounts = ({ routes })=> {
   return routes.map((route)=>{
 
     if(supported.evm.includes(route.blockchain)) {
@@ -1278,7 +2249,7 @@ let addRouteAmounts = ({ routes, fee })=> {
       if(route.directTransfer && !route.fee) {
         route.fromAmount = route.toAmount;
       } else {
-        let { fromAmount, toAmount, feeAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0], fee });
+        let { fromAmount, toAmount, feeAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0] });
         route.fromAmount = fromAmount;
         route.toAmount = toAmount;
         if(route.fee){
@@ -1287,7 +2258,12 @@ let addRouteAmounts = ({ routes, fee })=> {
       }
     } else if (supported.solana.includes(route.blockchain)) {
 
-      console.log('add route amounts solana!!!');
+      let { fromAmount, toAmount, feeAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0] });
+      route.fromAmount = fromAmount;
+      route.toAmount = toAmount;
+      if(route.fee){
+        route.feeAmount = feeAmount;
+      }
 
     }
     

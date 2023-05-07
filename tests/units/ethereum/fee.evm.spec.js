@@ -111,12 +111,12 @@ describe('fee', ()=> {
           toAddress,
           blockchain,
           token: toToken,
-          amount: tokenAmountOut
+          amount: tokenAmountOut,
+          fee: {
+            receiver: feeReceiver,
+            amount: '9%'
+          },
         }],
-        fee: {
-          receiver: feeReceiver,
-          amount: '9%'
-        },
         from: { [blockchain]: fromAddress }
       })
 
@@ -159,12 +159,12 @@ describe('fee', ()=> {
           toAddress,
           blockchain,
           token: toToken,
-          amount: tokenAmountOut
+          amount: tokenAmountOut,
+          fee: {
+            receiver: feeReceiver,
+            amount: '1.5%'
+          },
         }],
-        fee: {
-          receiver: feeReceiver,
-          amount: '1.5%'
-        },
         from: { [blockchain]: fromAddress }
       })
 
@@ -228,12 +228,12 @@ describe('fee', ()=> {
           toAddress,
           blockchain,
           token: toToken,
-          amount: tokenAmountOut
+          amount: tokenAmountOut,
+          fee: {
+            receiver: feeReceiver,
+            amount: '1.5%'
+          },
         }],
-        fee: {
-          receiver: feeReceiver,
-          amount: '1.5%'
-        },
         from: { [blockchain]: fromAddress }
       })
 
@@ -253,12 +253,12 @@ describe('fee', ()=> {
             toAddress,
             blockchain,
             token: toToken,
-            amount: tokenAmountOut
+            amount: tokenAmountOut,
+            fee: {
+              receiver: feeReceiver,
+              amount: '1.55%'
+            },
           }],
-          fee: {
-            receiver: feeReceiver,
-            amount: '1.55%'
-          },
           from: { [blockchain]: fromAddress }
         })  
       }).toThrow('Only up to 1 decimal is supported for fee amounts!')
@@ -273,12 +273,12 @@ describe('fee', ()=> {
           toAddress,
           blockchain,
           token: toToken,
-          amount: tokenAmountOut
+          amount: tokenAmountOut,
+          fee: {
+            receiver: feeReceiver,
+            amount: 1.8
+          },
         }],
-        fee: {
-          receiver: feeReceiver,
-          amount: 1.8
-        },
         from: { [blockchain]: fromAddress }
       })
 
@@ -320,12 +320,12 @@ describe('fee', ()=> {
           toAddress,
           blockchain,
           token: toToken,
-          amount: tokenAmountOut
+          amount: tokenAmountOut,
+          fee: {
+            receiver: feeReceiver,
+            amount: '1800000000000000000'
+          },
         }],
-        fee: {
-          receiver: feeReceiver,
-          amount: '1800000000000000000'
-        },
         from: { [blockchain]: fromAddress }
       })
 

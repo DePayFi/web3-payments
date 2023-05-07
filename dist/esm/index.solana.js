@@ -22637,7 +22637,7 @@ SystemProgram.programId = new PublicKey('11111111111111111111111111111111'); // 
 // TODO: replace 300 with a proper constant for the size of the other
 // Transaction fields
 
-var CHUNK_SIZE$2 = PACKET_DATA_SIZE - 300;
+var CHUNK_SIZE$4 = PACKET_DATA_SIZE - 300;
 /**
  * Program loader interface
  */
@@ -22866,7 +22866,7 @@ var Loader = /*#__PURE__*/function () {
   return Loader;
 }();
 
-Loader.chunkSize = CHUNK_SIZE$2;
+Loader.chunkSize = CHUNK_SIZE$4;
 var BPF_LOADER_PROGRAM_ID = new PublicKey('BPFLoader2111111111111111111111111111111111');
 /**
  * Factory class for transactions to interact with a program loader
@@ -40698,6 +40698,655 @@ var u8$1 = lib.u8;
 var vec = lib.vec;
 lib.vecU8;
 
+let _window$2;
+
+let getWindow$2 = () => {
+  if(_window$2) { return _window$2 }
+  if (typeof global == 'object') {
+    _window$2 = global;
+  } else {
+    _window$2 = window;
+  }
+  return _window$2
+};
+
+const getConfiguration$2 = () =>{
+  if(getWindow$2()._Web3ClientConfiguration === undefined) {
+    getWindow$2()._Web3ClientConfiguration = {};
+  }
+  return getWindow$2()._Web3ClientConfiguration
+};
+
+const BATCH_INTERVAL$3 = 10;
+const CHUNK_SIZE$3 = 99;
+
+class StaticJsonRpcSequentialProvider$2 extends Connection {
+
+  constructor(url, network, endpoints, failover) {
+    super(url);
+    this._provider = new Connection(url);
+    this._network = network;
+    this._endpoint = url;
+    this._endpoints = endpoints;
+    this._failover = failover;
+    this._pendingBatch = [];
+    this._rpcRequest = this._rpcRequestReplacement.bind(this);
+  }
+
+  requestChunk(chunk) {
+
+    const batch = chunk.map((inflight) => inflight.request);
+
+    return this._provider._rpcBatchRequest(batch)
+      .then((result) => {
+        // For each result, feed it to the correct Promise, depending
+        // on whether it was a success or error
+        chunk.forEach((inflightRequest, index) => {
+          const payload = result[index];
+          if (payload.error) {
+            const error = new Error(payload.error.message);
+            error.code = payload.error.code;
+            error.data = payload.error.data;
+            inflightRequest.reject(error);
+          } else {
+            inflightRequest.resolve(payload);
+          }
+        });
+      }).catch((error) => {
+        if(error && [
+          'Failed to fetch', '504', '503', '502', '500', '429', '426', '422', '413', '409', '408', '406', '405', '404', '403', '402', '401', '400'
+        ].some((errorType)=>error.toString().match(errorType))) {
+          const index = this._endpoints.indexOf(this._endpoint)+1;
+          this._endpoint = index >= this._endpoints.length ? this._endpoints[0] : this._endpoints[index];
+          this._provider = new Connection(this._endpoint);
+          this.requestChunk(chunk);
+        } else {
+          chunk.forEach((inflightRequest) => {
+            inflightRequest.reject(error);
+          });
+        }
+      })
+  }
+    
+  _rpcRequestReplacement(methodName, args) {
+
+    const request = { methodName, args };
+
+    if (this._pendingBatch == null) {
+      this._pendingBatch = [];
+    }
+
+    const inflightRequest = { request, resolve: null, reject: null };
+
+    const promise = new Promise((resolve, reject) => {
+      inflightRequest.resolve = resolve;
+      inflightRequest.reject = reject;
+    });
+
+    this._pendingBatch.push(inflightRequest);
+
+    if (!this._pendingBatchAggregator) {
+      // Schedule batch for next event loop + short duration
+      this._pendingBatchAggregator = setTimeout(() => {
+        // Get the current batch and clear it, so new requests
+        // go into the next batch
+        const batch = this._pendingBatch;
+        this._pendingBatch = [];
+        this._pendingBatchAggregator = null;
+        // Prepare Chunks of CHUNK_SIZE
+        const chunks = [];
+        for (let i = 0; i < Math.ceil(batch.length / CHUNK_SIZE$3); i++) {
+          chunks[i] = batch.slice(i*CHUNK_SIZE$3, (i+1)*CHUNK_SIZE$3);
+        }
+        chunks.forEach((chunk)=>{
+          // Get the request as an array of requests
+          chunk.map((inflight) => inflight.request);
+          return this.requestChunk(chunk)
+        });
+      }, getConfiguration$2().batchInterval || BATCH_INTERVAL$3);
+    }
+
+    return promise
+  }
+}
+
+const getAllProviders$3 = ()=> {
+  if(getWindow$2()._Web3ClientProviders == undefined) {
+    getWindow$2()._Web3ClientProviders = {};
+  }
+  return getWindow$2()._Web3ClientProviders
+};
+
+const setProvider$1$2 = (blockchain, provider)=> {
+  if(getAllProviders$3()[blockchain] === undefined) { getAllProviders$3()[blockchain] = []; }
+  const index = getAllProviders$3()[blockchain].indexOf(provider);
+  if(index > -1) {
+    getAllProviders$3()[blockchain].splice(index, 1);
+  }
+  getAllProviders$3()[blockchain].unshift(provider);
+};
+
+const setProviderEndpoints$1$2 = async (blockchain, endpoints, detectFastest = true)=> {
+  
+  getAllProviders$3()[blockchain] = endpoints.map((endpoint, index)=>
+    new StaticJsonRpcSequentialProvider$2(endpoint, blockchain, endpoints, ()=>{
+      if(getAllProviders$3()[blockchain].length === 1) {
+        setProviderEndpoints$1$2(blockchain, endpoints, detectFastest);
+      } else {
+        getAllProviders$3()[blockchain].splice(index, 1);
+      }
+    })
+  );
+
+  let provider;
+  let window = getWindow$2();
+
+  if(
+    window.fetch == undefined ||
+    (typeof process != 'undefined' && process['env'] && process['env']['NODE_ENV'] == 'test') ||
+    (typeof window.cy != 'undefined') ||
+    detectFastest === false
+  ) {
+    provider = getAllProviders$3()[blockchain][0];
+  } else {
+    
+    let responseTimes = await Promise.all(endpoints.map((endpoint)=>{
+      return new Promise(async (resolve)=>{
+        let timeout = 900;
+        let before = new Date().getTime();
+        setTimeout(()=>resolve(timeout), timeout);
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ method: 'getIdentity', id: 1, jsonrpc: '2.0' })
+        });
+        if(!response.ok) { return resolve(999) }
+        let after = new Date().getTime();
+        resolve(after-before);
+      })
+    }));
+
+    const fastestResponse = Math.min(...responseTimes);
+    const fastestIndex = responseTimes.indexOf(fastestResponse);
+    provider = getAllProviders$3()[blockchain][fastestIndex];
+  }
+  
+  setProvider$1$2(blockchain, provider);
+};
+
+const getProvider$1$2 = async (blockchain)=> {
+
+  let providers = getAllProviders$3();
+  if(providers && providers[blockchain]){ return providers[blockchain][0] }
+  
+  let window = getWindow$2();
+  if(window._Web3ClientGetProviderPromise && window._Web3ClientGetProviderPromise[blockchain]) { return await window._Web3ClientGetProviderPromise[blockchain] }
+
+  if(!window._Web3ClientGetProviderPromise){ window._Web3ClientGetProviderPromise = {}; }
+  window._Web3ClientGetProviderPromise[blockchain] = new Promise(async(resolve)=> {
+    await setProviderEndpoints$1$2(blockchain, Blockchains[blockchain].endpoints);
+    resolve(getWindow$2()._Web3ClientProviders[blockchain][0]);
+  });
+
+  return await window._Web3ClientGetProviderPromise[blockchain]
+};
+
+const getProviders$1$2 = async(blockchain)=>{
+
+  let providers = getAllProviders$3();
+  if(providers && providers[blockchain]){ return providers[blockchain] }
+  
+  let window = getWindow$2();
+  if(window._Web3ClientGetProvidersPromise && window._Web3ClientGetProvidersPromise[blockchain]) { return await window._Web3ClientGetProvidersPromise[blockchain] }
+
+  if(!window._Web3ClientGetProvidersPromise){ window._Web3ClientGetProvidersPromise = {}; }
+  window._Web3ClientGetProvidersPromise[blockchain] = new Promise(async(resolve)=> {
+    await setProviderEndpoints$1$2(blockchain, Blockchains[blockchain].endpoints);
+    resolve(getWindow$2()._Web3ClientProviders[blockchain]);
+  });
+
+  return await window._Web3ClientGetProvidersPromise[blockchain]
+};
+
+var Solana$2 = {
+  getProvider: getProvider$1$2,
+  getProviders: getProviders$1$2,
+  setProviderEndpoints: setProviderEndpoints$1$2,
+  setProvider: setProvider$1$2,
+};
+
+let supported$5 = ['solana'];
+supported$5.evm = [];
+supported$5.solana = ['solana'];
+
+function _optionalChain$1$4(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+let getCacheStore$2 = () => {
+  if (getWindow$2()._Web3ClientCacheStore == undefined) {
+    getWindow$2()._Web3ClientCacheStore = {};
+  }
+  return getWindow$2()._Web3ClientCacheStore
+};
+
+let getPromiseStore$2 = () => {
+  if (getWindow$2()._Web3ClientPromiseStore == undefined) {
+    getWindow$2()._Web3ClientPromiseStore = {};
+  }
+  return getWindow$2()._Web3ClientPromiseStore
+};
+
+let set$2 = function ({ key, value, expires }) {
+  getCacheStore$2()[key] = {
+    expiresAt: Date.now() + expires,
+    value,
+  };
+};
+
+let get$2 = function ({ key, expires }) {
+  let cachedEntry = getCacheStore$2()[key];
+  if (_optionalChain$1$4([cachedEntry, 'optionalAccess', _ => _.expiresAt]) > Date.now()) {
+    return cachedEntry.value
+  }
+};
+
+let getPromise$2 = function({ key }) {
+  return getPromiseStore$2()[key]
+};
+
+let setPromise$2 = function({ key, promise }) {
+  getPromiseStore$2()[key] = promise;
+  return promise
+};
+
+let deletePromise$2 = function({ key }) {
+  getPromiseStore$2()[key] = undefined; 
+};
+
+let cache$2 = function ({ call, key, expires = 0 }) {
+  return new Promise((resolve, reject)=>{
+    let value;
+    key = JSON.stringify(key);
+    
+    // get existing promise (of a previous pending request asking for the exact same thing)
+    let existingPromise = getPromise$2({ key });
+    if(existingPromise) { 
+      return existingPromise
+        .then(resolve)
+        .catch(reject)
+    }
+
+    setPromise$2({ key, promise: new Promise((resolveQueue, rejectQueue)=>{
+      if (expires === 0) {
+        return call()
+          .then((value)=>{
+            resolve(value);
+            resolveQueue(value);
+          })
+          .catch((error)=>{
+            reject(error);
+            rejectQueue(error);
+          })
+      }
+      
+      // get cached value
+      value = get$2({ key, expires });
+      if (value) {
+        resolve(value);
+        resolveQueue(value);
+        return value
+      }
+
+      // set new cache value
+      call()
+        .then((value)=>{
+          if (value) {
+            set$2({ key, value, expires });
+          }
+          resolve(value);
+          resolveQueue(value);
+        })
+        .catch((error)=>{
+          reject(error);
+          rejectQueue(error);
+        });
+      })
+    }).then(()=>{
+      deletePromise$2({ key });
+    }).catch(()=>{
+      deletePromise$2({ key });
+    });
+  })
+};
+
+const getProvider = async (blockchain)=>{
+
+  if(supported$5.evm.includes(blockchain)) ; else if(supported$5.solana.includes(blockchain)) {
+
+
+    return await Solana$2.getProvider(blockchain)
+
+
+  } else {
+    throw 'Unknown blockchain: ' + blockchain
+  }
+};
+
+const accountInfo$2 = async ({ address, api, method, params, provider, block }) => {
+  const info = await provider.getAccountInfo(new PublicKey(address));
+  if(!info || !info.data) { return }
+  return api.decode(info.data)
+};
+
+const balance$3 = ({ address, provider }) => {
+  return provider.getBalance(new PublicKey(address))
+};
+
+const singleRequest$3 = async({ blockchain, address, api, method, params, block, provider, providers })=> {
+
+  try {
+
+    if(method == undefined || method === 'getAccountInfo') {
+      if(api == undefined) {
+        api = ACCOUNT_LAYOUT; 
+      }
+      return await accountInfo$2({ address, api, method, params, provider, block })
+    } else if(method === 'getProgramAccounts') {
+      return await provider.getProgramAccounts(new PublicKey(address), params).then((accounts)=>{
+        if(api){
+          return accounts.map((account)=>{
+            account.data = api.decode(account.account.data);
+            return account
+          })
+        } else {
+          return accounts
+        }
+      })
+    } else if(method === 'getTokenAccountBalance') {
+      return await provider.getTokenAccountBalance(new PublicKey(address))
+    } else if (method === 'latestBlockNumber') {
+      return await provider.getBlockHeight()  
+    } else if (method === 'balance') {
+      return await balance$3({ address, provider })
+    }
+
+  } catch (error){
+    if(providers && error && [
+      'Failed to fetch', '504', '503', '502', '500', '429', '426', '422', '413', '409', '408', '406', '405', '404', '403', '402', '401', '400'
+    ].some((errorType)=>error.toString().match(errorType))) {
+      let nextProvider = providers[providers.indexOf(provider)+1] || providers[0];
+      return singleRequest$3({ blockchain, address, api, method, params, block, provider: nextProvider, providers })
+    } else {
+      throw error
+    }
+  }
+};
+
+var requestSolana$2 = async ({ blockchain, address, api, method, params, block, timeout, strategy }) => {
+
+  strategy = strategy ? strategy : (getConfiguration$2().strategy || 'failover');
+  timeout = timeout ? timeout : (getConfiguration$2().timeout || undefined);
+
+  const providers = await Solana$2.getProviders(blockchain);
+
+  if(strategy === 'fastest') {
+
+    return Promise.race(providers.map((provider)=>{
+
+      const succeedingRequest = new Promise((resolve)=>{
+        singleRequest$3({ blockchain, address, api, method, params, block, provider }).then(resolve);
+      }); // failing requests are ignored during race/fastest
+    
+      const timeoutPromise = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout || 10000));
+        
+      return Promise.race([succeedingRequest, timeoutPromise])
+    }))
+    
+  } else { // failover
+
+    const provider = await Solana$2.getProvider(blockchain);
+    const request = singleRequest$3({ blockchain, address, api, method, params, block, provider, providers });
+
+    if(timeout) {
+      timeout = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout));
+      return Promise.race([request, timeout])
+    } else {
+      return request
+    }
+  }
+};
+
+var parseUrl$2 = (url) => {
+  if (typeof url == 'object') {
+    return url
+  }
+  let deconstructed = url.match(/(?<blockchain>\w+):\/\/(?<part1>[\w\d]+)(\/(?<part2>[\w\d]+)*)?/);
+
+  if(deconstructed.groups.part2 == undefined) {
+    if(deconstructed.groups.part1.match(/\d/)) {
+      return {
+        blockchain: deconstructed.groups.blockchain,
+        address: deconstructed.groups.part1
+      }
+    } else {
+      return {
+        blockchain: deconstructed.groups.blockchain,
+        method: deconstructed.groups.part1
+      }
+    }
+  } else {
+    return {
+      blockchain: deconstructed.groups.blockchain,
+      address: deconstructed.groups.part1,
+      method: deconstructed.groups.part2
+    }
+  }
+};
+
+const request$2 = async function (url, options) {
+  
+  const { blockchain, address, method } = parseUrl$2(url);
+  const { api, params, cache: cache$1, block, timeout, strategy } = (typeof(url) == 'object' ? url : options) || {};
+
+  return await cache$2({
+    expires: cache$1 || 0,
+    key: [blockchain, address, method, params, block],
+    call: async()=>{
+      if(supported$5.evm.includes(blockchain)) ; else if(supported$5.solana.includes(blockchain)) {
+
+
+        return requestSolana$2({ blockchain, address, api, method, params, block, strategy, timeout })
+
+
+      } else {
+        throw 'Unknown blockchain: ' + blockchain
+      }  
+    }
+  })
+};
+
+const TOKEN_PROGRAM$1 = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
+const ASSOCIATED_TOKEN_PROGRAM$1 = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
+
+function _optionalChain$3$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+var findProgramAddress$1 = async ({ token, owner })=>{
+
+  const [address] = await PublicKey.findProgramAddress(
+    [
+      (new PublicKey(owner)).toBuffer(),
+      (new PublicKey(TOKEN_PROGRAM$1)).toBuffer(),
+      (new PublicKey(token)).toBuffer()
+    ],
+    new PublicKey(ASSOCIATED_TOKEN_PROGRAM$1)
+  );
+
+  return _optionalChain$3$1([address, 'optionalAccess', _ => _.toString, 'call', _2 => _2()])
+};
+
+const MINT_LAYOUT$1 = struct$1([
+  u32$2('mintAuthorityOption'),
+  publicKey$1('mintAuthority'),
+  u64$3$1('supply'),
+  u8$1('decimals'),
+  bool$1('isInitialized'),
+  u32$2('freezeAuthorityOption'),
+  publicKey$1('freezeAuthority')
+]);
+
+const KEY_LAYOUT$1 = rustEnum([
+  struct$1([], 'uninitialized'),
+  struct$1([], 'editionV1'),
+  struct$1([], 'masterEditionV1'),
+  struct$1([], 'reservationListV1'),
+  struct$1([], 'metadataV1'),
+  struct$1([], 'reservationListV2'),
+  struct$1([], 'masterEditionV2'),
+  struct$1([], 'editionMarker'),
+]);
+
+const CREATOR_LAYOUT$1 = struct$1([
+  publicKey$1('address'),
+  bool$1('verified'),
+  u8$1('share'),
+]);
+
+const DATA_LAYOUT$1 = struct$1([
+  str('name'),
+  str('symbol'),
+  str('uri'),
+  u16$1('sellerFeeBasisPoints'),
+  option(
+    vec(
+      CREATOR_LAYOUT$1.replicate('creators')
+    ),
+    'creators'
+  )
+]);
+
+const METADATA_LAYOUT$1 = struct$1([
+  KEY_LAYOUT$1.replicate('key'),
+  publicKey$1('updateAuthority'),
+  publicKey$1('mint'),
+  DATA_LAYOUT$1.replicate('data'),
+  bool$1('primarySaleHappened'),
+  bool$1('isMutable'),
+  option(u8$1(), 'editionNonce'),
+]);
+
+const TRANSFER_LAYOUT$1 = struct$1([
+  u8$1('instruction'),
+  u64$3$1('amount'),
+]);
+
+const TOKEN_LAYOUT$1 = struct$1([
+  publicKey$1('mint'),
+  publicKey$1('owner'),
+  u64$3$1('amount'),
+  u32$2('delegateOption'),
+  publicKey$1('delegate'),
+  u8$1('state'),
+  u32$2('isNativeOption'),
+  u64$3$1('isNative'),
+  u64$3$1('delegatedAmount'),
+  u32$2('closeAuthorityOption'),
+  publicKey$1('closeAuthority')
+]);
+
+const INITIALIZE_LAYOUT$1 = struct$1([
+  u8$1('instruction'),
+  publicKey$1('owner')
+]);
+
+const CLOSE_LAYOUT$1 = struct$1([
+  u8$1('instruction')
+]);
+
+const createTransferInstruction$1 = async ({ token, amount, from, to })=>{
+
+  let fromTokenAccount = await findProgramAddress$1({ token, owner: from });
+  let toTokenAccount = await findProgramAddress$1({ token, owner: to });
+
+  const keys = [
+    { pubkey: new PublicKey(fromTokenAccount), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(toTokenAccount), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(from), isSigner: true, isWritable: false }
+  ];
+
+  const data = Buffer.alloc(TRANSFER_LAYOUT$1.span);
+  TRANSFER_LAYOUT$1.encode({
+    instruction: 3, // TRANSFER
+    amount: new BN(amount)
+  }, data);
+  
+  return new TransactionInstruction({ 
+    keys,
+    programId: new PublicKey(TOKEN_PROGRAM$1),
+    data 
+  })
+};
+
+const createAssociatedTokenAccountInstruction$1 = async ({ token, owner, payer }) => {
+
+  let associatedToken = await findProgramAddress$1({ token, owner });
+
+  const keys = [
+    { pubkey: new PublicKey(payer), isSigner: true, isWritable: true },
+    { pubkey: new PublicKey(associatedToken), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(owner), isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(token), isSigner: false, isWritable: false },
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(TOKEN_PROGRAM$1), isSigner: false, isWritable: false },
+  ];
+
+ return new TransactionInstruction({
+    keys,
+    programId: new PublicKey(ASSOCIATED_TOKEN_PROGRAM$1),
+    data: Buffer.alloc(0)
+  })
+};
+
+const initializeAccountInstruction$1 = ({ account, token, owner })=>{
+
+  const keys = [
+    { pubkey: new PublicKey(account), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(token), isSigner: false, isWritable: false },
+  ];
+
+  const data = Buffer.alloc(INITIALIZE_LAYOUT$1.span);
+  INITIALIZE_LAYOUT$1.encode({
+    instruction: 18, // InitializeAccount3
+    owner: new PublicKey(owner)
+  }, data);
+  
+  return new TransactionInstruction({ keys, programId: new PublicKey(TOKEN_PROGRAM$1), data })
+};
+
+
+const closeAccountInstruction$1 = ({ account, owner })=>{
+
+  const keys = [
+    { pubkey: new PublicKey(account), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(owner), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(owner), isSigner: true, isWritable: false }
+  ];
+
+  const data = Buffer.alloc(CLOSE_LAYOUT$1.span);
+  CLOSE_LAYOUT$1.encode({
+    instruction: 9 // CloseAccount
+  }, data);
+
+  return new TransactionInstruction({ keys, programId: new PublicKey(TOKEN_PROGRAM$1), data })
+};
+
+var instructions$1 = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  createTransferInstruction: createTransferInstruction$1,
+  createAssociatedTokenAccountInstruction: createAssociatedTokenAccountInstruction$1,
+  initializeAccountInstruction: initializeAccountInstruction$1,
+  closeAccountInstruction: closeAccountInstruction$1
+});
+
 let _window$1;
 
 let getWindow$1 = () => {
@@ -40717,8 +41366,216 @@ const getConfiguration$1 = () =>{
   return getWindow$1()._Web3ClientConfiguration
 };
 
-const BATCH_INTERVAL$1 = 10;
-const CHUNK_SIZE$1 = 99;
+const BATCH_INTERVAL$1$1 = 10;
+const CHUNK_SIZE$1$1 = 99;
+
+class StaticJsonRpcBatchProvider$1 extends ethers$1.providers.JsonRpcProvider {
+
+  constructor(url, network, endpoints, failover) {
+    super(url);
+    this._network = network;
+    this._endpoint = url;
+    this._endpoints = endpoints;
+    this._failover = failover;
+    this._pendingBatch = [];
+  }
+
+  detectNetwork() {
+    return Promise.resolve(Blockchains.findByName(this._network).id)
+  }
+
+  requestChunk(chunk, endpoint) {
+    
+    const request = chunk.map((inflight) => inflight.request);
+
+    return ethers$1.utils.fetchJson(endpoint, JSON.stringify(request))
+      .then((result) => {
+        // For each result, feed it to the correct Promise, depending
+        // on whether it was a success or error
+        chunk.forEach((inflightRequest, index) => {
+          const payload = result[index];
+          if (payload.error) {
+            const error = new Error(payload.error.message);
+            error.code = payload.error.code;
+            error.data = payload.error.data;
+            inflightRequest.reject(error);
+          }
+          else {
+            inflightRequest.resolve(payload.result);
+          }
+        });
+      }).catch((error) => {
+        if(error && error.code == 'SERVER_ERROR') {
+          const index = this._endpoints.indexOf(this._endpoint)+1;
+          this._failover();
+          this._endpoint = index >= this._endpoints.length ? this._endpoints[0] : this._endpoints[index];
+          this.requestChunk(chunk, this._endpoint);
+        } else {
+          chunk.forEach((inflightRequest) => {
+            inflightRequest.reject(error);
+          });
+        }
+      })
+  }
+    
+  send(method, params) {
+
+    const request = {
+      method: method,
+      params: params,
+      id: (this._nextId++),
+      jsonrpc: "2.0"
+    };
+
+    if (this._pendingBatch == null) {
+      this._pendingBatch = [];
+    }
+
+    const inflightRequest = { request, resolve: null, reject: null };
+
+    const promise = new Promise((resolve, reject) => {
+      inflightRequest.resolve = resolve;
+      inflightRequest.reject = reject;
+    });
+
+    this._pendingBatch.push(inflightRequest);
+
+    if (!this._pendingBatchAggregator) {
+      // Schedule batch for next event loop + short duration
+      this._pendingBatchAggregator = setTimeout(() => {
+        // Get the current batch and clear it, so new requests
+        // go into the next batch
+        const batch = this._pendingBatch;
+        this._pendingBatch = [];
+        this._pendingBatchAggregator = null;
+        // Prepare Chunks of CHUNK_SIZE
+        const chunks = [];
+        for (let i = 0; i < Math.ceil(batch.length / CHUNK_SIZE$1$1); i++) {
+          chunks[i] = batch.slice(i*CHUNK_SIZE$1$1, (i+1)*CHUNK_SIZE$1$1);
+        }
+        chunks.forEach((chunk)=>{
+          // Get the request as an array of requests
+          chunk.map((inflight) => inflight.request);
+          return this.requestChunk(chunk, this._endpoint)
+        });
+      }, getConfiguration$1().batchInterval || BATCH_INTERVAL$1$1);
+    }
+
+    return promise
+  }
+
+}
+
+const getAllProviders$1$1 = ()=> {
+  if(getWindow$1()._Web3ClientProviders == undefined) {
+    getWindow$1()._Web3ClientProviders = {};
+  }
+  return getWindow$1()._Web3ClientProviders
+};
+
+const setProvider$2$1 = (blockchain, provider)=> {
+  if(getAllProviders$1$1()[blockchain] === undefined) { getAllProviders$1$1()[blockchain] = []; }
+  const index = getAllProviders$1$1()[blockchain].indexOf(provider);
+  if(index > -1) {
+    getAllProviders$1$1()[blockchain].splice(index, 1);
+  }
+  getAllProviders$1$1()[blockchain].unshift(provider);
+};
+
+const setProviderEndpoints$2$1 = async (blockchain, endpoints, detectFastest = true)=> {
+  
+  getAllProviders$1$1()[blockchain] = endpoints.map((endpoint, index)=>
+    new StaticJsonRpcBatchProvider$1(endpoint, blockchain, endpoints, ()=>{
+      if(getAllProviders$1$1()[blockchain].length === 1) {
+        setProviderEndpoints$2$1(blockchain, endpoints, detectFastest);
+      } else {
+        getAllProviders$1$1()[blockchain].splice(index, 1);
+      }
+    })
+  );
+  
+  let provider;
+  let window = getWindow$1();
+
+  if(
+    window.fetch == undefined ||
+    (typeof process != 'undefined' && process['env'] && process['env']['NODE_ENV'] == 'test') ||
+    (typeof window.cy != 'undefined') ||
+    detectFastest === false
+  ) {
+    provider = getAllProviders$1$1()[blockchain][0];
+  } else {
+    
+    let responseTimes = await Promise.all(endpoints.map((endpoint)=>{
+      return new Promise(async (resolve)=>{
+        let timeout = 900;
+        let before = new Date().getTime();
+        setTimeout(()=>resolve(timeout), timeout);
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ method: 'net_version', id: 1, jsonrpc: '2.0' })
+        });
+        if(!response.ok) { return resolve(999) }
+        let after = new Date().getTime();
+        resolve(after-before);
+      })
+    }));
+
+    const fastestResponse = Math.min(...responseTimes);
+    const fastestIndex = responseTimes.indexOf(fastestResponse);
+    provider = getAllProviders$1$1()[blockchain][fastestIndex];
+  }
+  
+  setProvider$2$1(blockchain, provider);
+};
+
+const getProvider$2$1 = async (blockchain)=> {
+
+  let providers = getAllProviders$1$1();
+  if(providers && providers[blockchain]){ return providers[blockchain][0] }
+  
+  let window = getWindow$1();
+  if(window._Web3ClientGetProviderPromise && window._Web3ClientGetProviderPromise[blockchain]) { return await window._Web3ClientGetProviderPromise[blockchain] }
+
+  if(!window._Web3ClientGetProviderPromise){ window._Web3ClientGetProviderPromise = {}; }
+  window._Web3ClientGetProviderPromise[blockchain] = new Promise(async(resolve)=> {
+    await setProviderEndpoints$2$1(blockchain, Blockchains[blockchain].endpoints);
+    resolve(getWindow$1()._Web3ClientProviders[blockchain][0]);
+  });
+
+  return await window._Web3ClientGetProviderPromise[blockchain]
+};
+
+const getProviders$2$1 = async(blockchain)=>{
+
+  let providers = getAllProviders$1$1();
+  if(providers && providers[blockchain]){ return providers[blockchain] }
+  
+  let window = getWindow$1();
+  if(window._Web3ClientGetProvidersPromise && window._Web3ClientGetProvidersPromise[blockchain]) { return await window._Web3ClientGetProvidersPromise[blockchain] }
+
+  if(!window._Web3ClientGetProvidersPromise){ window._Web3ClientGetProvidersPromise = {}; }
+  window._Web3ClientGetProvidersPromise[blockchain] = new Promise(async(resolve)=> {
+    await setProviderEndpoints$2$1(blockchain, Blockchains[blockchain].endpoints);
+    resolve(getWindow$1()._Web3ClientProviders[blockchain]);
+  });
+
+  return await window._Web3ClientGetProvidersPromise[blockchain]
+};
+
+var EVM$1 = {
+  getProvider: getProvider$2$1,
+  getProviders: getProviders$2$1,
+  setProviderEndpoints: setProviderEndpoints$2$1,
+  setProvider: setProvider$2$1,
+};
+
+const BATCH_INTERVAL$2 = 10;
+const CHUNK_SIZE$2 = 99;
 
 class StaticJsonRpcSequentialProvider$1 extends Connection {
 
@@ -40795,15 +41652,15 @@ class StaticJsonRpcSequentialProvider$1 extends Connection {
         this._pendingBatchAggregator = null;
         // Prepare Chunks of CHUNK_SIZE
         const chunks = [];
-        for (let i = 0; i < Math.ceil(batch.length / CHUNK_SIZE$1); i++) {
-          chunks[i] = batch.slice(i*CHUNK_SIZE$1, (i+1)*CHUNK_SIZE$1);
+        for (let i = 0; i < Math.ceil(batch.length / CHUNK_SIZE$2); i++) {
+          chunks[i] = batch.slice(i*CHUNK_SIZE$2, (i+1)*CHUNK_SIZE$2);
         }
         chunks.forEach((chunk)=>{
           // Get the request as an array of requests
           chunk.map((inflight) => inflight.request);
           return this.requestChunk(chunk)
         });
-      }, getConfiguration$1().batchInterval || BATCH_INTERVAL$1);
+      }, getConfiguration$1().batchInterval || BATCH_INTERVAL$2);
     }
 
     return promise
@@ -40918,11 +41775,11 @@ var Solana$1 = {
   setProvider: setProvider$1$1,
 };
 
-let supported$3 = ['solana'];
-supported$3.evm = [];
-supported$3.solana = ['solana'];
+let supported$1$1 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'velas'];
+supported$1$1.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'velas'];
+supported$1$1.solana = ['solana'];
 
-function _optionalChain$1$3(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+function _optionalChain$1$1$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 let getCacheStore$1 = () => {
   if (getWindow$1()._Web3ClientCacheStore == undefined) {
     getWindow$1()._Web3ClientCacheStore = {};
@@ -40946,7 +41803,7 @@ let set$1 = function ({ key, value, expires }) {
 
 let get$1 = function ({ key, expires }) {
   let cachedEntry = getCacheStore$1()[key];
-  if (_optionalChain$1$3([cachedEntry, 'optionalAccess', _ => _.expiresAt]) > Date.now()) {
+  if (_optionalChain$1$1$1([cachedEntry, 'optionalAccess', _ => _.expiresAt]) > Date.now()) {
     return cachedEntry.value
   }
 };
@@ -41020,21 +41877,82 @@ let cache$1 = function ({ call, key, expires = 0 }) {
   })
 };
 
-const getProvider = async (blockchain)=>{
+let paramsToContractArgs$1 = ({ contract, method, params }) => {
+  let fragment = contract.interface.fragments.find((fragment) => {
+    return fragment.name == method
+  });
 
-  if(supported$3.evm.includes(blockchain)) ; else if(supported$3.solana.includes(blockchain)) {
+  return fragment.inputs.map((input, index) => {
+    if (Array.isArray(params)) {
+      return params[index]
+    } else {
+      return params[input.name]
+    }
+  })
+};
 
+const contractCall$1 = ({ address, api, method, params, provider, block }) => {
+  let contract = new ethers$1.Contract(address, api, provider);
+  let args = paramsToContractArgs$1({ contract, method, params });
+  return contract[method](...args, { blockTag: block })
+};
 
-    return await Solana$1.getProvider(blockchain)
+const balance$1$1 = ({ address, provider }) => {
+  return provider.getBalance(address)
+};
 
+const transactionCount$1 = ({ address, provider }) => {
+  return provider.getTransactionCount(address)
+};
 
-  } else {
-    throw 'Unknown blockchain: ' + blockchain
+const singleRequest$1$1 = ({ blockchain, address, api, method, params, block, provider }) =>{
+  if (api) {
+    return contractCall$1({ address, api, method, params, provider, block })
+  } else if (method === 'latestBlockNumber') {
+    return provider.getBlockNumber()
+  } else if (method === 'balance') {
+    return balance$1$1({ address, provider })
+  } else if (method === 'transactionCount') {
+    return transactionCount$1({ address, provider })
+  }
+};
+
+var requestEVM$1 = async ({ blockchain, address, api, method, params, block, timeout, strategy }) => {
+
+  strategy = strategy ? strategy : (getConfiguration$1().strategy || 'failover');
+  timeout = timeout ? timeout : (getConfiguration$1().timeout || undefined);
+
+  if(strategy === 'fastest') {
+
+    return Promise.race((await EVM$1.getProviders(blockchain)).map((provider)=>{
+
+      const request = singleRequest$1$1({ blockchain, address, api, method, params, block, provider });
+    
+      if(timeout) {
+        const timeoutPromise = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout));
+        return Promise.race([request, timeoutPromise])
+      } else {
+        return request
+      }
+    }))
+
+  } else { // failover
+
+    const provider = await EVM$1.getProvider(blockchain);
+    const request = singleRequest$1$1({ blockchain, address, api, method, params, block, provider });
+    
+    if(timeout) {
+      timeout = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout));
+      return Promise.race([request, timeout])
+    } else {
+      return request
+    }
   }
 };
 
 const accountInfo$1 = async ({ address, api, method, params, provider, block }) => {
   const info = await provider.getAccountInfo(new PublicKey(address));
+  if(!info || !info.data) { return }
   return api.decode(info.data)
 };
 
@@ -41152,843 +42070,16 @@ const request$1 = async function (url, options) {
     expires: cache$1$1 || 0,
     key: [blockchain, address, method, params, block],
     call: async()=>{
-      if(supported$3.evm.includes(blockchain)) ; else if(supported$3.solana.includes(blockchain)) {
-
-
-        return requestSolana$1({ blockchain, address, api, method, params, block, strategy, timeout })
-
-
-      } else {
-        throw 'Unknown blockchain: ' + blockchain
-      }  
-    }
-  })
-};
-
-const TOKEN_PROGRAM = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
-const ASSOCIATED_TOKEN_PROGRAM = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
-
-function _optionalChain$3(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
-var findProgramAddress = async ({ token, owner })=>{
-
-  const [address] = await PublicKey.findProgramAddress(
-    [
-      (new PublicKey(owner)).toBuffer(),
-      (new PublicKey(TOKEN_PROGRAM)).toBuffer(),
-      (new PublicKey(token)).toBuffer()
-    ],
-    new PublicKey(ASSOCIATED_TOKEN_PROGRAM)
-  );
-
-  return _optionalChain$3([address, 'optionalAccess', _ => _.toString, 'call', _2 => _2()])
-};
-
-const MINT_LAYOUT = struct$1([
-  u32$2('mintAuthorityOption'),
-  publicKey$1('mintAuthority'),
-  u64$3$1('supply'),
-  u8$1('decimals'),
-  bool$1('isInitialized'),
-  u32$2('freezeAuthorityOption'),
-  publicKey$1('freezeAuthority')
-]);
-
-const KEY_LAYOUT = rustEnum([
-  struct$1([], 'uninitialized'),
-  struct$1([], 'editionV1'),
-  struct$1([], 'masterEditionV1'),
-  struct$1([], 'reservationListV1'),
-  struct$1([], 'metadataV1'),
-  struct$1([], 'reservationListV2'),
-  struct$1([], 'masterEditionV2'),
-  struct$1([], 'editionMarker'),
-]);
-
-const CREATOR_LAYOUT = struct$1([
-  publicKey$1('address'),
-  bool$1('verified'),
-  u8$1('share'),
-]);
-
-const DATA_LAYOUT = struct$1([
-  str('name'),
-  str('symbol'),
-  str('uri'),
-  u16$1('sellerFeeBasisPoints'),
-  option(
-    vec(
-      CREATOR_LAYOUT.replicate('creators')
-    ),
-    'creators'
-  )
-]);
-
-const METADATA_LAYOUT = struct$1([
-  KEY_LAYOUT.replicate('key'),
-  publicKey$1('updateAuthority'),
-  publicKey$1('mint'),
-  DATA_LAYOUT.replicate('data'),
-  bool$1('primarySaleHappened'),
-  bool$1('isMutable'),
-  option(u8$1(), 'editionNonce'),
-]);
-
-const TRANSFER_LAYOUT = struct$1([
-  u8$1('instruction'),
-  u64$3$1('amount'),
-]);
-
-const TOKEN_LAYOUT = struct$1([
-  publicKey$1('mint'),
-  publicKey$1('owner'),
-  u64$3$1('amount'),
-  u32$2('delegateOption'),
-  publicKey$1('delegate'),
-  u8$1('state'),
-  u32$2('isNativeOption'),
-  u64$3$1('isNative'),
-  u64$3$1('delegatedAmount'),
-  u32$2('closeAuthorityOption'),
-  publicKey$1('closeAuthority')
-]);
-
-const INITIALIZE_LAYOUT = struct$1([
-  u8$1('instruction'),
-  publicKey$1('owner')
-]);
-
-const CLOSE_LAYOUT = struct$1([
-  u8$1('instruction')
-]);
-
-const createTransferInstruction = async ({ token, amount, from, to })=>{
-
-  let fromTokenAccount = await findProgramAddress({ token, owner: from });
-  let toTokenAccount = await findProgramAddress({ token, owner: to });
-
-  const keys = [
-    { pubkey: new PublicKey(fromTokenAccount), isSigner: false, isWritable: true },
-    { pubkey: new PublicKey(toTokenAccount), isSigner: false, isWritable: true },
-    { pubkey: new PublicKey(from), isSigner: true, isWritable: false }
-  ];
-
-  const data = Buffer.alloc(TRANSFER_LAYOUT.span);
-  TRANSFER_LAYOUT.encode({
-    instruction: 3, // TRANSFER
-    amount: new BN(amount)
-  }, data);
-  
-  return new TransactionInstruction({ 
-    keys,
-    programId: new PublicKey(TOKEN_PROGRAM),
-    data 
-  })
-};
-
-const createAssociatedTokenAccountInstruction = async ({ token, owner, payer }) => {
-
-  let associatedToken = await findProgramAddress({ token, owner });
-
-  const keys = [
-    { pubkey: new PublicKey(payer), isSigner: true, isWritable: true },
-    { pubkey: new PublicKey(associatedToken), isSigner: false, isWritable: true },
-    { pubkey: new PublicKey(owner), isSigner: false, isWritable: false },
-    { pubkey: new PublicKey(token), isSigner: false, isWritable: false },
-    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-    { pubkey: new PublicKey(TOKEN_PROGRAM), isSigner: false, isWritable: false },
-  ];
-
- return new TransactionInstruction({
-    keys,
-    programId: new PublicKey(ASSOCIATED_TOKEN_PROGRAM),
-    data: Buffer.alloc(0)
-  })
-};
-
-const initializeAccountInstruction = ({ account, token, owner })=>{
-
-  const keys = [
-    { pubkey: new PublicKey(account), isSigner: false, isWritable: true },
-    { pubkey: new PublicKey(token), isSigner: false, isWritable: false },
-  ];
-
-  const data = Buffer.alloc(INITIALIZE_LAYOUT.span);
-  INITIALIZE_LAYOUT.encode({
-    instruction: 18, // InitializeAccount3
-    owner: new PublicKey(owner)
-  }, data);
-  
-  return new TransactionInstruction({ keys, programId: new PublicKey(TOKEN_PROGRAM), data })
-};
-
-
-const closeAccountInstruction = ({ account, owner })=>{
-
-  const keys = [
-    { pubkey: new PublicKey(account), isSigner: false, isWritable: true },
-    { pubkey: new PublicKey(owner), isSigner: false, isWritable: true },
-    { pubkey: new PublicKey(owner), isSigner: true, isWritable: false }
-  ];
-
-  const data = Buffer.alloc(CLOSE_LAYOUT.span);
-  CLOSE_LAYOUT.encode({
-    instruction: 9 // CloseAccount
-  }, data);
-
-  return new TransactionInstruction({ keys, programId: new PublicKey(TOKEN_PROGRAM), data })
-};
-
-var instructions = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  createTransferInstruction: createTransferInstruction,
-  createAssociatedTokenAccountInstruction: createAssociatedTokenAccountInstruction,
-  initializeAccountInstruction: initializeAccountInstruction,
-  closeAccountInstruction: closeAccountInstruction
-});
-
-const BATCH_INTERVAL = 10;
-const CHUNK_SIZE = 99;
-
-class StaticJsonRpcBatchProvider extends ethers$1.providers.JsonRpcProvider {
-
-  constructor(url, network, endpoints, failover) {
-    super(url);
-    this._network = network;
-    this._endpoint = url;
-    this._endpoints = endpoints;
-    this._failover = failover;
-  }
-
-  detectNetwork() {
-    return Promise.resolve(Blockchains.findByName(this._network).id)
-  }
-
-  requestChunk(chunk, endpoint) {
-    
-    const request = chunk.map((inflight) => inflight.request);
-
-    return ethers$1.utils.fetchJson(endpoint, JSON.stringify(request))
-      .then((result) => {
-        // For each result, feed it to the correct Promise, depending
-        // on whether it was a success or error
-        chunk.forEach((inflightRequest, index) => {
-          const payload = result[index];
-          if (payload.error) {
-            const error = new Error(payload.error.message);
-            error.code = payload.error.code;
-            error.data = payload.error.data;
-            inflightRequest.reject(error);
-          }
-          else {
-            inflightRequest.resolve(payload.result);
-          }
-        });
-      }).catch((error) => {
-        if(error && error.code == 'SERVER_ERROR') {
-          const index = this._endpoints.indexOf(this._endpoint)+1;
-          this._failover();
-          this._endpoint = index >= this._endpoints.length ? this._endpoints[0] : this._endpoints[index];
-          this.requestChunk(chunk, this._endpoint);
-        } else {
-          chunk.forEach((inflightRequest) => {
-            inflightRequest.reject(error);
-          });
-        }
-      })
-  }
-    
-  send(method, params) {
-
-    const request = {
-      method: method,
-      params: params,
-      id: (this._nextId++),
-      jsonrpc: "2.0"
-    };
-
-    if (this._pendingBatch == null) {
-      this._pendingBatch = [];
-    }
-
-    const inflightRequest = { request, resolve: null, reject: null };
-
-    const promise = new Promise((resolve, reject) => {
-      inflightRequest.resolve = resolve;
-      inflightRequest.reject = reject;
-    });
-
-    this._pendingBatch.push(inflightRequest);
-
-    if (!this._pendingBatchAggregator) {
-      // Schedule batch for next event loop + short duration
-      this._pendingBatchAggregator = setTimeout(() => {
-        // Get the current batch and clear it, so new requests
-        // go into the next batch
-        const batch = this._pendingBatch;
-        this._pendingBatch = null;
-        this._pendingBatchAggregator = null;
-        // Prepare Chunks of CHUNK_SIZE
-        const chunks = [];
-        for (let i = 0; i < Math.ceil(batch.length / CHUNK_SIZE); i++) {
-          chunks[i] = batch.slice(i*CHUNK_SIZE, (i+1)*CHUNK_SIZE);
-        }
-        chunks.forEach((chunk)=>{
-          // Get the request as an array of requests
-          chunk.map((inflight) => inflight.request);
-          return this.requestChunk(chunk, this._endpoint)
-        });
-      }, BATCH_INTERVAL);
-    }
-
-    return promise
-  }
-
-}
-
-let _window;
-
-let getWindow = () => {
-  if(_window) { return _window }
-  if (typeof global == 'object') {
-    _window = global;
-  } else {
-    _window = window;
-  }
-  return _window
-};
-
-const getAllProviders$1 = ()=> {
-  if(getWindow()._Web3ClientProviders == undefined) {
-    getWindow()._Web3ClientProviders = {};
-  }
-  return getWindow()._Web3ClientProviders
-};
-
-const setProvider$2 = (blockchain, provider)=> {
-  if(getAllProviders$1()[blockchain] === undefined) { getAllProviders$1()[blockchain] = []; }
-  const index = getAllProviders$1()[blockchain].indexOf(provider);
-  if(index > -1) {
-    getAllProviders$1()[blockchain].splice(index, 1);
-  }
-  getAllProviders$1()[blockchain].unshift(provider);
-};
-
-const setProviderEndpoints$2 = async (blockchain, endpoints, detectFastest = true)=> {
-  
-  getAllProviders$1()[blockchain] = endpoints.map((endpoint, index)=>
-    new StaticJsonRpcBatchProvider(endpoint, blockchain, endpoints, ()=>{
-      if(getAllProviders$1()[blockchain].length === 1) {
-        setProviderEndpoints$2(blockchain, endpoints, detectFastest);
-      } else {
-        getAllProviders$1()[blockchain].splice(index, 1);
-      }
-    })
-  );
-  
-  let provider;
-  let window = getWindow();
-
-  if(
-    window.fetch == undefined ||
-    (typeof process != 'undefined' && process['env'] && process['env']['NODE_ENV'] == 'test') ||
-    (typeof window.cy != 'undefined') ||
-    detectFastest === false
-  ) {
-    provider = getAllProviders$1()[blockchain][0];
-  } else {
-    
-    let responseTimes = await Promise.all(endpoints.map((endpoint)=>{
-      return new Promise(async (resolve)=>{
-        let timeout = 900;
-        let before = new Date().getTime();
-        setTimeout(()=>resolve(timeout), timeout);
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ method: 'net_version', id: 1, jsonrpc: '2.0' })
-        });
-        if(!response.ok) { return resolve(999) }
-        let after = new Date().getTime();
-        resolve(after-before);
-      })
-    }));
-
-    const fastestResponse = Math.min(...responseTimes);
-    const fastestIndex = responseTimes.indexOf(fastestResponse);
-    provider = getAllProviders$1()[blockchain][fastestIndex];
-  }
-  
-  setProvider$2(blockchain, provider);
-};
-
-const getProvider$2 = async (blockchain)=> {
-
-  let providers = getAllProviders$1();
-  if(providers && providers[blockchain]){ return providers[blockchain][0] }
-  
-  let window = getWindow();
-  if(window._Web3ClientGetProviderPromise && window._Web3ClientGetProviderPromise[blockchain]) { return await window._Web3ClientGetProviderPromise[blockchain] }
-
-  if(!window._Web3ClientGetProviderPromise){ window._Web3ClientGetProviderPromise = {}; }
-  window._Web3ClientGetProviderPromise[blockchain] = new Promise(async(resolve)=> {
-    await setProviderEndpoints$2(blockchain, Blockchains[blockchain].endpoints);
-    resolve(getWindow()._Web3ClientProviders[blockchain][0]);
-  });
-
-  return await window._Web3ClientGetProviderPromise[blockchain]
-};
-
-const getProviders$2 = async(blockchain)=>{
-
-  let providers = getAllProviders$1();
-  if(providers && providers[blockchain]){ return providers[blockchain] }
-  
-  let window = getWindow();
-  if(window._Web3ClientGetProvidersPromise && window._Web3ClientGetProvidersPromise[blockchain]) { return await window._Web3ClientGetProvidersPromise[blockchain] }
-
-  if(!window._Web3ClientGetProvidersPromise){ window._Web3ClientGetProvidersPromise = {}; }
-  window._Web3ClientGetProvidersPromise[blockchain] = new Promise(async(resolve)=> {
-    await setProviderEndpoints$2(blockchain, Blockchains[blockchain].endpoints);
-    resolve(getWindow()._Web3ClientProviders[blockchain]);
-  });
-
-  return await window._Web3ClientGetProvidersPromise[blockchain]
-};
-
-var EVM = {
-  getProvider: getProvider$2,
-  getProviders: getProviders$2,
-  setProviderEndpoints: setProviderEndpoints$2,
-  setProvider: setProvider$2,
-};
-
-class StaticJsonRpcSequentialProvider extends Connection {
-
-  constructor(url, network, endpoints, failover) {
-    super(url);
-    this._network = network;
-    this._endpoint = url;
-    this._endpoints = endpoints;
-    this._failover = failover;
-  }
-}
-
-const getAllProviders = ()=> {
-  if(getWindow()._Web3ClientProviders == undefined) {
-    getWindow()._Web3ClientProviders = {};
-  }
-  return getWindow()._Web3ClientProviders
-};
-
-const setProvider$1 = (blockchain, provider)=> {
-  if(getAllProviders()[blockchain] === undefined) { getAllProviders()[blockchain] = []; }
-  const index = getAllProviders()[blockchain].indexOf(provider);
-  if(index > -1) {
-    getAllProviders()[blockchain].splice(index, 1);
-  }
-  getAllProviders()[blockchain].unshift(provider);
-};
-
-const setProviderEndpoints$1 = async (blockchain, endpoints, detectFastest = true)=> {
-  
-  getAllProviders()[blockchain] = endpoints.map((endpoint, index)=>
-    new StaticJsonRpcSequentialProvider(endpoint, blockchain, endpoints)
-  );
-
-  let provider;
-  let window = getWindow();
-
-  if(
-    window.fetch == undefined ||
-    (typeof process != 'undefined' && process['env'] && process['env']['NODE_ENV'] == 'test') ||
-    (typeof window.cy != 'undefined') ||
-    detectFastest === false
-  ) {
-    provider = getAllProviders()[blockchain][0];
-  } else {
-    
-    let responseTimes = await Promise.all(endpoints.map((endpoint)=>{
-      return new Promise(async (resolve)=>{
-        let timeout = 900;
-        let before = new Date().getTime();
-        setTimeout(()=>resolve(timeout), timeout);
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ method: 'getIdentity', id: 1, jsonrpc: '2.0' })
-        });
-        if(!response.ok) { return resolve(999) }
-        let after = new Date().getTime();
-        resolve(after-before);
-      })
-    }));
-
-    const fastestResponse = Math.min(...responseTimes);
-    const fastestIndex = responseTimes.indexOf(fastestResponse);
-    provider = getAllProviders()[blockchain][fastestIndex];
-  }
-  
-  setProvider$1(blockchain, provider);
-};
-
-const getProvider$1 = async (blockchain)=> {
-
-  let providers = getAllProviders();
-  if(providers && providers[blockchain]){ return providers[blockchain][0] }
-  
-  let window = getWindow();
-  if(window._Web3ClientGetProviderPromise && window._Web3ClientGetProviderPromise[blockchain]) { return await window._Web3ClientGetProviderPromise[blockchain] }
-
-  if(!window._Web3ClientGetProviderPromise){ window._Web3ClientGetProviderPromise = {}; }
-  window._Web3ClientGetProviderPromise[blockchain] = new Promise(async(resolve)=> {
-    await setProviderEndpoints$1(blockchain, Blockchains[blockchain].endpoints);
-    resolve(getWindow()._Web3ClientProviders[blockchain][0]);
-  });
-
-  return await window._Web3ClientGetProviderPromise[blockchain]
-};
-
-const getProviders$1 = async(blockchain)=>{
-
-  let providers = getAllProviders();
-  if(providers && providers[blockchain]){ return providers[blockchain] }
-  
-  let window = getWindow();
-  if(window._Web3ClientGetProvidersPromise && window._Web3ClientGetProvidersPromise[blockchain]) { return await window._Web3ClientGetProvidersPromise[blockchain] }
-
-  if(!window._Web3ClientGetProvidersPromise){ window._Web3ClientGetProvidersPromise = {}; }
-  window._Web3ClientGetProvidersPromise[blockchain] = new Promise(async(resolve)=> {
-    await setProviderEndpoints$1(blockchain, Blockchains[blockchain].endpoints);
-    resolve(getWindow()._Web3ClientProviders[blockchain]);
-  });
-
-  return await window._Web3ClientGetProvidersPromise[blockchain]
-};
-
-var Solana = {
-  getProvider: getProvider$1,
-  getProviders: getProviders$1,
-  setProviderEndpoints: setProviderEndpoints$1,
-  setProvider: setProvider$1,
-};
-
-let supported$1$1 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'velas'];
-supported$1$1.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'velas'];
-supported$1$1.solana = ['solana'];
-
-function _optionalChain$1$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
-let getCacheStore = () => {
-  if (getWindow()._Web3ClientCacheStore == undefined) {
-    getWindow()._Web3ClientCacheStore = {};
-  }
-  return getWindow()._Web3ClientCacheStore
-};
-
-let getPromiseStore = () => {
-  if (getWindow()._Web3ClientPromiseStore == undefined) {
-    getWindow()._Web3ClientPromiseStore = {};
-  }
-  return getWindow()._Web3ClientPromiseStore
-};
-
-let set = function ({ key, value, expires }) {
-  getCacheStore()[key] = {
-    expiresAt: Date.now() + expires,
-    value,
-  };
-};
-
-let get = function ({ key, expires }) {
-  let cachedEntry = getCacheStore()[key];
-  if (_optionalChain$1$1([cachedEntry, 'optionalAccess', _ => _.expiresAt]) > Date.now()) {
-    return cachedEntry.value
-  }
-};
-
-let getPromise = function({ key }) {
-  return getPromiseStore()[key]
-};
-
-let setPromise = function({ key, promise }) {
-  getPromiseStore()[key] = promise;
-  return promise
-};
-
-let deletePromise = function({ key }) {
-  getPromiseStore()[key] = undefined; 
-};
-
-let cache = function ({ call, key, expires = 0 }) {
-  return new Promise((resolve, reject)=>{
-    let value;
-    key = JSON.stringify(key);
-    
-    // get existing promise (of a previous pending request asking for the exact same thing)
-    let existingPromise = getPromise({ key });
-    if(existingPromise) { 
-      return existingPromise
-        .then(resolve)
-        .catch(reject)
-    }
-
-    setPromise({ key, promise: new Promise((resolveQueue, rejectQueue)=>{
-      if (expires === 0) {
-        return call()
-          .then((value)=>{
-            resolve(value);
-            resolveQueue(value);
-          })
-          .catch((error)=>{
-            reject(error);
-            rejectQueue(error);
-          })
-      }
-      
-      // get cached value
-      value = get({ key, expires });
-      if (value) {
-        resolve(value);
-        resolveQueue(value);
-        return value
-      }
-
-      // set new cache value
-      call()
-        .then((value)=>{
-          if (value) {
-            set({ key, value, expires });
-          }
-          resolve(value);
-          resolveQueue(value);
-        })
-        .catch((error)=>{
-          reject(error);
-          rejectQueue(error);
-        });
-      })
-    }).then(()=>{
-      deletePromise({ key });
-    }).catch(()=>{
-      deletePromise({ key });
-    });
-  })
-};
-
-const getConfiguration = () =>{
-  if(getWindow()._Web3ClientConfiguration === undefined) {
-    getWindow()._Web3ClientConfiguration = {};
-  }
-  return getWindow()._Web3ClientConfiguration
-};
-
-let paramsToContractArgs = ({ contract, method, params }) => {
-  let fragment = contract.interface.fragments.find((fragment) => {
-    return fragment.name == method
-  });
-
-  return fragment.inputs.map((input, index) => {
-    if (Array.isArray(params)) {
-      return params[index]
-    } else {
-      return params[input.name]
-    }
-  })
-};
-
-const contractCall = ({ address, api, method, params, provider, block }) => {
-  let contract = new ethers$1.Contract(address, api, provider);
-  let args = paramsToContractArgs({ contract, method, params });
-  return contract[method](...args, { blockTag: block })
-};
-
-const balance$1 = ({ address, provider }) => {
-  return provider.getBalance(address)
-};
-
-const transactionCount = ({ address, provider }) => {
-  return provider.getTransactionCount(address)
-};
-
-const singleRequest$1 = ({ blockchain, address, api, method, params, block, provider }) =>{
-  if (api) {
-    return contractCall({ address, api, method, params, provider, block })
-  } else if (method === 'latestBlockNumber') {
-    return provider.getBlockNumber()
-  } else if (method === 'balance') {
-    return balance$1({ address, provider })
-  } else if (method === 'transactionCount') {
-    return transactionCount({ address, provider })
-  }
-};
-
-var requestEVM = async ({ blockchain, address, api, method, params, block, timeout, strategy }) => {
-
-  strategy = strategy ? strategy : (getConfiguration().strategy || 'failover');
-  timeout = timeout ? timeout : (getConfiguration().timeout || undefined);
-
-  if(strategy === 'fastest') {
-
-    return Promise.race((await EVM.getProviders(blockchain)).map((provider)=>{
-
-      const request = singleRequest$1({ blockchain, address, api, method, params, block, provider });
-    
-      if(timeout) {
-        const timeoutPromise = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout));
-        return Promise.race([request, timeoutPromise])
-      } else {
-        return request
-      }
-    }))
-
-  } else { // failover
-
-    const provider = await EVM.getProvider(blockchain);
-    const request = singleRequest$1({ blockchain, address, api, method, params, block, provider });
-    
-    if(timeout) {
-      timeout = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout));
-      return Promise.race([request, timeout])
-    } else {
-      return request
-    }
-  }
-};
-
-const accountInfo = async ({ address, api, method, params, provider, block }) => {
-  const info = await provider.getAccountInfo(new PublicKey(address));
-  return api.decode(info.data)
-};
-
-const balance = ({ address, provider }) => {
-  return provider.getBalance(new PublicKey(address))
-};
-
-const singleRequest = async({ blockchain, address, api, method, params, block, provider, providers })=> {
-
-  try {
-
-    if(method == undefined || method === 'getAccountInfo') {
-      if(api == undefined) {
-        api = ACCOUNT_LAYOUT; 
-      }
-      return await accountInfo({ address, api, method, params, provider, block })
-    } else if(method === 'getProgramAccounts') {
-      return await provider.getProgramAccounts(new PublicKey(address), params).then((accounts)=>{
-        if(api){
-          return accounts.map((account)=>{
-            account.data = api.decode(account.account.data);
-            return account
-          })
-        } else {
-          return accounts
-        }
-      })
-    } else if(method === 'getTokenAccountBalance') {
-      return await provider.getTokenAccountBalance(new PublicKey(address))
-    } else if (method === 'latestBlockNumber') {
-      return await provider.getBlockHeight()  
-    } else if (method === 'balance') {
-      return await balance({ address, provider })
-    }
-
-  } catch (error){
-    if(providers && error && [
-      'Failed to fetch', '504', '503', '502', '500', '429', '426', '422', '413', '409', '408', '406', '405', '404', '403', '402', '401', '400'
-    ].some((errorType)=>error.toString().match(errorType))) {
-      let nextProvider = providers[providers.indexOf(provider)+1] || providers[0];
-      return singleRequest({ blockchain, address, api, method, params, block, provider: nextProvider, providers })
-    } else {
-      throw error
-    }
-  }
-};
-
-var requestSolana = async ({ blockchain, address, api, method, params, block, timeout, strategy }) => {
-
-  strategy = strategy ? strategy : (getConfiguration().strategy || 'failover');
-  timeout = timeout ? timeout : (getConfiguration().timeout || undefined);
-
-  const providers = await Solana.getProviders(blockchain);
-
-  if(strategy === 'fastest') {
-
-    return Promise.race(providers.map((provider)=>{
-
-      const succeedingRequest = new Promise((resolve)=>{
-        singleRequest({ blockchain, address, api, method, params, block, provider }).then(resolve);
-      }); // failing requests are ignored during race/fastest
-    
-      const timeoutPromise = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout || 10000));
-        
-      return Promise.race([succeedingRequest, timeoutPromise])
-    }))
-    
-  } else { // failover
-
-    const provider = await Solana.getProvider(blockchain);
-    const request = singleRequest({ blockchain, address, api, method, params, block, provider, providers });
-
-    if(timeout) {
-      timeout = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout));
-      return Promise.race([request, timeout])
-    } else {
-      return request
-    }
-  }
-};
-
-var parseUrl = (url) => {
-  if (typeof url == 'object') {
-    return url
-  }
-  let deconstructed = url.match(/(?<blockchain>\w+):\/\/(?<part1>[\w\d]+)(\/(?<part2>[\w\d]+)*)?/);
-
-  if(deconstructed.groups.part2 == undefined) {
-    if(deconstructed.groups.part1.match(/\d/)) {
-      return {
-        blockchain: deconstructed.groups.blockchain,
-        address: deconstructed.groups.part1
-      }
-    } else {
-      return {
-        blockchain: deconstructed.groups.blockchain,
-        method: deconstructed.groups.part1
-      }
-    }
-  } else {
-    return {
-      blockchain: deconstructed.groups.blockchain,
-      address: deconstructed.groups.part1,
-      method: deconstructed.groups.part2
-    }
-  }
-};
-
-const request = async function (url, options) {
-  
-  const { blockchain, address, method } = parseUrl(url);
-  const { api, params, cache: cache$1, block, timeout, strategy } = (typeof(url) == 'object' ? url : options) || {};
-
-  return await cache({
-    expires: cache$1 || 0,
-    key: [blockchain, address, method, params, block],
-    call: async()=>{
       if(supported$1$1.evm.includes(blockchain)) {
 
 
-        return await requestEVM({ blockchain, address, api, method, params, block, strategy, timeout })
+        return await requestEVM$1({ blockchain, address, api, method, params, block, strategy, timeout })
 
 
       } else if(supported$1$1.solana.includes(blockchain)) {
 
 
-        return await requestSolana({ blockchain, address, api, method, params, block, strategy, timeout })
+        return await requestSolana$1({ blockchain, address, api, method, params, block, strategy, timeout })
 
 
       } else {
@@ -41998,11 +42089,11 @@ const request = async function (url, options) {
   })
 };
 
-var balanceOnSolana = async ({ blockchain, address, account, api })=>{
+var balanceOnSolana$1 = async ({ blockchain, address, account, api })=>{
 
   if(address == Blockchains[blockchain].currency.address) {
 
-     return ethers$1.BigNumber.from(await request(`solana://${account}/balance`))
+     return ethers$1.BigNumber.from(await request$1(`solana://${account}/balance`))
 
   } else {
 
@@ -42012,12 +42103,12 @@ var balanceOnSolana = async ({ blockchain, address, account, api })=>{
       { memcmp: { offset: 0, bytes: address }}
     ];
 
-    let tokenAccounts  = await request(`solana://TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA/getProgramAccounts`, { params: { filters } });
+    let tokenAccounts  = await request$1(`solana://TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA/getProgramAccounts`, { params: { filters } });
 
     let totalBalance = ethers$1.BigNumber.from('0');
 
     await Promise.all(tokenAccounts.map((tokenAccount)=>{
-      return request(`solana://${tokenAccount.pubkey.toString()}/getTokenAccountBalance`)
+      return request$1(`solana://${tokenAccount.pubkey.toString()}/getTokenAccountBalance`)
     })).then((balances)=>{
       balances.forEach((balance)=>{
         totalBalance = totalBalance.add(ethers$1.BigNumber.from(balance.value.amount));
@@ -42028,35 +42119,31 @@ var balanceOnSolana = async ({ blockchain, address, account, api })=>{
   }
 };
 
-var decimalsOnSolana = async ({ blockchain, address })=>{
-  let data = await request({ blockchain, address, api: MINT_LAYOUT });
+var decimalsOnSolana$1 = async ({ blockchain, address })=>{
+  let data = await request$1({ blockchain, address, api: MINT_LAYOUT$1 });
   return data.decimals
 };
 
-var findAccount = async ({ token, owner })=>{
+var findAccount$1 = async ({ token, owner })=>{
 
-  let existingAccounts = await request(`solana://${TOKEN_PROGRAM}/getProgramAccounts`, {
-    api: TOKEN_LAYOUT,
-    params: { filters: [
-      { dataSize: 165 },
-      { memcmp: { offset: 32, bytes: owner }},
-      { memcmp: { offset: 0, bytes: token }}
-    ]} 
+  const address = await findProgramAddress$1({ token, owner });
+
+  const existingAccount = await request$1({
+    blockchain: 'solana',
+    address,
+    api: TOKEN_LAYOUT$1,
+    cache: 10000 // 10s
   });
 
-  let existingAccount = existingAccounts.sort((a, b) => (a.account.data.amount.lt(b.account.data.amount) ? 1 : -1))[0];
-
-  if(existingAccount){
-    return existingAccount.pubkey.toString()
-  } 
+  return existingAccount
 };
 
 function _optionalChain$2$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
-const METADATA_ACCOUNT = 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s';
+const METADATA_ACCOUNT$1 = 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s';
 
-const METADATA_REPLACE = new RegExp('\u0000', 'g');
+const METADATA_REPLACE$1 = new RegExp('\u0000', 'g');
 
-const getMetaDataPDA = async ({ metaDataPublicKey, mintPublicKey }) => {
+const getMetaDataPDA$1 = async ({ metaDataPublicKey, mintPublicKey }) => {
   let seed = [
     Buffer.from('metadata'),
     metaDataPublicKey.toBuffer(),
@@ -42066,48 +42153,48 @@ const getMetaDataPDA = async ({ metaDataPublicKey, mintPublicKey }) => {
   return (await PublicKey.findProgramAddress(seed, metaDataPublicKey))[0]
 };
 
-const getMetaData = async ({ blockchain, address })=> {
+const getMetaData$1 = async ({ blockchain, address })=> {
 
   let mintPublicKey = new PublicKey(address);
-  let metaDataPublicKey = new PublicKey(METADATA_ACCOUNT);
-  let tokenMetaDataPublicKey = await getMetaDataPDA({ metaDataPublicKey, mintPublicKey });
+  let metaDataPublicKey = new PublicKey(METADATA_ACCOUNT$1);
+  let tokenMetaDataPublicKey = await getMetaDataPDA$1({ metaDataPublicKey, mintPublicKey });
 
-  let metaData = await request({
+  let metaData = await request$1({
     blockchain, 
     address: tokenMetaDataPublicKey.toString(),
-    api: METADATA_LAYOUT,
+    api: METADATA_LAYOUT$1,
     cache: 86400000, // 1 day
   });
 
   return {
-    name: _optionalChain$2$1([metaData, 'optionalAccess', _ => _.data, 'optionalAccess', _2 => _2.name, 'optionalAccess', _3 => _3.replace, 'call', _4 => _4(METADATA_REPLACE, '')]),
-    symbol: _optionalChain$2$1([metaData, 'optionalAccess', _5 => _5.data, 'optionalAccess', _6 => _6.symbol, 'optionalAccess', _7 => _7.replace, 'call', _8 => _8(METADATA_REPLACE, '')])
+    name: _optionalChain$2$1([metaData, 'optionalAccess', _ => _.data, 'optionalAccess', _2 => _2.name, 'optionalAccess', _3 => _3.replace, 'call', _4 => _4(METADATA_REPLACE$1, '')]),
+    symbol: _optionalChain$2$1([metaData, 'optionalAccess', _5 => _5.data, 'optionalAccess', _6 => _6.symbol, 'optionalAccess', _7 => _7.replace, 'call', _8 => _8(METADATA_REPLACE$1, '')])
   }
 };
 
-function _optionalChain$1$2(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
-var nameOnSolana = async ({ blockchain, address })=>{
-  let metaData = await getMetaData({ blockchain, address });
-  return _optionalChain$1$2([metaData, 'optionalAccess', _ => _.name])
+function _optionalChain$1$3(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+var nameOnSolana$1 = async ({ blockchain, address })=>{
+  let metaData = await getMetaData$1({ blockchain, address });
+  return _optionalChain$1$3([metaData, 'optionalAccess', _ => _.name])
 };
 
-function _optionalChain$4(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
-var symbolOnSolana = async ({ blockchain, address })=>{
-  let metaData = await getMetaData({ blockchain, address });
-  return _optionalChain$4([metaData, 'optionalAccess', _ => _.symbol])
+function _optionalChain$7(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+var symbolOnSolana$1 = async ({ blockchain, address })=>{
+  let metaData = await getMetaData$1({ blockchain, address });
+  return _optionalChain$7([metaData, 'optionalAccess', _ => _.symbol])
 };
 
-let supported$2 = ['solana'];
-supported$2.evm = [];
-supported$2.solana = ['solana'];
+let supported$4 = ['solana'];
+supported$4.evm = [];
+supported$4.solana = ['solana'];
 
-class Token {
+class Token$1 {
   
   constructor({ blockchain, address }) {
     this.blockchain = blockchain;
-    if(supported$2.evm.includes(this.blockchain)) {
+    if(supported$4.evm.includes(this.blockchain)) {
       this.address = ethers$1.utils.getAddress(address);
-    } else if(supported$2.solana.includes(this.blockchain)) {
+    } else if(supported$4.solana.includes(this.blockchain)) {
       this.address = address;
     }
   }
@@ -42118,11 +42205,11 @@ class Token {
     }
     let decimals;
     try {
-      if(supported$2.evm.includes(this.blockchain)) {
+      if(supported$4.evm.includes(this.blockchain)) {
 
-      } else if(supported$2.solana.includes(this.blockchain)) {
+      } else if(supported$4.solana.includes(this.blockchain)) {
 
-        decimals = await decimalsOnSolana({ blockchain: this.blockchain, address: this.address });
+        decimals = await decimalsOnSolana$1({ blockchain: this.blockchain, address: this.address });
 
         
       }
@@ -42134,9 +42221,9 @@ class Token {
     if (this.address == Blockchains.findByName(this.blockchain).currency.address) {
       return Blockchains.findByName(this.blockchain).currency.symbol
     }
-    if(supported$2.evm.includes(this.blockchain)) ; else if(supported$2.solana.includes(this.blockchain)) {
+    if(supported$4.evm.includes(this.blockchain)) ; else if(supported$4.solana.includes(this.blockchain)) {
 
-      return await symbolOnSolana({ blockchain: this.blockchain, address: this.address })
+      return await symbolOnSolana$1({ blockchain: this.blockchain, address: this.address })
 
     }
   }
@@ -42145,17 +42232,17 @@ class Token {
     if (this.address == Blockchains.findByName(this.blockchain).currency.address) {
       return Blockchains.findByName(this.blockchain).currency.name
     }
-    if(supported$2.evm.includes(this.blockchain)) ; else if(supported$2.solana.includes(this.blockchain)) {
+    if(supported$4.evm.includes(this.blockchain)) ; else if(supported$4.solana.includes(this.blockchain)) {
 
-      return await nameOnSolana({ blockchain: this.blockchain, address: this.address })
+      return await nameOnSolana$1({ blockchain: this.blockchain, address: this.address })
 
     }
   }
 
   async balance(account, id) {
-    if(supported$2.evm.includes(this.blockchain)) ; else if(supported$2.solana.includes(this.blockchain)) {
+    if(supported$4.evm.includes(this.blockchain)) ; else if(supported$4.solana.includes(this.blockchain)) {
 
-      return await balanceOnSolana({ blockchain: this.blockchain, account, address: this.address, api: Token[this.blockchain].DEFAULT })
+      return await balanceOnSolana$1({ blockchain: this.blockchain, account, address: this.address, api: Token$1[this.blockchain].DEFAULT })
 
     }
   }
@@ -42164,7 +42251,7 @@ class Token {
     if (this.address == Blockchains.findByName(this.blockchain).currency.address) {
       return ethers$1.BigNumber.from(Blockchains.findByName(this.blockchain).maxInt)
     }
-    if(supported$2.evm.includes(this.blockchain)) ; else if(supported$2.solana.includes(this.blockchain)) {
+    if(supported$4.evm.includes(this.blockchain)) ; else if(supported$4.solana.includes(this.blockchain)) {
       return ethers$1.BigNumber.from(Blockchains.findByName(this.blockchain).maxInt)
     } 
   }
@@ -42172,7 +42259,7 @@ class Token {
   async BigNumber(amount) {
     let decimals = await this.decimals();
     return ethers$1.utils.parseUnits(
-      Token.safeAmount({ amount: parseFloat(amount), decimals }).toString(),
+      Token$1.safeAmount({ amount: parseFloat(amount), decimals }).toString(),
       decimals
     )
   }
@@ -42185,33 +42272,33 @@ class Token {
   }
 }
 
-Token.BigNumber = async ({ amount, blockchain, address }) => {
-  let token = new Token({ blockchain, address });
+Token$1.BigNumber = async ({ amount, blockchain, address }) => {
+  let token = new Token$1({ blockchain, address });
   return token.BigNumber(amount)
 };
 
-Token.readable = async ({ amount, blockchain, address }) => {
-  let token = new Token({ blockchain, address });
+Token$1.readable = async ({ amount, blockchain, address }) => {
+  let token = new Token$1({ blockchain, address });
   return token.readable(amount)
 };
 
-Token.safeAmount = ({ amount, decimals }) => {
+Token$1.safeAmount = ({ amount, decimals }) => {
   return parseFloat(amount.toFixed(decimals))
 };
 
 
-Token.solana = {
-  MINT_LAYOUT,
-  METADATA_LAYOUT,
-  TRANSFER_LAYOUT,
-  METADATA_ACCOUNT,
-  TOKEN_PROGRAM,
-  TOKEN_LAYOUT,
-  ASSOCIATED_TOKEN_PROGRAM,
-  findProgramAddress,
-  findAccount,
-  getMetaData,
-  ...instructions
+Token$1.solana = {
+  MINT_LAYOUT: MINT_LAYOUT$1,
+  METADATA_LAYOUT: METADATA_LAYOUT$1,
+  TRANSFER_LAYOUT: TRANSFER_LAYOUT$1,
+  METADATA_ACCOUNT: METADATA_ACCOUNT$1,
+  TOKEN_PROGRAM: TOKEN_PROGRAM$1,
+  TOKEN_LAYOUT: TOKEN_LAYOUT$1,
+  ASSOCIATED_TOKEN_PROGRAM: ASSOCIATED_TOKEN_PROGRAM$1,
+  findProgramAddress: findProgramAddress$1,
+  findAccount: findAccount$1,
+  getMetaData: getMetaData$1,
+  ...instructions$1
 };
 
 const ensureNativeTokenAsset = async ({ address, options, assets, blockchain }) => {
@@ -42220,7 +42307,7 @@ const ensureNativeTokenAsset = async ({ address, options, assets, blockchain }) 
 
   const nativeTokenMissing = !assets.find((asset)=>(asset.address.toLowerCase() == Blockchains[blockchain].currency.address.toLowerCase()));
   if(nativeTokenMissing) {
-    let balance = await request$1(
+    let balance = await request$2(
       {
         blockchain: blockchain,
         address,
@@ -42330,7 +42417,7 @@ var dripAssets = async (options) => {
   promises = promises.concat((options.priority || []).map((asset)=>{
     return new Promise(async (resolve, reject)=>{
       try {
-        let token = new Token(asset);
+        let token = new Token$1(asset);
         let completedAsset = Object.assign({},
           asset,
           {
@@ -42365,7 +42452,7 @@ var dripAssets = async (options) => {
   }
   promises = promises.concat((majorTokens.map((asset)=>{
     return new Promise((resolve, reject)=>{
-      new Token(asset).balance(options.accounts[asset.blockchain])
+      new Token$1(asset).balance(options.accounts[asset.blockchain])
         .then((balance)=>{
           if(exists({ assets, asset })) { return resolve() }
           const assetWithBalance = reduceAssetWithBalance(asset, balance);
@@ -42385,7 +42472,7 @@ var dripAssets = async (options) => {
     let allAssets = await getAssets(options);
     promises = promises.concat((allAssets.map((asset)=>{
       return new Promise((resolve, reject)=>{
-        return new Token(asset).balance(options.accounts[asset.blockchain])
+        return new Token$1(asset).balance(options.accounts[asset.blockchain])
           .then((balance)=>{
             if(exists({ assets, asset })) { return resolve() }
             const assetWithBalance = reduceAssetWithBalance(asset, balance);
@@ -47362,7 +47449,7 @@ var basics = {
   slippage: true,
 };
 
-function _optionalChain$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }class Route {
+function _optionalChain$1$2(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }class Route {
   constructor({
     tokenIn,
     tokenOut,
@@ -47377,18 +47464,18 @@ function _optionalChain$1(ops) { let lastAccessLHS = undefined; let value = ops[
     this.tokenIn = tokenIn;
     this.tokenOut = tokenOut;
     this.path = path;
-    this.amountIn = _optionalChain$1([amountIn, 'optionalAccess', _ => _.toString, 'call', _2 => _2()]);
-    this.amountOutMin = _optionalChain$1([amountOutMin, 'optionalAccess', _3 => _3.toString, 'call', _4 => _4()]);
-    this.amountOut = _optionalChain$1([amountOut, 'optionalAccess', _5 => _5.toString, 'call', _6 => _6()]);
-    this.amountInMax = _optionalChain$1([amountInMax, 'optionalAccess', _7 => _7.toString, 'call', _8 => _8()]);
+    this.amountIn = _optionalChain$1$2([amountIn, 'optionalAccess', _ => _.toString, 'call', _2 => _2()]);
+    this.amountOutMin = _optionalChain$1$2([amountOutMin, 'optionalAccess', _3 => _3.toString, 'call', _4 => _4()]);
+    this.amountOut = _optionalChain$1$2([amountOut, 'optionalAccess', _5 => _5.toString, 'call', _6 => _6()]);
+    this.amountInMax = _optionalChain$1$2([amountInMax, 'optionalAccess', _7 => _7.toString, 'call', _8 => _8()]);
     this.exchange = exchange;
     this.getTransaction = getTransaction;
   }
 }
 
-let supported$1 = ['solana'];
-supported$1.evm = [];
-supported$1.solana = ['solana'];
+let supported$3 = ['solana'];
+supported$3.evm = [];
+supported$3.solana = ['solana'];
 
 const DEFAULT_SLIPPAGE = '0.5'; // percent
 
@@ -47402,11 +47489,11 @@ const calculateAmountInWithSlippage = async ({ exchange, fixedPath, amountIn, am
 
   let newAmountInWithDefaultSlippageBN = amountIn.add(amountIn.mul(parseFloat(defaultSlippage)*100).div(10000));
 
-  if(!supported$1.evm.includes(exchange.blockchain)) { 
+  if(!supported$3.evm.includes(exchange.blockchain)) { 
     return newAmountInWithDefaultSlippageBN
   }
 
-  const currentBlock = await request$1({ blockchain: exchange.blockchain, method: 'latestBlockNumber' });
+  const currentBlock = await request$2({ blockchain: exchange.blockchain, method: 'latestBlockNumber' });
 
   let blocks = [];
   for(var i = 0; i <= 2; i++){
@@ -47497,9 +47584,9 @@ const calculateAmountsWithSlippage = async ({
   amountInInput, amountOutInput, amountInMaxInput, amountOutMinInput,
 })=>{
   if(amountOutMinInput || amountOutInput) {
-    if(supported$1.evm.includes(exchange.blockchain)) {
+    if(supported$3.evm.includes(exchange.blockchain)) {
       amountIn = amountInMax = await calculateAmountInWithSlippage({ exchange, fixedPath, amountIn, amountOut: (amountOutMinInput || amountOut) });
-    } else if(supported$1.solana.includes(exchange.blockchain)){
+    } else if(supported$3.solana.includes(exchange.blockchain)){
       let amountsWithSlippage = [];
       await Promise.all(fixedPath.map((step, index)=>{
         if(index != 0) {
@@ -47513,7 +47600,7 @@ const calculateAmountsWithSlippage = async ({
       amountIn = amountInMax = amounts[0];
     }
   } else if(amountInMaxInput || amountInInput) {
-    if(supported$1.solana.includes(exchange.blockchain)){
+    if(supported$3.solana.includes(exchange.blockchain)){
       let amountsWithSlippage = [];
       await Promise.all(fixedPath.map((step, index)=>{
         if(index !== 0 && index < fixedPath.length-1) {
@@ -47545,7 +47632,7 @@ const fixAddress = (address)=>{
 };
 
 let getAmount = async ({ amount, blockchain, address }) => {
-  return await Token.BigNumber({ amount, blockchain, address })
+  return await Token$1.BigNumber({ amount, blockchain, address })
 };
 
 let fixRouteParams = async ({
@@ -48598,7 +48685,7 @@ const getTickArrays = async ({
 
       let data;
       try {
-        data = await request$1({ blockchain: 'solana' , address: address.toString(), api: TICK_ARRAY_LAYOUT, cache: 10 });
+        data = await request$2({ blockchain: 'solana' , address: address.toString(), api: TICK_ARRAY_LAYOUT, cache: 10 });
       } catch (e2) {}
 
       return { address, data }
@@ -48811,7 +48898,7 @@ const getPrice = async ({
 
   try {
     
-    const freshWhirlpoolData = await request$1({ blockchain: 'solana' , address: account.pubkey.toString(), api: basics.router.v1.api, cache: 10 });
+    const freshWhirlpoolData = await request$2({ blockchain: 'solana' , address: account.pubkey.toString(), api: basics.router.v1.api, cache: 10 });
 
     const aToB = (account.data.tokenMintA.toString() === tokenIn);
 
@@ -48854,7 +48941,7 @@ const getPrice = async ({
 // This method is cached dan is only to be used to generally existing pools every 24h
 // Do not use for price calulations, fetch accounts for pools individually in order to calculate price 
 let getAccounts = async (base, quote) => {
-  let accounts = await request$1(`solana://${basics.router.v1.address}/getProgramAccounts`, {
+  let accounts = await request$2(`solana://${basics.router.v1.address}/getProgramAccounts`, {
     params: { filters: [
       { dataSize: basics.router.v1.api.span },
       { memcmp: { offset: 101, bytes: base }},
@@ -48910,7 +48997,7 @@ let getBestPair = async({ tokenIn, tokenOut, amountIn, amountInMax, amountOut, a
   return bestPair
 };
 
-function _optionalChain$2(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+function _optionalChain$6(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 const blockchain$1 = Blockchains.solana;
 
 // Replaces 11111111111111111111111111111111 with the wrapped token and implies wrapping.
@@ -48985,9 +49072,9 @@ let findPath = async ({ tokenIn, tokenOut, amountIn, amountOut, amountInMax, amo
 
   // Add blockchain.wrapped.address to route path if things start or end with blockchain.currency.address
   // because that actually reflects how things are routed in reality:
-  if(_optionalChain$2([path, 'optionalAccess', _ => _.length]) && path[0] == blockchain$1.currency.address) {
+  if(_optionalChain$6([path, 'optionalAccess', _ => _.length]) && path[0] == blockchain$1.currency.address) {
     path.splice(1, 0, blockchain$1.wrapped.address);
-  } else if(_optionalChain$2([path, 'optionalAccess', _2 => _2.length]) && path[path.length-1] == blockchain$1.currency.address) {
+  } else if(_optionalChain$6([path, 'optionalAccess', _2 => _2.length]) && path[path.length-1] == blockchain$1.currency.address) {
     path.splice(path.length-1, 0, blockchain$1.wrapped.address);
   }
   return { path, fixedPath: fixPath(path) }
@@ -49083,10 +49170,10 @@ const TWO_HOP_SWAP_INSTRUCTION = new BN("16635068063392030915");
 
 const createTokenAccountIfNotExisting = async ({ instructions, owner, token, account })=>{
   let outAccountExists;
-  try{ outAccountExists = !!(await request$1({ blockchain: 'solana', address: account.toString() })); } catch (e2) {}
+  try{ outAccountExists = !!(await request$2({ blockchain: 'solana', address: account.toString() })); } catch (e2) {}
   if(!outAccountExists) {
     instructions.push(
-      await Token.solana.createAssociatedTokenAccountInstruction({
+      await Token$1.solana.createAssociatedTokenAccountInstruction({
         token,
         owner,
         payer: owner,
@@ -49113,7 +49200,7 @@ const getTwoHopSwapInstructionKeys = async ({
 
   return [
     // token_program
-    { pubkey: new PublicKey(Token.solana.TOKEN_PROGRAM), isWritable: false, isSigner: false },
+    { pubkey: new PublicKey(Token$1.solana.TOKEN_PROGRAM), isWritable: false, isSigner: false },
     // token_authority
     { pubkey: new PublicKey(fromAddress), isWritable: false, isSigner: true },
     // whirlpool_one
@@ -49205,7 +49292,7 @@ const getSwapInstructionKeys = async ({
 
   return [
     // token_program
-    { pubkey: new PublicKey(Token.solana.TOKEN_PROGRAM), isWritable: false, isSigner: false },
+    { pubkey: new PublicKey(Token$1.solana.TOKEN_PROGRAM), isWritable: false, isSigner: false },
     // token_authority
     { pubkey: new PublicKey(fromAddress), isWritable: false, isSigner: true },
     // whirlpool
@@ -49298,21 +49385,21 @@ const getTransaction$2 = async ({
   const provider = await getProvider('solana');
   
   if(startsWrapped || endsUnwrapped) {
-    const rent = await provider.getMinimumBalanceForRentExemption(Token.solana.TOKEN_LAYOUT.span);
+    const rent = await provider.getMinimumBalanceForRentExemption(Token$1.solana.TOKEN_LAYOUT.span);
     const keypair = Keypair.generate();
     wrappedAccount = keypair.publicKey.toString();
     const lamports = startsWrapped ? new BN(amountIn.toString()).add(new BN(rent)) :  new BN(rent);
     let createAccountInstruction = SystemProgram.createAccount({
       fromPubkey: new PublicKey(fromAddress),
       newAccountPubkey: new PublicKey(wrappedAccount),
-      programId: new PublicKey(Token.solana.TOKEN_PROGRAM),
-      space: Token.solana.TOKEN_LAYOUT.span,
+      programId: new PublicKey(Token$1.solana.TOKEN_PROGRAM),
+      space: Token$1.solana.TOKEN_LAYOUT.span,
       lamports
     });
     createAccountInstruction.signers = [keypair];
     instructions.push(createAccountInstruction);
     instructions.push(
-      Token.solana.initializeAccountInstruction({
+      Token$1.solana.initializeAccountInstruction({
         account: wrappedAccount,
         token: blockchain.wrapped.address,
         owner: fromAddress
@@ -49325,8 +49412,8 @@ const getTransaction$2 = async ({
     let amountSpecifiedIsInput = !!(amountInInput || amountOutMinInput);
     let amount = amountSpecifiedIsInput ? amountIn : amountOut;
     let otherAmountThreshold = amountSpecifiedIsInput ? amountOutMin : amountInMax;
-    let tokenAccountIn = startsWrapped ? new PublicKey(wrappedAccount) : new PublicKey(await Token.solana.findProgramAddress({ owner: fromAddress, token: tokenIn }));
-    let tokenAccountOut = endsUnwrapped ? new PublicKey(wrappedAccount) : new PublicKey(await Token.solana.findProgramAddress({ owner: fromAddress, token: tokenOut }));
+    let tokenAccountIn = startsWrapped ? new PublicKey(wrappedAccount) : new PublicKey(await Token$1.solana.findProgramAddress({ owner: fromAddress, token: tokenIn }));
+    let tokenAccountOut = endsUnwrapped ? new PublicKey(wrappedAccount) : new PublicKey(await Token$1.solana.findProgramAddress({ owner: fromAddress, token: tokenOut }));
     await createTokenAccountIfNotExisting({ instructions, owner: fromAddress, token: tokenOut, account: tokenAccountOut });
     instructions.push(
       new TransactionInstruction({
@@ -49354,11 +49441,11 @@ const getTransaction$2 = async ({
     let amountSpecifiedIsInput = !!(amountInInput || amountOutMinInput);
     let amount = amountSpecifiedIsInput ? amountIn : amountOut;
     let otherAmountThreshold = amountSpecifiedIsInput ? amountOutMin : amountInMax;
-    let tokenAccountIn = startsWrapped ? new PublicKey(wrappedAccount) : new PublicKey(await Token.solana.findProgramAddress({ owner: fromAddress, token: tokenIn }));
+    let tokenAccountIn = startsWrapped ? new PublicKey(wrappedAccount) : new PublicKey(await Token$1.solana.findProgramAddress({ owner: fromAddress, token: tokenIn }));
     let tokenMiddle = path[1];
-    let tokenAccountMiddle = new PublicKey(await Token.solana.findProgramAddress({ owner: fromAddress, token: tokenMiddle }));
+    let tokenAccountMiddle = new PublicKey(await Token$1.solana.findProgramAddress({ owner: fromAddress, token: tokenMiddle }));
     await createTokenAccountIfNotExisting({ instructions, owner: fromAddress, token: tokenMiddle, account: tokenAccountMiddle });
-    let tokenAccountOut = endsUnwrapped ? new PublicKey(wrappedAccount) : new PublicKey(await Token.solana.findProgramAddress({ owner: fromAddress, token: tokenOut }));
+    let tokenAccountOut = endsUnwrapped ? new PublicKey(wrappedAccount) : new PublicKey(await Token$1.solana.findProgramAddress({ owner: fromAddress, token: tokenOut }));
     await createTokenAccountIfNotExisting({ instructions, owner: fromAddress, token: tokenOut, account: tokenAccountOut });
     instructions.push(
       new TransactionInstruction({
@@ -49393,7 +49480,7 @@ const getTransaction$2 = async ({
   
   if(startsWrapped || endsUnwrapped) {
     instructions.push(
-      Token.solana.closeAccountInstruction({
+      Token$1.solana.closeAccountInstruction({
         account: wrappedAccount,
         owner: fromAddress
       })
@@ -49470,7 +49557,7 @@ var solanaRouters = {
 let evmRouters = {};
 
 
-var routers = {... evmRouters, solanaRouters};
+var routers$1 = {... evmRouters, solanaRouters};
 
 /**
  * Checks if `value` is the
@@ -50051,7 +50138,7 @@ function throttle(func, wait, options) {
 
 var throttle_1 = throttle;
 
-({
+var routers = {
   solana: {
     address: 'DePayRG7ZySPWzeK9Kvq7aPeif7sdbBZNh6DHcvNj7F7',
     api: {
@@ -50115,19 +50202,3242 @@ var throttle_1 = throttle;
       }
     }
   },
+};
+
+let _window;
+
+let getWindow = () => {
+  if(_window) { return _window }
+  if (typeof global == 'object') {
+    _window = global;
+  } else {
+    _window = window;
+  }
+  return _window
+};
+
+const getConfiguration = () =>{
+  if(getWindow()._Web3ClientConfiguration === undefined) {
+    getWindow()._Web3ClientConfiguration = {};
+  }
+  return getWindow()._Web3ClientConfiguration
+};
+
+const BATCH_INTERVAL$1 = 10;
+const CHUNK_SIZE$1 = 99;
+
+class StaticJsonRpcBatchProvider extends ethers$1.providers.JsonRpcProvider {
+
+  constructor(url, network, endpoints, failover) {
+    super(url);
+    this._network = network;
+    this._endpoint = url;
+    this._endpoints = endpoints;
+    this._failover = failover;
+    this._pendingBatch = [];
+  }
+
+  detectNetwork() {
+    return Promise.resolve(Blockchains.findByName(this._network).id)
+  }
+
+  requestChunk(chunk, endpoint) {
+    
+    const request = chunk.map((inflight) => inflight.request);
+
+    return ethers$1.utils.fetchJson(endpoint, JSON.stringify(request))
+      .then((result) => {
+        // For each result, feed it to the correct Promise, depending
+        // on whether it was a success or error
+        chunk.forEach((inflightRequest, index) => {
+          const payload = result[index];
+          if (payload.error) {
+            const error = new Error(payload.error.message);
+            error.code = payload.error.code;
+            error.data = payload.error.data;
+            inflightRequest.reject(error);
+          }
+          else {
+            inflightRequest.resolve(payload.result);
+          }
+        });
+      }).catch((error) => {
+        if(error && error.code == 'SERVER_ERROR') {
+          const index = this._endpoints.indexOf(this._endpoint)+1;
+          this._failover();
+          this._endpoint = index >= this._endpoints.length ? this._endpoints[0] : this._endpoints[index];
+          this.requestChunk(chunk, this._endpoint);
+        } else {
+          chunk.forEach((inflightRequest) => {
+            inflightRequest.reject(error);
+          });
+        }
+      })
+  }
+    
+  send(method, params) {
+
+    const request = {
+      method: method,
+      params: params,
+      id: (this._nextId++),
+      jsonrpc: "2.0"
+    };
+
+    if (this._pendingBatch == null) {
+      this._pendingBatch = [];
+    }
+
+    const inflightRequest = { request, resolve: null, reject: null };
+
+    const promise = new Promise((resolve, reject) => {
+      inflightRequest.resolve = resolve;
+      inflightRequest.reject = reject;
+    });
+
+    this._pendingBatch.push(inflightRequest);
+
+    if (!this._pendingBatchAggregator) {
+      // Schedule batch for next event loop + short duration
+      this._pendingBatchAggregator = setTimeout(() => {
+        // Get the current batch and clear it, so new requests
+        // go into the next batch
+        const batch = this._pendingBatch;
+        this._pendingBatch = [];
+        this._pendingBatchAggregator = null;
+        // Prepare Chunks of CHUNK_SIZE
+        const chunks = [];
+        for (let i = 0; i < Math.ceil(batch.length / CHUNK_SIZE$1); i++) {
+          chunks[i] = batch.slice(i*CHUNK_SIZE$1, (i+1)*CHUNK_SIZE$1);
+        }
+        chunks.forEach((chunk)=>{
+          // Get the request as an array of requests
+          chunk.map((inflight) => inflight.request);
+          return this.requestChunk(chunk, this._endpoint)
+        });
+      }, getConfiguration().batchInterval || BATCH_INTERVAL$1);
+    }
+
+    return promise
+  }
+
+}
+
+const getAllProviders$1 = ()=> {
+  if(getWindow()._Web3ClientProviders == undefined) {
+    getWindow()._Web3ClientProviders = {};
+  }
+  return getWindow()._Web3ClientProviders
+};
+
+const setProvider$2 = (blockchain, provider)=> {
+  if(getAllProviders$1()[blockchain] === undefined) { getAllProviders$1()[blockchain] = []; }
+  const index = getAllProviders$1()[blockchain].indexOf(provider);
+  if(index > -1) {
+    getAllProviders$1()[blockchain].splice(index, 1);
+  }
+  getAllProviders$1()[blockchain].unshift(provider);
+};
+
+const setProviderEndpoints$2 = async (blockchain, endpoints, detectFastest = true)=> {
+  
+  getAllProviders$1()[blockchain] = endpoints.map((endpoint, index)=>
+    new StaticJsonRpcBatchProvider(endpoint, blockchain, endpoints, ()=>{
+      if(getAllProviders$1()[blockchain].length === 1) {
+        setProviderEndpoints$2(blockchain, endpoints, detectFastest);
+      } else {
+        getAllProviders$1()[blockchain].splice(index, 1);
+      }
+    })
+  );
+  
+  let provider;
+  let window = getWindow();
+
+  if(
+    window.fetch == undefined ||
+    (typeof process != 'undefined' && process['env'] && process['env']['NODE_ENV'] == 'test') ||
+    (typeof window.cy != 'undefined') ||
+    detectFastest === false
+  ) {
+    provider = getAllProviders$1()[blockchain][0];
+  } else {
+    
+    let responseTimes = await Promise.all(endpoints.map((endpoint)=>{
+      return new Promise(async (resolve)=>{
+        let timeout = 900;
+        let before = new Date().getTime();
+        setTimeout(()=>resolve(timeout), timeout);
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ method: 'net_version', id: 1, jsonrpc: '2.0' })
+        });
+        if(!response.ok) { return resolve(999) }
+        let after = new Date().getTime();
+        resolve(after-before);
+      })
+    }));
+
+    const fastestResponse = Math.min(...responseTimes);
+    const fastestIndex = responseTimes.indexOf(fastestResponse);
+    provider = getAllProviders$1()[blockchain][fastestIndex];
+  }
+  
+  setProvider$2(blockchain, provider);
+};
+
+const getProvider$2 = async (blockchain)=> {
+
+  let providers = getAllProviders$1();
+  if(providers && providers[blockchain]){ return providers[blockchain][0] }
+  
+  let window = getWindow();
+  if(window._Web3ClientGetProviderPromise && window._Web3ClientGetProviderPromise[blockchain]) { return await window._Web3ClientGetProviderPromise[blockchain] }
+
+  if(!window._Web3ClientGetProviderPromise){ window._Web3ClientGetProviderPromise = {}; }
+  window._Web3ClientGetProviderPromise[blockchain] = new Promise(async(resolve)=> {
+    await setProviderEndpoints$2(blockchain, Blockchains[blockchain].endpoints);
+    resolve(getWindow()._Web3ClientProviders[blockchain][0]);
+  });
+
+  return await window._Web3ClientGetProviderPromise[blockchain]
+};
+
+const getProviders$2 = async(blockchain)=>{
+
+  let providers = getAllProviders$1();
+  if(providers && providers[blockchain]){ return providers[blockchain] }
+  
+  let window = getWindow();
+  if(window._Web3ClientGetProvidersPromise && window._Web3ClientGetProvidersPromise[blockchain]) { return await window._Web3ClientGetProvidersPromise[blockchain] }
+
+  if(!window._Web3ClientGetProvidersPromise){ window._Web3ClientGetProvidersPromise = {}; }
+  window._Web3ClientGetProvidersPromise[blockchain] = new Promise(async(resolve)=> {
+    await setProviderEndpoints$2(blockchain, Blockchains[blockchain].endpoints);
+    resolve(getWindow()._Web3ClientProviders[blockchain]);
+  });
+
+  return await window._Web3ClientGetProvidersPromise[blockchain]
+};
+
+var EVM = {
+  getProvider: getProvider$2,
+  getProviders: getProviders$2,
+  setProviderEndpoints: setProviderEndpoints$2,
+  setProvider: setProvider$2,
+};
+
+const BATCH_INTERVAL = 10;
+const CHUNK_SIZE = 99;
+
+class StaticJsonRpcSequentialProvider extends Connection {
+
+  constructor(url, network, endpoints, failover) {
+    super(url);
+    this._provider = new Connection(url);
+    this._network = network;
+    this._endpoint = url;
+    this._endpoints = endpoints;
+    this._failover = failover;
+    this._pendingBatch = [];
+    this._rpcRequest = this._rpcRequestReplacement.bind(this);
+  }
+
+  requestChunk(chunk) {
+
+    const batch = chunk.map((inflight) => inflight.request);
+
+    return this._provider._rpcBatchRequest(batch)
+      .then((result) => {
+        // For each result, feed it to the correct Promise, depending
+        // on whether it was a success or error
+        chunk.forEach((inflightRequest, index) => {
+          const payload = result[index];
+          if (payload.error) {
+            const error = new Error(payload.error.message);
+            error.code = payload.error.code;
+            error.data = payload.error.data;
+            inflightRequest.reject(error);
+          } else {
+            inflightRequest.resolve(payload);
+          }
+        });
+      }).catch((error) => {
+        if(error && [
+          'Failed to fetch', '504', '503', '502', '500', '429', '426', '422', '413', '409', '408', '406', '405', '404', '403', '402', '401', '400'
+        ].some((errorType)=>error.toString().match(errorType))) {
+          const index = this._endpoints.indexOf(this._endpoint)+1;
+          this._endpoint = index >= this._endpoints.length ? this._endpoints[0] : this._endpoints[index];
+          this._provider = new Connection(this._endpoint);
+          this.requestChunk(chunk);
+        } else {
+          chunk.forEach((inflightRequest) => {
+            inflightRequest.reject(error);
+          });
+        }
+      })
+  }
+    
+  _rpcRequestReplacement(methodName, args) {
+
+    const request = { methodName, args };
+
+    if (this._pendingBatch == null) {
+      this._pendingBatch = [];
+    }
+
+    const inflightRequest = { request, resolve: null, reject: null };
+
+    const promise = new Promise((resolve, reject) => {
+      inflightRequest.resolve = resolve;
+      inflightRequest.reject = reject;
+    });
+
+    this._pendingBatch.push(inflightRequest);
+
+    if (!this._pendingBatchAggregator) {
+      // Schedule batch for next event loop + short duration
+      this._pendingBatchAggregator = setTimeout(() => {
+        // Get the current batch and clear it, so new requests
+        // go into the next batch
+        const batch = this._pendingBatch;
+        this._pendingBatch = [];
+        this._pendingBatchAggregator = null;
+        // Prepare Chunks of CHUNK_SIZE
+        const chunks = [];
+        for (let i = 0; i < Math.ceil(batch.length / CHUNK_SIZE); i++) {
+          chunks[i] = batch.slice(i*CHUNK_SIZE, (i+1)*CHUNK_SIZE);
+        }
+        chunks.forEach((chunk)=>{
+          // Get the request as an array of requests
+          chunk.map((inflight) => inflight.request);
+          return this.requestChunk(chunk)
+        });
+      }, getConfiguration().batchInterval || BATCH_INTERVAL);
+    }
+
+    return promise
+  }
+}
+
+const getAllProviders = ()=> {
+  if(getWindow()._Web3ClientProviders == undefined) {
+    getWindow()._Web3ClientProviders = {};
+  }
+  return getWindow()._Web3ClientProviders
+};
+
+const setProvider$1 = (blockchain, provider)=> {
+  if(getAllProviders()[blockchain] === undefined) { getAllProviders()[blockchain] = []; }
+  const index = getAllProviders()[blockchain].indexOf(provider);
+  if(index > -1) {
+    getAllProviders()[blockchain].splice(index, 1);
+  }
+  getAllProviders()[blockchain].unshift(provider);
+};
+
+const setProviderEndpoints$1 = async (blockchain, endpoints, detectFastest = true)=> {
+  
+  getAllProviders()[blockchain] = endpoints.map((endpoint, index)=>
+    new StaticJsonRpcSequentialProvider(endpoint, blockchain, endpoints, ()=>{
+      if(getAllProviders()[blockchain].length === 1) {
+        setProviderEndpoints$1(blockchain, endpoints, detectFastest);
+      } else {
+        getAllProviders()[blockchain].splice(index, 1);
+      }
+    })
+  );
+
+  let provider;
+  let window = getWindow();
+
+  if(
+    window.fetch == undefined ||
+    (typeof process != 'undefined' && process['env'] && process['env']['NODE_ENV'] == 'test') ||
+    (typeof window.cy != 'undefined') ||
+    detectFastest === false
+  ) {
+    provider = getAllProviders()[blockchain][0];
+  } else {
+    
+    let responseTimes = await Promise.all(endpoints.map((endpoint)=>{
+      return new Promise(async (resolve)=>{
+        let timeout = 900;
+        let before = new Date().getTime();
+        setTimeout(()=>resolve(timeout), timeout);
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ method: 'getIdentity', id: 1, jsonrpc: '2.0' })
+        });
+        if(!response.ok) { return resolve(999) }
+        let after = new Date().getTime();
+        resolve(after-before);
+      })
+    }));
+
+    const fastestResponse = Math.min(...responseTimes);
+    const fastestIndex = responseTimes.indexOf(fastestResponse);
+    provider = getAllProviders()[blockchain][fastestIndex];
+  }
+  
+  setProvider$1(blockchain, provider);
+};
+
+const getProvider$1 = async (blockchain)=> {
+
+  let providers = getAllProviders();
+  if(providers && providers[blockchain]){ return providers[blockchain][0] }
+  
+  let window = getWindow();
+  if(window._Web3ClientGetProviderPromise && window._Web3ClientGetProviderPromise[blockchain]) { return await window._Web3ClientGetProviderPromise[blockchain] }
+
+  if(!window._Web3ClientGetProviderPromise){ window._Web3ClientGetProviderPromise = {}; }
+  window._Web3ClientGetProviderPromise[blockchain] = new Promise(async(resolve)=> {
+    await setProviderEndpoints$1(blockchain, Blockchains[blockchain].endpoints);
+    resolve(getWindow()._Web3ClientProviders[blockchain][0]);
+  });
+
+  return await window._Web3ClientGetProviderPromise[blockchain]
+};
+
+const getProviders$1 = async(blockchain)=>{
+
+  let providers = getAllProviders();
+  if(providers && providers[blockchain]){ return providers[blockchain] }
+  
+  let window = getWindow();
+  if(window._Web3ClientGetProvidersPromise && window._Web3ClientGetProvidersPromise[blockchain]) { return await window._Web3ClientGetProvidersPromise[blockchain] }
+
+  if(!window._Web3ClientGetProvidersPromise){ window._Web3ClientGetProvidersPromise = {}; }
+  window._Web3ClientGetProvidersPromise[blockchain] = new Promise(async(resolve)=> {
+    await setProviderEndpoints$1(blockchain, Blockchains[blockchain].endpoints);
+    resolve(getWindow()._Web3ClientProviders[blockchain]);
+  });
+
+  return await window._Web3ClientGetProvidersPromise[blockchain]
+};
+
+var Solana = {
+  getProvider: getProvider$1,
+  getProviders: getProviders$1,
+  setProviderEndpoints: setProviderEndpoints$1,
+  setProvider: setProvider$1,
+};
+
+let supported$2 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'velas'];
+supported$2.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'velas'];
+supported$2.solana = ['solana'];
+
+function _optionalChain$1$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+let getCacheStore = () => {
+  if (getWindow()._Web3ClientCacheStore == undefined) {
+    getWindow()._Web3ClientCacheStore = {};
+  }
+  return getWindow()._Web3ClientCacheStore
+};
+
+let getPromiseStore = () => {
+  if (getWindow()._Web3ClientPromiseStore == undefined) {
+    getWindow()._Web3ClientPromiseStore = {};
+  }
+  return getWindow()._Web3ClientPromiseStore
+};
+
+let set = function ({ key, value, expires }) {
+  getCacheStore()[key] = {
+    expiresAt: Date.now() + expires,
+    value,
+  };
+};
+
+let get = function ({ key, expires }) {
+  let cachedEntry = getCacheStore()[key];
+  if (_optionalChain$1$1([cachedEntry, 'optionalAccess', _ => _.expiresAt]) > Date.now()) {
+    return cachedEntry.value
+  }
+};
+
+let getPromise = function({ key }) {
+  return getPromiseStore()[key]
+};
+
+let setPromise = function({ key, promise }) {
+  getPromiseStore()[key] = promise;
+  return promise
+};
+
+let deletePromise = function({ key }) {
+  getPromiseStore()[key] = undefined; 
+};
+
+let cache = function ({ call, key, expires = 0 }) {
+  return new Promise((resolve, reject)=>{
+    let value;
+    key = JSON.stringify(key);
+    
+    // get existing promise (of a previous pending request asking for the exact same thing)
+    let existingPromise = getPromise({ key });
+    if(existingPromise) { 
+      return existingPromise
+        .then(resolve)
+        .catch(reject)
+    }
+
+    setPromise({ key, promise: new Promise((resolveQueue, rejectQueue)=>{
+      if (expires === 0) {
+        return call()
+          .then((value)=>{
+            resolve(value);
+            resolveQueue(value);
+          })
+          .catch((error)=>{
+            reject(error);
+            rejectQueue(error);
+          })
+      }
+      
+      // get cached value
+      value = get({ key, expires });
+      if (value) {
+        resolve(value);
+        resolveQueue(value);
+        return value
+      }
+
+      // set new cache value
+      call()
+        .then((value)=>{
+          if (value) {
+            set({ key, value, expires });
+          }
+          resolve(value);
+          resolveQueue(value);
+        })
+        .catch((error)=>{
+          reject(error);
+          rejectQueue(error);
+        });
+      })
+    }).then(()=>{
+      deletePromise({ key });
+    }).catch(()=>{
+      deletePromise({ key });
+    });
+  })
+};
+
+let paramsToContractArgs = ({ contract, method, params }) => {
+  let fragment = contract.interface.fragments.find((fragment) => {
+    return fragment.name == method
+  });
+
+  return fragment.inputs.map((input, index) => {
+    if (Array.isArray(params)) {
+      return params[index]
+    } else {
+      return params[input.name]
+    }
+  })
+};
+
+const contractCall = ({ address, api, method, params, provider, block }) => {
+  let contract = new ethers$1.Contract(address, api, provider);
+  let args = paramsToContractArgs({ contract, method, params });
+  return contract[method](...args, { blockTag: block })
+};
+
+const balance$1 = ({ address, provider }) => {
+  return provider.getBalance(address)
+};
+
+const transactionCount = ({ address, provider }) => {
+  return provider.getTransactionCount(address)
+};
+
+const singleRequest$1 = ({ blockchain, address, api, method, params, block, provider }) =>{
+  if (api) {
+    return contractCall({ address, api, method, params, provider, block })
+  } else if (method === 'latestBlockNumber') {
+    return provider.getBlockNumber()
+  } else if (method === 'balance') {
+    return balance$1({ address, provider })
+  } else if (method === 'transactionCount') {
+    return transactionCount({ address, provider })
+  }
+};
+
+var requestEVM = async ({ blockchain, address, api, method, params, block, timeout, strategy }) => {
+
+  strategy = strategy ? strategy : (getConfiguration().strategy || 'failover');
+  timeout = timeout ? timeout : (getConfiguration().timeout || undefined);
+
+  if(strategy === 'fastest') {
+
+    return Promise.race((await EVM.getProviders(blockchain)).map((provider)=>{
+
+      const request = singleRequest$1({ blockchain, address, api, method, params, block, provider });
+    
+      if(timeout) {
+        const timeoutPromise = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout));
+        return Promise.race([request, timeoutPromise])
+      } else {
+        return request
+      }
+    }))
+
+  } else { // failover
+
+    const provider = await EVM.getProvider(blockchain);
+    const request = singleRequest$1({ blockchain, address, api, method, params, block, provider });
+    
+    if(timeout) {
+      timeout = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout));
+      return Promise.race([request, timeout])
+    } else {
+      return request
+    }
+  }
+};
+
+const accountInfo = async ({ address, api, method, params, provider, block }) => {
+  const info = await provider.getAccountInfo(new PublicKey(address));
+  if(!info || !info.data) { return }
+  return api.decode(info.data)
+};
+
+const balance = ({ address, provider }) => {
+  return provider.getBalance(new PublicKey(address))
+};
+
+const singleRequest = async({ blockchain, address, api, method, params, block, provider, providers })=> {
+
+  try {
+
+    if(method == undefined || method === 'getAccountInfo') {
+      if(api == undefined) {
+        api = ACCOUNT_LAYOUT; 
+      }
+      return await accountInfo({ address, api, method, params, provider, block })
+    } else if(method === 'getProgramAccounts') {
+      return await provider.getProgramAccounts(new PublicKey(address), params).then((accounts)=>{
+        if(api){
+          return accounts.map((account)=>{
+            account.data = api.decode(account.account.data);
+            return account
+          })
+        } else {
+          return accounts
+        }
+      })
+    } else if(method === 'getTokenAccountBalance') {
+      return await provider.getTokenAccountBalance(new PublicKey(address))
+    } else if (method === 'latestBlockNumber') {
+      return await provider.getBlockHeight()  
+    } else if (method === 'balance') {
+      return await balance({ address, provider })
+    }
+
+  } catch (error){
+    if(providers && error && [
+      'Failed to fetch', '504', '503', '502', '500', '429', '426', '422', '413', '409', '408', '406', '405', '404', '403', '402', '401', '400'
+    ].some((errorType)=>error.toString().match(errorType))) {
+      let nextProvider = providers[providers.indexOf(provider)+1] || providers[0];
+      return singleRequest({ blockchain, address, api, method, params, block, provider: nextProvider, providers })
+    } else {
+      throw error
+    }
+  }
+};
+
+var requestSolana = async ({ blockchain, address, api, method, params, block, timeout, strategy }) => {
+
+  strategy = strategy ? strategy : (getConfiguration().strategy || 'failover');
+  timeout = timeout ? timeout : (getConfiguration().timeout || undefined);
+
+  const providers = await Solana.getProviders(blockchain);
+
+  if(strategy === 'fastest') {
+
+    return Promise.race(providers.map((provider)=>{
+
+      const succeedingRequest = new Promise((resolve)=>{
+        singleRequest({ blockchain, address, api, method, params, block, provider }).then(resolve);
+      }); // failing requests are ignored during race/fastest
+    
+      const timeoutPromise = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout || 10000));
+        
+      return Promise.race([succeedingRequest, timeoutPromise])
+    }))
+    
+  } else { // failover
+
+    const provider = await Solana.getProvider(blockchain);
+    const request = singleRequest({ blockchain, address, api, method, params, block, provider, providers });
+
+    if(timeout) {
+      timeout = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout));
+      return Promise.race([request, timeout])
+    } else {
+      return request
+    }
+  }
+};
+
+var parseUrl = (url) => {
+  if (typeof url == 'object') {
+    return url
+  }
+  let deconstructed = url.match(/(?<blockchain>\w+):\/\/(?<part1>[\w\d]+)(\/(?<part2>[\w\d]+)*)?/);
+
+  if(deconstructed.groups.part2 == undefined) {
+    if(deconstructed.groups.part1.match(/\d/)) {
+      return {
+        blockchain: deconstructed.groups.blockchain,
+        address: deconstructed.groups.part1
+      }
+    } else {
+      return {
+        blockchain: deconstructed.groups.blockchain,
+        method: deconstructed.groups.part1
+      }
+    }
+  } else {
+    return {
+      blockchain: deconstructed.groups.blockchain,
+      address: deconstructed.groups.part1,
+      method: deconstructed.groups.part2
+    }
+  }
+};
+
+const request = async function (url, options) {
+  
+  const { blockchain, address, method } = parseUrl(url);
+  const { api, params, cache: cache$1, block, timeout, strategy } = (typeof(url) == 'object' ? url : options) || {};
+
+  return await cache({
+    expires: cache$1 || 0,
+    key: [blockchain, address, method, params, block],
+    call: async()=>{
+      if(supported$2.evm.includes(blockchain)) {
+
+
+        return await requestEVM({ blockchain, address, api, method, params, block, strategy, timeout })
+
+
+      } else if(supported$2.solana.includes(blockchain)) {
+
+
+        return await requestSolana({ blockchain, address, api, method, params, block, strategy, timeout })
+
+
+      } else {
+        throw 'Unknown blockchain: ' + blockchain
+      }  
+    }
+  })
+};
+
+var allowanceOnEVM = ({ blockchain, address, api, owner, spender })=>{
+  return request(
+    {
+      blockchain,
+      address,
+      api,
+      method: 'allowance',
+      params: [owner, spender],
+      cache: 5000, // 5 seconds
+    },
+  )
+};
+
+var balanceOnEVM = async ({ blockchain, address, account, api, id })=>{
+  if (address == Blockchains[blockchain].currency.address) {
+    return await request(
+      {
+        blockchain: blockchain,
+        address: account,
+        method: 'balance',
+        cache: 10000, // 10 seconds
+      },
+    )
+  } else {
+    return await request(
+      {
+        blockchain: blockchain,
+        address: address,
+        method: 'balanceOf',
+        api,
+        params: id ? [account, id] : [account],
+        cache: 10000, // 10 seconds
+      },
+    )
+  }
+};
+
+var BEP20 = [
+  {
+    "inputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "name": "Approval",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "name": "Transfer",
+    "type": "event"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      }
+    ],
+    "name": "allowance",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "approve",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "balanceOf",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "decimals",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "subtractedValue",
+        "type": "uint256"
+      }
+    ],
+    "name": "decreaseAllowance",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "getOwner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "addedValue",
+        "type": "uint256"
+      }
+    ],
+    "name": "increaseAllowance",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "mint",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "name",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "symbol",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "totalSupply",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "transfer",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "transferFrom",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+];
+
+var bsc1155 = [
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "approved",
+        "type": "bool"
+      }
+    ],
+    "name": "ApprovalForAll",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "ids",
+        "type": "uint256[]"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "values",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "TransferBatch",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "name": "TransferSingle",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "value",
+        "type": "string"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "URI",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "balanceOf",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "accounts",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "ids",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "balanceOfBatch",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      }
+    ],
+    "name": "isApprovedForAll",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "ids",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "amounts",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "safeBatchTransferFrom",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "safeTransferFrom",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "approved",
+        "type": "bool"
+      }
+    ],
+    "name": "setApprovalForAll",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "interfaceId",
+        "type": "bytes4"
+      }
+    ],
+    "name": "supportsInterface",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "uri",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
+var decimalsOnEVM = ({ blockchain, address, api })=>{
+  return request({
+    blockchain,
+    address,
+    api,
+    method: 'decimals',
+    cache: 86400000, // 1 day
+  })
+};
+
+var ERC20 = [
+  {
+    constant: true,
+    inputs: [],
+    name: 'name',
+    outputs: [{ name: '', type: 'string' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: '_spender', type: 'address' },
+      { name: '_value', type: 'uint256' },
+    ],
+    name: 'approve',
+    outputs: [{ name: '', type: 'bool' }],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: 'totalSupply',
+    outputs: [{ name: '', type: 'uint256' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: '_from', type: 'address' },
+      { name: '_to', type: 'address' },
+      { name: '_value', type: 'uint256' },
+    ],
+    name: 'transferFrom',
+    outputs: [{ name: '', type: 'bool' }],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: 'decimals',
+    outputs: [{ name: '', type: 'uint8' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    constant: true,
+    inputs: [{ name: '_owner', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: 'balance', type: 'uint256' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: 'symbol',
+    outputs: [{ name: '', type: 'string' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: '_to', type: 'address' },
+      { name: '_value', type: 'uint256' },
+    ],
+    name: 'transfer',
+    outputs: [{ name: '', type: 'bool' }],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    constant: true,
+    inputs: [
+      { name: '_owner', type: 'address' },
+      { name: '_spender', type: 'address' },
+    ],
+    name: 'allowance',
+    outputs: [{ name: '', type: 'uint256' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function',
+  },
+  { payable: true, stateMutability: 'payable', type: 'fallback' },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: 'owner', type: 'address' },
+      { indexed: true, name: 'spender', type: 'address' },
+      { indexed: false, name: 'value', type: 'uint256' },
+    ],
+    name: 'Approval',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: 'from', type: 'address' },
+      { indexed: true, name: 'to', type: 'address' },
+      { indexed: false, name: 'value', type: 'uint256' },
+    ],
+    name: 'Transfer',
+    type: 'event',
+  },
+];
+
+var ERC20onPolygon = [
+  {
+    constant: true,
+    inputs: [],
+    name: 'name',
+    outputs: [{ name: '', type: 'string' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: '_spender', type: 'address' },
+      { name: '_value', type: 'uint256' },
+    ],
+    name: 'approve',
+    outputs: [{ name: '', type: 'bool' }],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: 'totalSupply',
+    outputs: [{ name: '', type: 'uint256' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: '_from', type: 'address' },
+      { name: '_to', type: 'address' },
+      { name: '_value', type: 'uint256' },
+    ],
+    name: 'transferFrom',
+    outputs: [{ name: '', type: 'bool' }],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: 'decimals',
+    outputs: [{ name: '', type: 'uint8' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    constant: true,
+    inputs: [{ name: '_owner', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: 'balance', type: 'uint256' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: 'symbol',
+    outputs: [{ name: '', type: 'string' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: '_to', type: 'address' },
+      { name: '_value', type: 'uint256' },
+    ],
+    name: 'transfer',
+    outputs: [{ name: '', type: 'bool' }],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    constant: true,
+    inputs: [
+      { name: '_owner', type: 'address' },
+      { name: '_spender', type: 'address' },
+    ],
+    name: 'allowance',
+    outputs: [{ name: '', type: 'uint256' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function',
+  },
+  { payable: true, stateMutability: 'payable', type: 'fallback' },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: 'owner', type: 'address' },
+      { indexed: true, name: 'spender', type: 'address' },
+      { indexed: false, name: 'value', type: 'uint256' },
+    ],
+    name: 'Approval',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: 'from', type: 'address' },
+      { indexed: true, name: 'to', type: 'address' },
+      { indexed: false, name: 'value', type: 'uint256' },
+    ],
+    name: 'Transfer',
+    type: 'event'
+  },
+];
+
+var ethereum1155 = [
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "approved",
+        "type": "bool"
+      }
+    ],
+    "name": "ApprovalForAll",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "ids",
+        "type": "uint256[]"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "values",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "TransferBatch",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "name": "TransferSingle",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "value",
+        "type": "string"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "URI",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "balanceOf",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "accounts",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "ids",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "balanceOfBatch",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      }
+    ],
+    "name": "isApprovedForAll",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "ids",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "amounts",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "safeBatchTransferFrom",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "safeTransferFrom",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "approved",
+        "type": "bool"
+      }
+    ],
+    "name": "setApprovalForAll",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "interfaceId",
+        "type": "bytes4"
+      }
+    ],
+    "name": "supportsInterface",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "uri",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
+var ftm1155 = [
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "approved",
+        "type": "bool"
+      }
+    ],
+    "name": "ApprovalForAll",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "ids",
+        "type": "uint256[]"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "values",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "TransferBatch",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "name": "TransferSingle",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "value",
+        "type": "string"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "URI",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "balanceOf",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "accounts",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "ids",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "balanceOfBatch",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      }
+    ],
+    "name": "isApprovedForAll",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "ids",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "amounts",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "safeBatchTransferFrom",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "safeTransferFrom",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "approved",
+        "type": "bool"
+      }
+    ],
+    "name": "setApprovalForAll",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "interfaceId",
+        "type": "bytes4"
+      }
+    ],
+    "name": "supportsInterface",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "uri",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
+var FTM20 = [
+  {
+    constant: true,
+    inputs: [],
+    name: 'name',
+    outputs: [{ name: '', type: 'string' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: '_spender', type: 'address' },
+      { name: '_value', type: 'uint256' },
+    ],
+    name: 'approve',
+    outputs: [{ name: '', type: 'bool' }],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: 'totalSupply',
+    outputs: [{ name: '', type: 'uint256' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: '_from', type: 'address' },
+      { name: '_to', type: 'address' },
+      { name: '_value', type: 'uint256' },
+    ],
+    name: 'transferFrom',
+    outputs: [{ name: '', type: 'bool' }],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: 'decimals',
+    outputs: [{ name: '', type: 'uint8' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    constant: true,
+    inputs: [{ name: '_owner', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: 'balance', type: 'uint256' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: 'symbol',
+    outputs: [{ name: '', type: 'string' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: '_to', type: 'address' },
+      { name: '_value', type: 'uint256' },
+    ],
+    name: 'transfer',
+    outputs: [{ name: '', type: 'bool' }],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    constant: true,
+    inputs: [
+      { name: '_owner', type: 'address' },
+      { name: '_spender', type: 'address' },
+    ],
+    name: 'allowance',
+    outputs: [{ name: '', type: 'uint256' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function',
+  },
+  { payable: true, stateMutability: 'payable', type: 'fallback' },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: 'owner', type: 'address' },
+      { indexed: true, name: 'spender', type: 'address' },
+      { indexed: false, name: 'value', type: 'uint256' },
+    ],
+    name: 'Approval',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: 'from', type: 'address' },
+      { indexed: true, name: 'to', type: 'address' },
+      { indexed: false, name: 'value', type: 'uint256' },
+    ],
+    name: 'Transfer',
+    type: 'event',
+  },
+];
+
+const uriAPI = [{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"uri","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"}];
+
+const uriToName = (tokenURI)=>{
+  return new Promise((resolve)=>{
+    if(tokenURI.match(/^ipfs/)) {
+      tokenURI = `https://ipfs.io/ipfs/${tokenURI.split('://')[1]}`;
+    }
+    fetch(tokenURI).then((response) => {
+      if (response.ok) { return response.json() }
+      resolve();
+    })
+    .then((responseJson) => {
+      if(responseJson) {
+        let name = responseJson.name;
+        if(name){
+          resolve(name);
+        } else {
+          resolve();
+        }
+      }
+    }).catch(()=>resolve());
+  })
+};
+
+var nameOnEVM = ({ blockchain, address, api, id })=>{
+
+  if(id) {
+    return new Promise((resolve)=>{
+      request({ blockchain, address, api: uriAPI, method: 'uri', params: [id] }).then((uri)=>{
+        uri = uri.match('0x{id}') ? uri.replace('0x{id}', id) : uri;
+        uriToName(uri).then(resolve);
+      }).catch((error)=>{
+        console.log('error', error);
+        resolve();
+      });
+    })
+  } else {
+    return request(
+      {
+        blockchain: blockchain,
+        address: address,
+        api,
+        method: 'name',
+        cache: 86400000, // 1 day
+      },
+    )
+  }
+};
+
+var symbolOnEVM = ({ blockchain, address, api })=>{
+  return request(
+    {
+      blockchain,
+      address,
+      api,
+      method: 'symbol',
+      cache: 86400000, // 1 day
+    }
+  )
+};
+
+var VRC20 = [{"name": "Approval", "type": "event", "inputs": [{"name": "src", "type": "address", "indexed": true, "internalType": "address"}, {"name": "guy", "type": "address", "indexed": true, "internalType": "address"}, {"name": "wad", "type": "uint256", "indexed": false, "internalType": "uint256"}], "anonymous": false}, {"name": "Deposit", "type": "event", "inputs": [{"name": "dst", "type": "address", "indexed": true, "internalType": "address"}, {"name": "wad", "type": "uint256", "indexed": false, "internalType": "uint256"}], "anonymous": false}, {"name": "Transfer", "type": "event", "inputs": [{"name": "src", "type": "address", "indexed": true, "internalType": "address"}, {"name": "dst", "type": "address", "indexed": true, "internalType": "address"}, {"name": "wad", "type": "uint256", "indexed": false, "internalType": "uint256"}], "anonymous": false}, {"name": "Withdrawal", "type": "event", "inputs": [{"name": "src", "type": "address", "indexed": true, "internalType": "address"}, {"name": "wad", "type": "uint256", "indexed": false, "internalType": "uint256"}], "anonymous": false}, {"type": "fallback", "stateMutability": "payable"}, {"name": "allowance", "type": "function", "inputs": [{"name": "", "type": "address", "internalType": "address"}, {"name": "", "type": "address", "internalType": "address"}], "outputs": [{"name": "", "type": "uint256", "internalType": "uint256"}], "stateMutability": "view"}, {"name": "approve", "type": "function", "inputs": [{"name": "guy", "type": "address", "internalType": "address"}, {"name": "wad", "type": "uint256", "internalType": "uint256"}], "outputs": [{"name": "", "type": "bool", "internalType": "bool"}], "stateMutability": "nonpayable"}, {"name": "balanceOf", "type": "function", "inputs": [{"name": "", "type": "address", "internalType": "address"}], "outputs": [{"name": "", "type": "uint256", "internalType": "uint256"}], "stateMutability": "view"}, {"name": "decimals", "type": "function", "inputs": [], "outputs": [{"name": "", "type": "uint8", "internalType": "uint8"}], "stateMutability": "view"}, {"name": "deposit", "type": "function", "inputs": [], "outputs": [], "stateMutability": "payable"}, {"name": "name", "type": "function", "inputs": [], "outputs": [{"name": "", "type": "string", "internalType": "string"}], "stateMutability": "view"}, {"name": "symbol", "type": "function", "inputs": [], "outputs": [{"name": "", "type": "string", "internalType": "string"}], "stateMutability": "view"}, {"name": "totalSupply", "type": "function", "inputs": [], "outputs": [{"name": "", "type": "uint256", "internalType": "uint256"}], "stateMutability": "view"}, {"name": "transfer", "type": "function", "inputs": [{"name": "dst", "type": "address", "internalType": "address"}, {"name": "wad", "type": "uint256", "internalType": "uint256"}], "outputs": [{"name": "", "type": "bool", "internalType": "bool"}], "stateMutability": "nonpayable"}, {"name": "transferFrom", "type": "function", "inputs": [{"name": "src", "type": "address", "internalType": "address"}, {"name": "dst", "type": "address", "internalType": "address"}, {"name": "wad", "type": "uint256", "internalType": "uint256"}], "outputs": [{"name": "", "type": "bool", "internalType": "bool"}], "stateMutability": "nonpayable"}, {"name": "withdraw", "type": "function", "inputs": [{"name": "wad", "type": "uint256", "internalType": "uint256"}], "outputs": [], "stateMutability": "nonpayable"}];
+
+const TOKEN_PROGRAM = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
+const ASSOCIATED_TOKEN_PROGRAM = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
+
+function _optionalChain$4(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+var findProgramAddress = async ({ token, owner })=>{
+
+  const [address] = await PublicKey.findProgramAddress(
+    [
+      (new PublicKey(owner)).toBuffer(),
+      (new PublicKey(TOKEN_PROGRAM)).toBuffer(),
+      (new PublicKey(token)).toBuffer()
+    ],
+    new PublicKey(ASSOCIATED_TOKEN_PROGRAM)
+  );
+
+  return _optionalChain$4([address, 'optionalAccess', _ => _.toString, 'call', _2 => _2()])
+};
+
+const MINT_LAYOUT = struct$1([
+  u32$2('mintAuthorityOption'),
+  publicKey$1('mintAuthority'),
+  u64$3$1('supply'),
+  u8$1('decimals'),
+  bool$1('isInitialized'),
+  u32$2('freezeAuthorityOption'),
+  publicKey$1('freezeAuthority')
+]);
+
+const KEY_LAYOUT = rustEnum([
+  struct$1([], 'uninitialized'),
+  struct$1([], 'editionV1'),
+  struct$1([], 'masterEditionV1'),
+  struct$1([], 'reservationListV1'),
+  struct$1([], 'metadataV1'),
+  struct$1([], 'reservationListV2'),
+  struct$1([], 'masterEditionV2'),
+  struct$1([], 'editionMarker'),
+]);
+
+const CREATOR_LAYOUT = struct$1([
+  publicKey$1('address'),
+  bool$1('verified'),
+  u8$1('share'),
+]);
+
+const DATA_LAYOUT = struct$1([
+  str('name'),
+  str('symbol'),
+  str('uri'),
+  u16$1('sellerFeeBasisPoints'),
+  option(
+    vec(
+      CREATOR_LAYOUT.replicate('creators')
+    ),
+    'creators'
+  )
+]);
+
+const METADATA_LAYOUT = struct$1([
+  KEY_LAYOUT.replicate('key'),
+  publicKey$1('updateAuthority'),
+  publicKey$1('mint'),
+  DATA_LAYOUT.replicate('data'),
+  bool$1('primarySaleHappened'),
+  bool$1('isMutable'),
+  option(u8$1(), 'editionNonce'),
+]);
+
+const TRANSFER_LAYOUT = struct$1([
+  u8$1('instruction'),
+  u64$3$1('amount'),
+]);
+
+const TOKEN_LAYOUT = struct$1([
+  publicKey$1('mint'),
+  publicKey$1('owner'),
+  u64$3$1('amount'),
+  u32$2('delegateOption'),
+  publicKey$1('delegate'),
+  u8$1('state'),
+  u32$2('isNativeOption'),
+  u64$3$1('isNative'),
+  u64$3$1('delegatedAmount'),
+  u32$2('closeAuthorityOption'),
+  publicKey$1('closeAuthority')
+]);
+
+const INITIALIZE_LAYOUT = struct$1([
+  u8$1('instruction'),
+  publicKey$1('owner')
+]);
+
+const CLOSE_LAYOUT = struct$1([
+  u8$1('instruction')
+]);
+
+const createTransferInstruction = async ({ token, amount, from, to })=>{
+
+  let fromTokenAccount = await findProgramAddress({ token, owner: from });
+  let toTokenAccount = await findProgramAddress({ token, owner: to });
+
+  const keys = [
+    { pubkey: new PublicKey(fromTokenAccount), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(toTokenAccount), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(from), isSigner: true, isWritable: false }
+  ];
+
+  const data = Buffer.alloc(TRANSFER_LAYOUT.span);
+  TRANSFER_LAYOUT.encode({
+    instruction: 3, // TRANSFER
+    amount: new BN(amount)
+  }, data);
+  
+  return new TransactionInstruction({ 
+    keys,
+    programId: new PublicKey(TOKEN_PROGRAM),
+    data 
+  })
+};
+
+const createAssociatedTokenAccountInstruction = async ({ token, owner, payer }) => {
+
+  let associatedToken = await findProgramAddress({ token, owner });
+
+  const keys = [
+    { pubkey: new PublicKey(payer), isSigner: true, isWritable: true },
+    { pubkey: new PublicKey(associatedToken), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(owner), isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(token), isSigner: false, isWritable: false },
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(TOKEN_PROGRAM), isSigner: false, isWritable: false },
+  ];
+
+ return new TransactionInstruction({
+    keys,
+    programId: new PublicKey(ASSOCIATED_TOKEN_PROGRAM),
+    data: Buffer.alloc(0)
+  })
+};
+
+const initializeAccountInstruction = ({ account, token, owner })=>{
+
+  const keys = [
+    { pubkey: new PublicKey(account), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(token), isSigner: false, isWritable: false },
+  ];
+
+  const data = Buffer.alloc(INITIALIZE_LAYOUT.span);
+  INITIALIZE_LAYOUT.encode({
+    instruction: 18, // InitializeAccount3
+    owner: new PublicKey(owner)
+  }, data);
+  
+  return new TransactionInstruction({ keys, programId: new PublicKey(TOKEN_PROGRAM), data })
+};
+
+
+const closeAccountInstruction = ({ account, owner })=>{
+
+  const keys = [
+    { pubkey: new PublicKey(account), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(owner), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(owner), isSigner: true, isWritable: false }
+  ];
+
+  const data = Buffer.alloc(CLOSE_LAYOUT.span);
+  CLOSE_LAYOUT.encode({
+    instruction: 9 // CloseAccount
+  }, data);
+
+  return new TransactionInstruction({ keys, programId: new PublicKey(TOKEN_PROGRAM), data })
+};
+
+var instructions = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  createTransferInstruction: createTransferInstruction,
+  createAssociatedTokenAccountInstruction: createAssociatedTokenAccountInstruction,
+  initializeAccountInstruction: initializeAccountInstruction,
+  closeAccountInstruction: closeAccountInstruction
 });
 
+var balanceOnSolana = async ({ blockchain, address, account, api })=>{
+
+  if(address == Blockchains[blockchain].currency.address) {
+
+     return ethers$1.BigNumber.from(await request(`solana://${account}/balance`))
+
+  } else {
+
+    let filters = [
+      { dataSize: 165 },
+      { memcmp: { offset: 32, bytes: account }},
+      { memcmp: { offset: 0, bytes: address }}
+    ];
+
+    let tokenAccounts  = await request(`solana://TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA/getProgramAccounts`, { params: { filters } });
+
+    let totalBalance = ethers$1.BigNumber.from('0');
+
+    await Promise.all(tokenAccounts.map((tokenAccount)=>{
+      return request(`solana://${tokenAccount.pubkey.toString()}/getTokenAccountBalance`)
+    })).then((balances)=>{
+      balances.forEach((balance)=>{
+        totalBalance = totalBalance.add(ethers$1.BigNumber.from(balance.value.amount));
+      });
+    });
+
+    return totalBalance
+  }
+};
+
+var decimalsOnSolana = async ({ blockchain, address })=>{
+  let data = await request({ blockchain, address, api: MINT_LAYOUT });
+  return data.decimals
+};
+
+var findAccount = async ({ token, owner })=>{
+
+  const address = await findProgramAddress({ token, owner });
+
+  const existingAccount = await request({
+    blockchain: 'solana',
+    address,
+    api: TOKEN_LAYOUT,
+    cache: 10000 // 10s
+  });
+
+  return existingAccount
+};
+
+function _optionalChain$3(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+const METADATA_ACCOUNT = 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s';
+
+const METADATA_REPLACE = new RegExp('\u0000', 'g');
+
+const getMetaDataPDA = async ({ metaDataPublicKey, mintPublicKey }) => {
+  let seed = [
+    Buffer.from('metadata'),
+    metaDataPublicKey.toBuffer(),
+    mintPublicKey.toBuffer()  
+  ];
+
+  return (await PublicKey.findProgramAddress(seed, metaDataPublicKey))[0]
+};
+
+const getMetaData = async ({ blockchain, address })=> {
+
+  let mintPublicKey = new PublicKey(address);
+  let metaDataPublicKey = new PublicKey(METADATA_ACCOUNT);
+  let tokenMetaDataPublicKey = await getMetaDataPDA({ metaDataPublicKey, mintPublicKey });
+
+  let metaData = await request({
+    blockchain, 
+    address: tokenMetaDataPublicKey.toString(),
+    api: METADATA_LAYOUT,
+    cache: 86400000, // 1 day
+  });
+
+  return {
+    name: _optionalChain$3([metaData, 'optionalAccess', _ => _.data, 'optionalAccess', _2 => _2.name, 'optionalAccess', _3 => _3.replace, 'call', _4 => _4(METADATA_REPLACE, '')]),
+    symbol: _optionalChain$3([metaData, 'optionalAccess', _5 => _5.data, 'optionalAccess', _6 => _6.symbol, 'optionalAccess', _7 => _7.replace, 'call', _8 => _8(METADATA_REPLACE, '')])
+  }
+};
+
+function _optionalChain$2(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+var nameOnSolana = async ({ blockchain, address })=>{
+  let metaData = await getMetaData({ blockchain, address });
+  return _optionalChain$2([metaData, 'optionalAccess', _ => _.name])
+};
+
+function _optionalChain$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+var symbolOnSolana = async ({ blockchain, address })=>{
+  let metaData = await getMetaData({ blockchain, address });
+  return _optionalChain$1([metaData, 'optionalAccess', _ => _.symbol])
+};
+
+let supported$1 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'velas'];
+supported$1.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'velas'];
+supported$1.solana = ['solana'];
+
+function _optionalChain$5(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+
+class Token {
+  
+  constructor({ blockchain, address }) {
+    this.blockchain = blockchain;
+    if(supported$1.evm.includes(this.blockchain)) {
+      this.address = ethers$1.utils.getAddress(address);
+    } else if(supported$1.solana.includes(this.blockchain)) {
+      this.address = address;
+    }
+  }
+
+  async decimals() {
+    if (this.address == Blockchains.findByName(this.blockchain).currency.address) {
+      return Blockchains.findByName(this.blockchain).currency.decimals
+    }
+    let decimals;
+    try {
+      if(supported$1.evm.includes(this.blockchain)) {
+
+        decimals = await decimalsOnEVM({ blockchain: this.blockchain, address: this.address, api: Token[this.blockchain].DEFAULT });
+
+      } else if(supported$1.solana.includes(this.blockchain)) {
+
+        decimals = await decimalsOnSolana({ blockchain: this.blockchain, address: this.address });
+
+        
+      }
+    } catch (e) {}
+    return decimals
+  }
+
+  async symbol() {
+    if (this.address == Blockchains.findByName(this.blockchain).currency.address) {
+      return Blockchains.findByName(this.blockchain).currency.symbol
+    }
+    if(supported$1.evm.includes(this.blockchain)) {
+
+      return await symbolOnEVM({ blockchain: this.blockchain, address: this.address, api: Token[this.blockchain].DEFAULT })
+
+    } else if(supported$1.solana.includes(this.blockchain)) {
+
+      return await symbolOnSolana({ blockchain: this.blockchain, address: this.address })
+
+    }
+  }
+
+  async name(args) {
+    if (this.address == Blockchains.findByName(this.blockchain).currency.address) {
+      return Blockchains.findByName(this.blockchain).currency.name
+    }
+    if(supported$1.evm.includes(this.blockchain)) {
+
+      return await nameOnEVM({ blockchain: this.blockchain, address: this.address, api: Token[this.blockchain].DEFAULT, id: _optionalChain$5([args, 'optionalAccess', _ => _.id]) })
+
+    } else if(supported$1.solana.includes(this.blockchain)) {
+
+      return await nameOnSolana({ blockchain: this.blockchain, address: this.address })
+
+    }
+  }
+
+  async balance(account, id) {
+    if(supported$1.evm.includes(this.blockchain)) {
+
+      return await balanceOnEVM({ blockchain: this.blockchain, account, address: this.address, api: id ? Token[this.blockchain][1155] : Token[this.blockchain].DEFAULT, id })
+
+    } else if(supported$1.solana.includes(this.blockchain)) {
+
+      return await balanceOnSolana({ blockchain: this.blockchain, account, address: this.address, api: Token[this.blockchain].DEFAULT })
+
+    }
+  }
+
+  async allowance(owner, spender) {
+    if (this.address == Blockchains.findByName(this.blockchain).currency.address) {
+      return ethers$1.BigNumber.from(Blockchains.findByName(this.blockchain).maxInt)
+    }
+    if(supported$1.evm.includes(this.blockchain)) {
+
+      return await allowanceOnEVM({ blockchain: this.blockchain, address: this.address, api: Token[this.blockchain].DEFAULT, owner, spender })
+
+    } else if(supported$1.solana.includes(this.blockchain)) {
+      return ethers$1.BigNumber.from(Blockchains.findByName(this.blockchain).maxInt)
+    } 
+  }
+
+  async BigNumber(amount) {
+    let decimals = await this.decimals();
+    return ethers$1.utils.parseUnits(
+      Token.safeAmount({ amount: parseFloat(amount), decimals }).toString(),
+      decimals
+    )
+  }
+
+  async readable(amount) {
+    let decimals = await this.decimals();
+    let readable = ethers$1.utils.formatUnits(amount.toString(), decimals);
+    readable = readable.replace(/\.0+$/, '');
+    return readable
+  }
+}
+
+Token.BigNumber = async ({ amount, blockchain, address }) => {
+  let token = new Token({ blockchain, address });
+  return token.BigNumber(amount)
+};
+
+Token.readable = async ({ amount, blockchain, address }) => {
+  let token = new Token({ blockchain, address });
+  return token.readable(amount)
+};
+
+Token.safeAmount = ({ amount, decimals }) => {
+  return parseFloat(amount.toFixed(decimals))
+};
+
+
+Token.ethereum = { 
+  DEFAULT: ERC20,
+  ERC20,
+  20: ERC20,
+  1155: ethereum1155,
+};
+
+Token.bsc = { 
+  DEFAULT: BEP20,
+  BEP20,
+  20: BEP20,
+  1155: bsc1155,
+};
+
+Token.polygon = { 
+  DEFAULT: ERC20onPolygon,
+  ERC20: ERC20onPolygon,
+  20: ERC20onPolygon,
+  1155: bsc1155,
+};
+
+Token.fantom = {
+  DEFAULT: FTM20,
+  FTM20,
+  20: FTM20,
+  1155: ftm1155,
+};
+
+Token.velas = {
+  DEFAULT: VRC20,
+  VRC20,
+  20: VRC20,
+  1155: bsc1155,
+};
+
+Token.solana = {
+  MINT_LAYOUT,
+  METADATA_LAYOUT,
+  TRANSFER_LAYOUT,
+  METADATA_ACCOUNT,
+  TOKEN_PROGRAM,
+  TOKEN_LAYOUT,
+  ASSOCIATED_TOKEN_PROGRAM,
+  findProgramAddress,
+  findAccount,
+  getMetaData,
+  ...instructions
+};
+
+const getPaymentsAccountAddress = async({ from })=>{
+  let seeds = [Buffer.from("payments"), new PublicKey(from).toBuffer()];
+
+  let [ pdaPublicKey ] = await PublicKey.findProgramAddress(
+    seeds, new PublicKey(routers.solana.address)
+  );
+
+  return pdaPublicKey
+};
+
+const getPaymentsAccountData = async({ from })=>{
+  let address = (await getPaymentsAccountAddress({ from })).toString();
+  console.log('address', address);
+  return await request({
+    blockchain: 'solana',
+    address,
+    api: struct$1([u64$3$1('anchorDiscriminator'), u64$3$1('nonce')]),
+    cache: 1000 
+  })
+};
+
 const createPaymentsAccount = async({ from })=> {
+  console.log('createPaymentsAccount');
+
+  let paymentsAccountData = await getPaymentsAccountData({ from });
+  if(paymentsAccountData) { 
+    console.log('NOT NEEDED');
+    return
+  }
+  console.log('CREATE');
+
+  const keys = [
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(from), isSigner: true, isWritable: true },
+    { pubkey: pdaPublicKey, isSigner: false, isWritable: true },
+  ];
+
+  const data = Buffer.alloc(routers.solana.api.createPaymentsAccount.layout.span);
+  routers.solana.api.createPaymentsAccount.layout.encode({
+    anchorDiscriminator: routers.solana.api.createPaymentsAccount.anchorDiscriminator
+  }, data);
+  
+  return new TransactionInstruction({ 
+    keys,
+    programId: new PublicKey(routers.solana.address),
+    data
+  })
+};
+
+const getPaymentSenderTokenAccountAddress = async ({ paymentRoute })=> {
+
+  return await Token.solana.findProgramAddress({
+    token: paymentRoute.fromToken.address,
+    owner: paymentRoute.fromAddress
+  })
+};
+
+const getPaymentReceiverTokenAccountAddress = async ({ paymentRoute })=> {
+
+  return await Token.solana.findProgramAddress({
+    token: paymentRoute.toToken.address,
+    owner: paymentRoute.toAddress
+  })
+};
+
+const getPaymentReceiverTokenAccount = async ({ paymentRoute })=> {
+
+  return await Token.solana.findAccount({
+    token: paymentRoute.toToken.address,
+    owner: paymentRoute.toAddress
+  })  
+};
+
+const createSenderTokenAccount = async({ paymentRoute })=> {
+  console.log('createSenderTokenAccount');
+  if(
+    paymentRoute.fromToken.address === Blockchains.solana.currency.address &&
+    paymentRoute.toToken.address === Blockchains.solana.currency.address
+  ){ // SOL <> SOL
+    console.log('NOT NEEDED');
+    return
+  } else if (
+    paymentRoute.fromToken.address === Blockchains.solana.currency.address
+  ) {
+    console.log('NEEDED');
+  }
+};
+
+const createPaymentReceiverTokenAccount = async({ paymentRoute })=> {
+  console.log('createPaymentReceiverTokenAccount');
+  
+  if(
+    paymentRoute.fromToken.address === Blockchains.solana.currency.address &&
+    paymentRoute.toToken.address === Blockchains.solana.currency.address
+  ){ // SOL <> SOL
+    console.log('NOT NEEDED');
+    return
+  } else {
+
+    const token = paymentRoute.toToken.address === Blockchains.solana.currency.address ? Blockchains.solana.wrapped.address : paymentRoute.toToken.address;
+
+    const paymentReceiverTokenAccount = await getPaymentReceiverTokenAccount({ paymentRoute });
+    if(paymentReceiverTokenAccount) {
+      console.log('NOT NEEDED');
+      return
+    }
+
+    console.log('NEEDED');
+    return Token.solana.createAssociatedTokenAccountInstruction({
+      token,
+      owner: paymentRoute.toAddress,
+      payer: paymentRoute.fromAddress,
+    })
+  }
+};
+
+const getFeeReceiverTokenAccountAddress = async ({ paymentRoute })=> {
+
+  return await Token.solana.findProgramAddress({
+    token: paymentRoute.toToken.address,
+    owner: paymentRoute.fee.address
+  })  
+};
+
+const createFeeReceiverTokenAccount = async({ paymentRoute })=> {
+  console.log('createFeeReceiverTokenAccount');
+  
+  if(
+    paymentRoute.fromToken.address === Blockchains.solana.currency.address &&
+    paymentRoute.toToken.address === Blockchains.solana.currency.address
+  ){
+    console.log('NOT NEEDED');
+    return
+  }
 
 };
 
-const getTransaction$1 = async({ paymentRoute, event, fee })=> {
+const getPaymentMethod = ({ paymentRoute })=>{
+  
+  if(
+    paymentRoute.fromToken.address === Blockchains.solana.currency.address &&
+    paymentRoute.toToken.address === Blockchains.solana.currency.address
+  ){
 
-  console.log('paymentRoute', paymentRoute);
+    return 'routeSol'
+
+  } else if (
+    paymentRoute.fromToken.address !== Blockchains.solana.currency.address &&
+    paymentRoute.toToken.address !== Blockchains.solana.currency.address &&
+    paymentRoute.exchangeRoutes.length === 0
+  ) {
+
+    return 'routeToken'
+
+  }
+};
+
+const routeSol = async({ paymentRoute, paymentsAccountData }) =>{
+  console.log('routeSol');
+  const keys = [
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
+    { pubkey: await getPaymentsAccountAddress({ from: paymentRoute.fromAddress }), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(paymentRoute.toAddress), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(paymentRoute.toAddress), isSigner: false, isWritable: true },
+  ];
+
+  const data = Buffer.alloc(routers.solana.api.routeSol.layout.span);
+  routers.solana.api.routeSol.layout.encode({
+    anchorDiscriminator: routers.solana.api.routeSol.anchorDiscriminator,
+    nonce: paymentsAccountData.nonce,
+    paymentAmount: new BN(paymentRoute.toAmount.toString()),
+    feeAmount: new BN((paymentRoute.feeAmount || '0').toString())
+  }, data);
+  
+  return new TransactionInstruction({ 
+    keys,
+    programId: new PublicKey(routers.solana.address),
+    data 
+  })    
+};
+
+const routeToken = async({ paymentRoute, paymentsAccountData }) =>{
+  console.log('routeToken');
+
+  const senderTokenAccountAddress = await getPaymentSenderTokenAccountAddress({ paymentRoute });
+  const paymentReceiverTokenAccountAddress = await getPaymentReceiverTokenAccountAddress({ paymentRoute });
+  const feeReceiverTokenAccountAddress = paymentRoute.fee ? await getFeeReceiverTokenAccountAddress({ paymentRoute }) : paymentReceiverTokenAccountAddress;
+
+  const keys = [
+    { pubkey: new PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
+    { pubkey: await getPaymentsAccountAddress({ from: paymentRoute.fromAddress }), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(senderTokenAccountAddress), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(paymentReceiverTokenAccountAddress), isSigner: false, isWritable: true },
+    { pubkey: new PublicKey(feeReceiverTokenAccountAddress), isSigner: false, isWritable: true },
+  ];
+
+  const data = Buffer.alloc(routers.solana.api.routeToken.layout.span);
+  routers.solana.api.routeToken.layout.encode({
+    anchorDiscriminator: routers.solana.api.routeToken.anchorDiscriminator,
+    nonce: paymentsAccountData.nonce,
+    paymentAmount: new BN(paymentRoute.toAmount.toString()),
+    feeAmount: new BN((paymentRoute.feeAmount || '0').toString())
+  }, data);
+  
+  return new TransactionInstruction({ 
+    keys,
+    programId: new PublicKey(routers.solana.address),
+    data 
+  })    
+};
+
+const payment = async({ paymentRoute })=> {
+
+  const paymentsAccountData = await getPaymentsAccountData({ from: paymentRoute.fromAddress });
+  const paymentMethod = getPaymentMethod({ paymentRoute });
+
+  switch(paymentMethod){
+    
+    case 'routeSol':
+    return await routeSol({ paymentRoute, paymentsAccountData });
+    
+    case 'routeToken':
+    return await routeToken({ paymentRoute, paymentsAccountData });
+  }
+
+};
+
+const getTransaction$1 = async({ paymentRoute })=> {
 
   let instructions = [
-    await createPaymentsAccount({ from: paymentRoute.fromAddress })
-  ].filter(Boolean);
+    await createPaymentsAccount({ from: paymentRoute.fromAddress }),
+    await createSenderTokenAccount({ paymentRoute }),
+    await createPaymentReceiverTokenAccount({ paymentRoute }),
+    await createFeeReceiverTokenAccount({ paymentRoute }),
+    await payment({ paymentRoute }),
+  ].filter(Boolean).flat();
+
+  console.log('instructions.length', instructions.length);
 
   return {
     blockchain: paymentRoute.blockchain,
@@ -50190,19 +53500,19 @@ class PaymentRoute {
     this.approvalTransaction = approvalTransaction;
     this.directTransfer = directTransfer;
     this.event = event;
-    this.getTransaction = async ()=> await getTransaction({ paymentRoute: this, event, fee });
+    this.getTransaction = async ()=> await getTransaction({ paymentRoute: this, event });
   }
 }
 
-function convertToRoutes({ assets, accept, from, fee, event }) {
+function convertToRoutes({ assets, accept, from, event }) {
   return Promise.all(assets.map(async (asset)=>{
     let relevantConfigurations = accept.filter((configuration)=>(configuration.blockchain == asset.blockchain));
-    let fromToken = new Token(asset);
+    let fromToken = new Token$1(asset);
     return Promise.all(relevantConfigurations.map(async (configuration)=>{
       if(configuration.token && configuration.amount) {
         let blockchain = configuration.blockchain;
         let fromDecimals = asset.decimals;
-        let toToken = new Token({ blockchain, address: configuration.token });
+        let toToken = new Token$1({ blockchain, address: configuration.token });
         let toDecimals = await toToken.decimals();
         let toAmount = (await toToken.BigNumber(configuration.amount)).toString();
 
@@ -50216,14 +53526,14 @@ function convertToRoutes({ assets, accept, from, fee, event }) {
           fromBalance: asset.balance,
           fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
-          fee,
+          fee: configuration.fee,
           event
         })
       } else if(configuration.fromToken && configuration.fromAmount && fromToken.address.toLowerCase() == configuration.fromToken.toLowerCase()) {
         let blockchain = configuration.blockchain;
         let fromAmount = (await fromToken.BigNumber(configuration.fromAmount)).toString();
         let fromDecimals = asset.decimals;
-        let toToken = new Token({ blockchain, address: configuration.toToken });
+        let toToken = new Token$1({ blockchain, address: configuration.toToken });
         let toDecimals = await toToken.decimals();
         
         return new PaymentRoute({
@@ -50236,7 +53546,7 @@ function convertToRoutes({ assets, accept, from, fee, event }) {
           fromBalance: asset.balance,
           fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
-          fee,
+          fee: configuration.fee,
           event
         })
       }
@@ -50244,23 +53554,23 @@ function convertToRoutes({ assets, accept, from, fee, event }) {
   })).then((routes)=> routes.flat().filter(el => el))
 }
 
-function assetsToRoutes({ assets, blacklist, accept, from, event, fee }) {
+function assetsToRoutes({ assets, blacklist, accept, from, event }) {
   return Promise.resolve(filterBlacklistedAssets({ assets, blacklist }))
-    .then((assets) => convertToRoutes({ assets, accept, from, fee, event }))
-    .then((routes) => addDirectTransferStatus({ routes, fee }))
+    .then((assets) => convertToRoutes({ assets, accept, from, event }))
+    .then((routes) => addDirectTransferStatus({ routes }))
     .then(addExchangeRoutes)
     .then(filterExchangeRoutesWithoutPlugin)
     .then(filterNotRoutable)
     .then(filterInsufficientBalance)
-    .then((routes)=>addRouteAmounts({ routes, fee }))
+    .then((routes)=>addRouteAmounts({ routes }))
     .then(addApproval)
     .then(sortPaymentRoutes)
     .then(filterDuplicateFromTokens)
     .then((routes)=>routes.map((route)=>new PaymentRoute(route)))
 }
 
-function route({ accept, from, whitelist, blacklist, event, fee, update }) {
-  if(fee && fee.amount && typeof(fee.amount) == 'string' && fee.amount.match(/\.\d\d+\%/)) {
+function route({ accept, from, whitelist, blacklist, event, update }) {
+  if(accept.some((accept)=>{ return accept && accept.fee && typeof(accept.fee.amount) == 'string' && accept.fee.amount.match(/\.\d\d+\%/) })) {
     throw('Only up to 1 decimal is supported for fee amounts!')
   }
 
@@ -50281,8 +53591,8 @@ function route({ accept, from, whitelist, blacklist, event, fee, update }) {
 
     let throttledUpdate;
     if(update) {
-      throttledUpdate = throttle_1(async ({ assets, blacklist, accept, from, event, fee })=>{
-        update.callback(await assetsToRoutes({ assets, blacklist, accept, from, event, fee }));
+      throttledUpdate = throttle_1(async ({ assets, blacklist, accept, from, event })=>{
+        update.callback(await assetsToRoutes({ assets, blacklist, accept, from, event }));
       }, update.every);
     }
     
@@ -50295,12 +53605,12 @@ function route({ accept, from, whitelist, blacklist, event, fee, update }) {
       drip: (asset)=>{
         if(update) {
           drippedAssets.push(asset);
-          throttledUpdate({ assets: drippedAssets, blacklist, accept, from, event, fee });
+          throttledUpdate({ assets: drippedAssets, blacklist, accept, from, event });
         }
       }
     });
 
-    let allPaymentRoutes = await assetsToRoutes({ assets: allAssets, blacklist, accept, from, event, fee });
+    let allPaymentRoutes = await assetsToRoutes({ assets: allAssets, blacklist, accept, from, event });
     resolveAll(allPaymentRoutes);
   })
 }
@@ -50388,7 +53698,7 @@ let addApproval = (routes) => {
       if(route.blockchain === 'solana') {
         return Promise.resolve(Blockchains.solana.maxInt)
       } else {
-        return route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address)
+        return route.fromToken.allowance(route.fromAddress, routers$1[route.blockchain].address)
       }
     }
   )).then(
@@ -50408,9 +53718,9 @@ let addApproval = (routes) => {
             routes[index].approvalTransaction = {
               blockchain: route.blockchain,
               to: route.fromToken.address,
-              api: Token[route.blockchain].DEFAULT,
+              api: Token$1[route.blockchain].DEFAULT,
               method: 'approve',
-              params: [routers[route.blockchain].address, Blockchains[route.blockchain].maxInt]
+              params: [routers$1[route.blockchain].address, Blockchains[route.blockchain].maxInt]
             };
           }
         }
@@ -50420,57 +53730,57 @@ let addApproval = (routes) => {
   )
 };
 
-let addDirectTransferStatus = ({ routes, fee }) => {
+let addDirectTransferStatus = ({ routes }) => {
   return routes.map((route)=>{
-    route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && fee == undefined;
+    route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && route.fee == undefined;
     return route
   })
 };
 
-let calculateAmounts = ({ paymentRoute, exchangeRoute, fee })=>{
+let calculateAmounts = ({ paymentRoute, exchangeRoute })=>{
   let fromAmount;
   let toAmount;
   let feeAmount;
   if(exchangeRoute) {
     if(exchangeRoute && exchangeRoute.exchange.wrapper) {
       fromAmount = exchangeRoute.amountIn.toString();
-      toAmount = subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee });
+      toAmount = subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute });
     } else {
       fromAmount = exchangeRoute.amountIn.toString();
-      toAmount = subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee });
+      toAmount = subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute });
     }
   } else {
     fromAmount = paymentRoute.fromAmount;
-    toAmount = subtractFee({ amount: paymentRoute.fromAmount, paymentRoute, fee });
+    toAmount = subtractFee({ amount: paymentRoute.fromAmount, paymentRoute });
   }
-  if(fee){
-    feeAmount = getFeeAmount({ paymentRoute, fee });
+  if(paymentRoute.fee){
+    feeAmount = getFeeAmount({ paymentRoute });
   }
   return { fromAmount, toAmount, feeAmount }
 };
 
-let subtractFee = ({ amount, paymentRoute, fee })=> {
-  if(fee) {
-    let feeAmount = getFeeAmount({ paymentRoute, fee });
+let subtractFee = ({ amount, paymentRoute })=> {
+  if(paymentRoute.fee) {
+    let feeAmount = getFeeAmount({ paymentRoute });
     return ethers$1.BigNumber.from(amount).sub(feeAmount).toString()
   } else {
     return amount
   }
 };
 
-let getFeeAmount = ({ paymentRoute, fee })=> {
-  if(typeof fee.amount == 'string' && fee.amount.match('%')) {
-    return ethers$1.BigNumber.from(paymentRoute.toAmount).mul(parseFloat(fee.amount)*10).div(1000).toString()
-  } else if(typeof fee.amount == 'string') {
-    return fee.amount
-  } else if(typeof fee.amount == 'number') {
-    return ethers$1.utils.parseUnits(fee.amount.toString(), paymentRoute.toDecimals).toString()
+let getFeeAmount = ({ paymentRoute })=> {
+  if(typeof paymentRoute.fee.amount == 'string' && paymentRoute.fee.amount.match('%')) {
+    return ethers$1.BigNumber.from(paymentRoute.toAmount).mul(parseFloat(paymentRoute.fee.amount)*10).div(1000).toString()
+  } else if(typeof paymentRoute.fee.amount == 'string') {
+    return paymentRoute.fee.amount
+  } else if(typeof paymentRoute.fee.amount == 'number') {
+    return ethers$1.utils.parseUnits(paymentRoute.fee.amount.toString(), paymentRoute.toDecimals).toString()
   } else {
     throw('Unknown fee amount type!')
   }
 };
 
-let addRouteAmounts = ({ routes, fee })=> {
+let addRouteAmounts = ({ routes })=> {
   return routes.map((route)=>{
 
     if(supported.evm.includes(route.blockchain)) {
@@ -50478,7 +53788,7 @@ let addRouteAmounts = ({ routes, fee })=> {
       if(route.directTransfer && !route.fee) {
         route.fromAmount = route.toAmount;
       } else {
-        let { fromAmount, toAmount, feeAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0], fee });
+        let { fromAmount, toAmount, feeAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0] });
         route.fromAmount = fromAmount;
         route.toAmount = toAmount;
         if(route.fee){
@@ -50487,7 +53797,12 @@ let addRouteAmounts = ({ routes, fee })=> {
       }
     } else if (supported.solana.includes(route.blockchain)) {
 
-      console.log('add route amounts solana!!!');
+      let { fromAmount, toAmount, feeAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0] });
+      route.fromAmount = fromAmount;
+      route.toAmount = toAmount;
+      if(route.fee){
+        route.feeAmount = feeAmount;
+      }
 
     }
     
@@ -50568,4 +53883,4 @@ let sortPaymentRoutes = (routes) => {
   })
 };
 
-export { plugins, route, routers };
+export { plugins, route, routers$1 as routers };

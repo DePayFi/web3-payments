@@ -242,11 +242,14 @@ Events are not emitted if payment receiver is a smart contract. Make sure your s
 
 ```javascript
 let paymentRoutes = await route({
-  accept: [...],
-  fee: {
-    amount: '3%',
-    receiver: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
-  }
+  
+  accept: [{
+    //...
+    fee: {
+      amount: '3%',
+      receiver: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
+    }
+  }]
 })
 
 // splits 0.3 of the amount paid and sends it to the feeReceiver
@@ -256,22 +259,28 @@ let paymentRoutes = await route({
 
 ```javascript
 let paymentRoutes = await route({
-  accept: [...],
-  fee: {
-    amount: '300000000000000000',
-    receiver: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
-  }
+  
+  accept: [{
+    //...
+    fee: {
+      amount: '300000000000000000',
+      receiver: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
+    }
+  }]
 })
 // splits 0.3 of the amount paid and sends it to the feeReceiver
 ```
 
 ```javascript
 let paymentRoutes = await route({
-  accept: [...],
-  fee: {
-    amount: 0.3,
-    receiver: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
-  }
+  
+  accept: [{
+    //...
+    fee: {
+      amount: 0.3,
+      receiver: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
+    }
+  }]
 })
 // splits 0.3 of the amount paid and sends it to the feeReceiver
 ```

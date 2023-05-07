@@ -141,14 +141,14 @@ describe('event', ()=> {
         toAddress,
         blockchain,
         token: Blockchains[blockchain].currency.address,
-        amount: 0.0001
+        amount: 0.0001,
+        fee: {
+          receiver: '0x4e260bB2b25EC6F3A59B478fCDe5eD5B8D783B02',
+          amount: '1%'
+        }
       }],
       event: 'ifRoutedAndNative',
       from: { [blockchain]: fromAddress },
-      fee: {
-        receiver: '0x4e260bB2b25EC6F3A59B478fCDe5eD5B8D783B02',
-        amount: '1%'
-      }
     })
 
     transaction = await routes[0].getTransaction()
@@ -160,14 +160,14 @@ describe('event', ()=> {
         toAddress,
         blockchain,
         token: Blockchains[blockchain].wrapped.address,
-        amount: 0.0001
+        amount: 0.0001,
+        fee: {
+          receiver: '0x4e260bB2b25EC6F3A59B478fCDe5eD5B8D783B02',
+          amount: '1%'
+        }
       }],
       event: 'ifRoutedAndNative',
       from: { [blockchain]: fromAddress },
-      fee: {
-        receiver: '0x4e260bB2b25EC6F3A59B478fCDe5eD5B8D783B02',
-        amount: '1%'
-      }
     })
 
     transaction = await routes[0].getTransaction()
