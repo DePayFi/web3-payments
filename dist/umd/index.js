@@ -1788,15 +1788,39 @@
     })  
   };
 
+  const getFeeReceiverTokenAccount = async ({ paymentRoute })=> {
+
+    return await web3Tokens.Token.solana.findAccount({
+      token: paymentRoute.toToken.address,
+      owner: paymentRoute.fee.address
+    })
+  };
+
   const createFeeReceiverTokenAccount = async({ paymentRoute })=> {
     console.log('createFeeReceiverTokenAccount');
     
     if(
       paymentRoute.fromToken.address === Blockchains__default["default"].solana.currency.address &&
       paymentRoute.toToken.address === Blockchains__default["default"].solana.currency.address
-    ){
+    ){ // SOL <> SOL
       console.log('NOT NEEDED');
       return
+    } else {
+
+      const token = paymentRoute.toToken.address === Blockchains__default["default"].solana.currency.address ? Blockchains__default["default"].solana.wrapped.address : paymentRoute.toToken.address;
+
+      const feeReceiverTokenAccount = await getFeeReceiverTokenAccount({ paymentRoute });
+      if(feeReceiverTokenAccount) {
+        console.log('NOT NEEDED');
+        return
+      }
+
+      console.log('NEEDED');
+      return web3Tokens.Token.solana.createAssociatedTokenAccountInstruction({
+        token,
+        owner: paymentRoute.fee.receiver,
+        payer: paymentRoute.fromAddress,
+      })
     }
 
   };

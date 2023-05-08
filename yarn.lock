@@ -1021,20 +1021,20 @@
   resolved "https://registry.yarnpkg.com/@depay/web3-client/-/web3-client-10.12.1.tgz#f0af24509c43791222989fd60fd02727773ef29f"
   integrity sha512-xn1toyCnLpM7Appuh1678UOEWo3UGuenLFJv6VlsKaLRYiyxBfiqWJSIWzxEEipYHG6fqCsM6tQiqQq+GNglxg==
 
-"@depay/web3-exchanges-evm@^12.2.0":
-  version "12.2.0"
-  resolved "https://registry.yarnpkg.com/@depay/web3-exchanges-evm/-/web3-exchanges-evm-12.2.0.tgz#5235b8cc1da65b2343359921bf5cdbfe7b69d08f"
-  integrity sha512-eo0zc+UHyq0+OZvvbeRY9hIe0G4vDFIk87K15c3muLRqR9KbyNAX6umrK6CetvwvehX9/BgSpNoocCibnhuQVg==
+"@depay/web3-exchanges-evm@^12.2.1":
+  version "12.2.1"
+  resolved "https://registry.yarnpkg.com/@depay/web3-exchanges-evm/-/web3-exchanges-evm-12.2.1.tgz#3967de4e979412016a475b0262bff7e20078780c"
+  integrity sha512-HNggHdBs65b+29N/E2NPErx6ogErKcuveLVLiaJyJJwfWoBsH282hLrSvoQgZz+0JXhWRGIWecfqICvdfII0Qg==
 
-"@depay/web3-exchanges-solana@^12.2.0":
-  version "12.2.0"
-  resolved "https://registry.yarnpkg.com/@depay/web3-exchanges-solana/-/web3-exchanges-solana-12.2.0.tgz#a316124135dd02a3689b68dcf4c82bf765f698f9"
-  integrity sha512-bUi2d9xvWhE5xcdXILRhFcclxJyx6LvsrwvHxKD+u/6X/Z7cMXXJkpR9WK8DpxkkuzTaotX3ZzTHKSlzEXZnFw==
+"@depay/web3-exchanges-solana@^12.2.1":
+  version "12.2.1"
+  resolved "https://registry.yarnpkg.com/@depay/web3-exchanges-solana/-/web3-exchanges-solana-12.2.1.tgz#0add5c20b9e70d8475c1822bac811b632515e0a3"
+  integrity sha512-vvDuHsQk5V9VIS2RGr3SBhSI/HKjh5vI9PRFcjWTd3y8O9qdTRtCeQNfgQIgEpLoyeOiAc04ZZpv173llPfKfQ==
 
-"@depay/web3-exchanges@^12.2.0":
-  version "12.2.0"
-  resolved "https://registry.yarnpkg.com/@depay/web3-exchanges/-/web3-exchanges-12.2.0.tgz#c99a30fc0988a324a57f37f98e1bfbb07bff2946"
-  integrity sha512-6pR+wnaGYNHjduKTVx63VY8GiIxkRcNgRFqGlEnawTLdkcSGzm2QpxAC8p419wB+qjhLNEI1IuJj4QBXSh9XtQ==
+"@depay/web3-exchanges@^12.2.1":
+  version "12.2.1"
+  resolved "https://registry.yarnpkg.com/@depay/web3-exchanges/-/web3-exchanges-12.2.1.tgz#e505a8d18dd3c8647263489e98f941ffeb15e30c"
+  integrity sha512-ZTJF6b+7/Ny6gCzDTxN/upG8oNpW4lY+FS1vH/L3iY0V1L2RZ3nptuRXTbr9buNdiYGvlHs3zV1PwyABmiOprA==
 
 "@depay/web3-mock@^14.7.0":
   version "14.7.0"
@@ -1045,20 +1045,20 @@
     "@depay/web3-blockchains" "^8.0.1"
     ethers "^5.7.1"
 
-"@depay/web3-tokens-evm@^9.19.2":
-  version "9.19.2"
-  resolved "https://registry.yarnpkg.com/@depay/web3-tokens-evm/-/web3-tokens-evm-9.19.2.tgz#067139c609a7dc40898a23eccea304202373f886"
-  integrity sha512-xo5AEqDxxRvOMVqCGX8ZY8we2JUX2+SOuqKNB7GakLgNJNdCedHF5IeZZmKA3Wbr5q9Iwl8bVN9oZksuOeI2eA==
+"@depay/web3-tokens-evm@^9.19.3":
+  version "9.19.3"
+  resolved "https://registry.yarnpkg.com/@depay/web3-tokens-evm/-/web3-tokens-evm-9.19.3.tgz#9eedd552d1fbeb8604903f15015aa236e59f6397"
+  integrity sha512-DMIfEpv0F4W9voZBk+jPaUrez8JO81hhdprjWW0X/aJxuljO9gk0dNJdNlIDJmXUOzQpX6UmT1lm7sDPwNuZQg==
 
-"@depay/web3-tokens-solana@^9.19.2":
-  version "9.19.2"
-  resolved "https://registry.yarnpkg.com/@depay/web3-tokens-solana/-/web3-tokens-solana-9.19.2.tgz#1e0f6802efe99bd293d3fbe21402925d5f7aed5f"
-  integrity sha512-QdTOoq8xXzHz8N5NTNskIMAvN4nvaTmDLcEskFQuA+0IHYhaFp9a5lU3FLhagsCjoQ6O+MEOpz9ek/IfigrvBg==
+"@depay/web3-tokens-solana@^9.19.3":
+  version "9.19.3"
+  resolved "https://registry.yarnpkg.com/@depay/web3-tokens-solana/-/web3-tokens-solana-9.19.3.tgz#c5784e3e46f00c7d66596d6d5fa15643bfb110b7"
+  integrity sha512-cpzxtTkmFT6f7ReR2EBpOrYGFluKGTafF53CdutskfRVm+5011yJ3KuIae4SWQlJXXN2SpcH9LMYAgUMO/o/Fw==
 
-"@depay/web3-tokens@^9.19.2":
-  version "9.19.2"
-  resolved "https://registry.yarnpkg.com/@depay/web3-tokens/-/web3-tokens-9.19.2.tgz#62079c7a658099708d300f824b2f8e6854a8ecee"
-  integrity sha512-FPkGeXeREhILoFkrxUfxZUEzP3qul9SxzZ/2a2YTp4O+NQ1nmNHU27NVZ/l2/tm31Nx1XJH7y1N83jug75k6/g==
+"@depay/web3-tokens@^9.19.3":
+  version "9.19.3"
+  resolved "https://registry.yarnpkg.com/@depay/web3-tokens/-/web3-tokens-9.19.3.tgz#f1058c08a768dfc4f89548e205b569db2952b9de"
+  integrity sha512-+BTpbvRahauZpJl0TCC3+mmJfLMHaBz0d9oQGsDOrDB6S+8dv3mpKnyHi1elysovGLeaorqchSgDZv9/SujH9A==
 
 "@depay/web3-wallets-evm@^15.8.0":
   version "15.8.0"

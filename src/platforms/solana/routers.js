@@ -3,6 +3,7 @@ import { BN, struct, u64, u128, bool } from '@depay/solana-web3.js'
 export default {
   solana: {
     address: 'DePayRG7ZySPWzeK9Kvq7aPeif7sdbBZNh6DHcvNj7F7',
+    ammProgram: 'whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc',
     api: {
       createPaymentsAccount: {
         anchorDiscriminator: new BN("8445995362644372894"),
