@@ -11,8 +11,14 @@ export default {
           u64("anchorDiscriminator"),
         ])
       },
-      createEscrowAccount: {
-        anchorDiscriminator: new BN("103653380020343698"),
+      createEscrowSolAccount: {
+        anchorDiscriminator: new BN("2482112285991870004"),
+        layout: struct([
+          u64("anchorDiscriminator"),
+        ])
+      },
+      createEscrowTokenAccount: {
+        anchorDiscriminator: new BN("16156440424245087"),
         layout: struct([
           u64("anchorDiscriminator"),
         ])
@@ -48,8 +54,36 @@ export default {
           u64("feeAmount"),
         ])
       },
+      routeOrcaSwapSolOut: {
+        anchorDiscriminator: new BN("13662217913752830165"),
+        layout: struct([
+          u64("anchorDiscriminator"),
+          u64("nonce"),
+          u64("amountIn"),
+          u128("sqrtPriceLimit"),
+          bool("amountSpecifiedIsInput"),
+          bool("aToB"),
+          u64("paymentAmount"),
+          u64("feeAmount"),
+        ])
+      },
       routeOrcaTwoHopSwap: {
         anchorDiscriminator: new BN("15695720599845325801"),
+        layout: struct([
+          u64("anchorDiscriminator"),
+          u64("nonce"),
+          u64("amountIn"),
+          bool("amountSpecifiedIsInput"),
+          bool("aToBOne"),
+          bool("aToBTwo"),
+          u128("sqrtPriceLimitOne"),
+          u128("sqrtPriceLimitTwo"),
+          u64("paymentAmount"),
+          u64("feeAmount"),
+        ])
+      },
+      routeOrcaTwoHopSwapSolOut: {
+        anchorDiscriminator: new BN("15074061855608091530"),
         layout: struct([
           u64("anchorDiscriminator"),
           u64("nonce"),
