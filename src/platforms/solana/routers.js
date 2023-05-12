@@ -4,6 +4,7 @@ export default {
   solana: {
     address: 'DePayRG7ZySPWzeK9Kvq7aPeif7sdbBZNh6DHcvNj7F7',
     ammProgram: 'whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc',
+    alt: 'EYGgx5fYCZtLN2pvnR4Bhn5KpMffKwyHCms4VhjSvF2K',
     api: {
       createPaymentsAccount: {
         anchorDiscriminator: new BN("8445995362644372894"),
