@@ -295,7 +295,11 @@ let addApproval = (routes) => {
 
 let addDirectTransferStatus = ({ routes }) => {
   return routes.map((route)=>{
-    route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && route.fee == undefined
+    if(supported.evm.includes(route.blockchain)) {
+      route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && route.fee == undefined
+    } else if (route.blockchain === 'solana') {
+      route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase()
+    }
     return route
   })
 }

@@ -123,7 +123,7 @@ transaction.failed = (transaction)=>{ console.log('failed', transaction) }
 wallet.sendTransaction(transaction)
 ```
 
-## routeOrcaSwapToSol (TOKEN<>WSOL->SOL)
+## routeOrcaSwapSolOut (TOKEN<>WSOL->SOL)
 
 ```javascript
 
@@ -187,7 +187,7 @@ transaction.failed = (transaction)=>{ console.log('failed', transaction) }
 wallet.sendTransaction(transaction)
 ```
 
-## routeOrcaTwoHopSwap (TOKEN<>TOKEN<>WSOL->SOL)
+## routeOrcaTwoHopSwapSolOut (TOKEN<>TOKEN<>WSOL->SOL)
 
 ```javascript
 

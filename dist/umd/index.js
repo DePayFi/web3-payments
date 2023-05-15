@@ -217,7 +217,7 @@
     },
   };
 
-  var routers = {... routers$2, solanaRouters: routers$1};
+  var routers = {... routers$2, ...routers$1};
 
   /**
    * Checks if `value` is the
@@ -1941,16 +1941,16 @@
       const paymentReceiverBalance = await request({ blockchain: 'solana', method: 'balance', address: paymentRoute.toAddress });
       const provider = await getProvider('solana');
       const rent = new solanaWeb3_js.BN(await provider.getMinimumBalanceForRentExemption(0));
-      const feeAmount = new solanaWeb3_js.BN(paymentRoute.feeAmount);
+      const paymentAmount = new solanaWeb3_js.BN(paymentRoute.toAmount);
 
-      if(new solanaWeb3_js.BN(paymentReceiverBalance).add(feeAmount).gt(rent)) {
+      if(new solanaWeb3_js.BN(paymentReceiverBalance).add(paymentAmount).gt(rent)) {
         return
       }
       
       return solanaWeb3_js.SystemProgram.transfer({
         fromPubkey: new solanaWeb3_js.PublicKey(paymentRoute.fromAddress),
         toPubkey: new solanaWeb3_js.PublicKey(paymentRoute.toAddress),
-        lamports: rent.sub(feeAmount)
+        lamports: rent.sub(paymentAmount)
       })
     
     } else {
@@ -2915,7 +2915,11 @@
 
   let addDirectTransferStatus = ({ routes }) => {
     return routes.map((route)=>{
-      route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && route.fee == undefined;
+      if(supported.evm.includes(route.blockchain)) {
+        route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && route.fee == undefined;
+      } else if (route.blockchain === 'solana') {
+        route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase();
+      }
       return route
     })
   };

@@ -15,5 +15,5 @@ import solanaRouters from './platforms/solana/routers'
 
 //#endif
 
-export default {... evmRouters, solanaRouters}
+export default {... evmRouters, ...solanaRouters}
 
