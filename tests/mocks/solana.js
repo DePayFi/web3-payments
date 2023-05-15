@@ -1,5 +1,5 @@
 import Blockchains from '@depay/web3-blockchains'
-import { struct, u64, Buffer, PublicKey } from '@depay/solana-web3.js'
+import { struct, u64, publicKey, Buffer, PublicKey } from '@depay/solana-web3.js'
 import { ethers } from 'ethers'
 import { getProvider } from '@depay/web3-client'
 import { mock } from '@depay/web3-mock'
@@ -13,6 +13,81 @@ const getTokenAccountAddress = async({ tokenAddress, ownerAddress })=>{
   return await Token.solana.findProgramAddress({
     token: tokenAddress,
     owner: ownerAddress
+  })
+}
+
+const getEscrowOutSolAccountAddress = async()=>{
+
+  let seeds = [
+    Buffer.from("escrow_sol"),
+  ]
+  
+  let [ pdaPublicKey, bump ] = await PublicKey.findProgramAddress(
+    seeds, new PublicKey(routers.solana.address)
+  )
+
+  return pdaPublicKey
+}
+
+const mockEscrowOutSolAccount = async({ provider, exists, balance })=>{
+
+  const accountAddress = (await getEscrowOutSolAccountAddress()).toString()
+
+  mock({
+    blockchain: 'solana',
+    provider,
+    request: {
+      method: 'getAccountInfo',
+      to: accountAddress,
+      api: struct([ u64('amount'), publicKey('owner') ]),
+      return: exists ? {
+        amount: balance || '0',
+        owner: accountAddress,
+      } : null
+    }
+  })
+}
+
+const getEscrowOutTokenAccountAddress = async({ tokenAddress })=>{
+
+  let seeds = [
+    Buffer.from("escrow"),
+    new PublicKey(tokenAddress).toBuffer()
+  ]
+  
+  let [ pdaPublicKey, bump ] = await PublicKey.findProgramAddress(
+    seeds, new PublicKey(routers.solana.address)
+  )
+
+
+  return pdaPublicKey
+}
+
+const mockEscrowOutTokenAccount = async({ provider, tokenAddress, exists, balance })=>{
+
+  const accountAddress = (await getEscrowOutTokenAccountAddress({ tokenAddress })).toString()
+
+  mock({
+    blockchain: 'solana',
+    provider,
+    request: {
+      method: 'getAccountInfo',
+      to: accountAddress,
+      api: Token.solana.TOKEN_LAYOUT,
+      return: exists ? {
+        mint: tokenAddress,
+        owner: accountAddress,
+        amount: balance ? balance : '0',
+        delegateOption: 70962703,
+        delegate: 'BSFGxQ38xesdoUd3qsvNhjRu2FLPq9CwCBiGE42fc9hR',
+        state: 0,
+        isNativeOption: 0,
+        isNative: '0',
+        delegatedAmount: '0',
+        closeAuthorityOption: 0,
+        closeAuthority: '11111111111111111111111111111111'
+      } : null
+    }
   })
 }
 
@@ -118,7 +193,7 @@ const mockMajorTokenBalances = async({ provider, fromAddress })=>{
   }))
 }
 
-const mockBasics = async({ provider, fromAddress, toAddress, feeReceiverAddress, tokenAddress })=>{
+const mockBasics = async({ provider, fromAddress, toAddress, feeReceiverAddress, fromTokenAddress, toTokenAddress })=>{
 
   mock({
     provider,
@@ -141,12 +216,23 @@ const mockBasics = async({ provider, fromAddress, toAddress, feeReceiverAddress,
   await mockPaymentsAccount({ provider, fromAddress })
 
   mock({ provider, blockchain, request: { method: 'getMinimumBalanceForRentExemption', params: [0], return: 890880 } })
+  mock({ provider, blockchain, request: { method: 'getMinimumBalanceForRentExemption', params: [165], return: 2039280 } })
 
-  if(tokenAddress) {
-    await mockTokenAccount({ provider, ownerAddress: fromAddress, tokenAddress })
-    await mockTokenAccount({ provider, ownerAddress: toAddress, tokenAddress })
+  await mockEscrowOutSolAccount({ provider })
+
+  if(fromTokenAddress) {
+    await mockTokenAccount({ provider, ownerAddress: fromAddress, tokenAddress: fromTokenAddress })
+    await mockTokenAccount({ provider, ownerAddress: toAddress, tokenAddress: fromTokenAddress })
     if(feeReceiverAddress) {
-      await mockTokenAccount({ provider, ownerAddress: feeReceiverAddress, tokenAddress })
+      await mockTokenAccount({ provider, ownerAddress: feeReceiverAddress, tokenAddress: fromTokenAddress })
+    }
+  }
+
+  if(toTokenAddress) {
+    await mockTokenAccount({ provider, ownerAddress: fromAddress, tokenAddress: toTokenAddress })
+    await mockTokenAccount({ provider, ownerAddress: toAddress, tokenAddress: toTokenAddress })
+    if(feeReceiverAddress) {
+      await mockTokenAccount({ provider, ownerAddress: feeReceiverAddress, tokenAddress: toTokenAddress })
     }
   }
 }
@@ -158,4 +244,8 @@ export {
   mockTokenBalance,
   getTokenAccountAddress,
   mockTokenAccount,
+  mockEscrowOutTokenAccount,
+  getEscrowOutTokenAccountAddress,
+  getEscrowOutSolAccountAddress,
+  mockEscrowOutSolAccount,
 }

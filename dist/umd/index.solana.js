@@ -4036,6 +4036,15 @@
     return pdaPublicKey
   };
 
+  const getEscrowSolAccountData = async({ paymentRoute })=>{
+    return await request({
+      blockchain: 'solana',
+      address: (await getEscrowSolAccountPublicKey()).toString(),
+      api: solanaWeb3_js.struct([ solanaWeb3_js.u64('amount'), solanaWeb3_js.publicKey('owner') ]),
+      cache: 1000
+    })
+  };
+
   const getEscrowAccountPublicKey = async({ paymentRoute })=>{
 
     let seeds = [
@@ -4061,7 +4070,7 @@
 
   const createEscrowOutTokenAccount = async({ paymentRoute })=> {
 
-    if(paymentRoute.exchangeRoutes.length === 0) {
+    if(paymentRoute.exchangeRoutes.length === 0 || paymentRoute.toToken.address === Blockchains__default["default"].solana.currency.address) {
       return
     }
 
@@ -4100,7 +4109,7 @@
       return
     }
 
-    const escrowAccount = await getEscrowAccountData({ paymentRoute });
+    const escrowAccount = await getEscrowSolAccountData({ paymentRoute });
 
     if(escrowAccount) {
       return

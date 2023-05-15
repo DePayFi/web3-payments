@@ -2,7 +2,7 @@ import Blockchains from '@depay/web3-blockchains';
 import { dripAssets } from '@depay/web3-assets';
 import { route as route$1 } from '@depay/web3-exchanges';
 import { Token } from '@depay/web3-tokens';
-import { BN, struct, u64, u128, bool, Connection, ACCOUNT_LAYOUT, PublicKey, Keypair, SystemProgram, Buffer, TransactionInstruction } from '@depay/solana-web3.js';
+import { BN, struct, u64, u128, bool, Connection, ACCOUNT_LAYOUT, PublicKey, Keypair, SystemProgram, Buffer, TransactionInstruction, publicKey } from '@depay/solana-web3.js';
 import { ethers } from 'ethers';
 
 const prepareUniswapTransaction = (transaction)=>{
@@ -2035,6 +2035,15 @@ const getEscrowSolAccountPublicKey = async()=>{
   return pdaPublicKey
 };
 
+const getEscrowSolAccountData = async({ paymentRoute })=>{
+  return await request({
+    blockchain: 'solana',
+    address: (await getEscrowSolAccountPublicKey()).toString(),
+    api: struct([ u64('amount'), publicKey('owner') ]),
+    cache: 1000
+  })
+};
+
 const getEscrowAccountPublicKey = async({ paymentRoute })=>{
 
   let seeds = [
@@ -2060,7 +2069,7 @@ const getEscrowAccountData = async({ paymentRoute })=>{
 
 const createEscrowOutTokenAccount = async({ paymentRoute })=> {
 
-  if(paymentRoute.exchangeRoutes.length === 0) {
+  if(paymentRoute.exchangeRoutes.length === 0 || paymentRoute.toToken.address === Blockchains.solana.currency.address) {
     return
   }
 
@@ -2099,7 +2108,7 @@ const createEscrowOutSolAccount = async({ paymentRoute })=> {
     return
   }
 
-  const escrowAccount = await getEscrowAccountData({ paymentRoute });
+  const escrowAccount = await getEscrowSolAccountData({ paymentRoute });
 
   if(escrowAccount) {
     return

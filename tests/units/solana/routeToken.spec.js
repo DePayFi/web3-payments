@@ -32,16 +32,8 @@ describe('routeToken', ()=> {
     fetchMock.reset()
     provider = await getProvider('solana')
     mock({ provider, blockchain, accounts: { return: accounts } })
-    mockAssets({ blockchain, account: fromAddress, assets: [
-      {
-        "name": "Solana",
-        "symbol": "SOL",
-        "address": Blockchains.solana.currency.address,
-        "type": "NATIVE",
-        "decimals": Blockchains.solana.currency.decimals
-      }
-    ]})
-    await mockBasics({ provider, fromAddress, toAddress, feeReceiverAddress, tokenAddress: toToken })
+    mockAssets({ blockchain, account: fromAddress, assets: []})
+    await mockBasics({ provider, fromAddress, toAddress, feeReceiverAddress, fromTokenAddress: toToken })
     mockTokenBalance({ provider, tokenAddress: toToken, tokenDecimals: 6, fromAddress, balance: '10000000' })
   })
 
