@@ -1955,7 +1955,7 @@
     
     } else {
 
-      const token = paymentRoute.toToken.address === Blockchains__default["default"].solana.currency.address ? Blockchains__default["default"].solana.wrapped.address : paymentRoute.toToken.address;
+      const token = paymentRoute.toToken.address;
 
       const paymentReceiverTokenAccount = await getPaymentReceiverTokenAccount({ paymentRoute });
       if(paymentReceiverTokenAccount) {
@@ -2011,13 +2011,13 @@
     
     } else {
 
-      const token = paymentRoute.toToken.address === Blockchains__default["default"].solana.currency.address ? Blockchains__default["default"].solana.wrapped.address : paymentRoute.toToken.address;
+      const token = paymentRoute.toToken.address;
 
       const feeReceiverTokenAccount = await getFeeReceiverTokenAccount({ paymentRoute });
+      
       if(feeReceiverTokenAccount) {
         return
       }
-
 
       return web3Tokens.Token.solana.createAssociatedTokenAccountInstruction({
         token,

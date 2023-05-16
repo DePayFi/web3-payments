@@ -240,7 +240,7 @@ const createPaymentReceiverAccount = async({ paymentRoute })=> {
   
   } else {
 
-    const token = paymentRoute.toToken.address === Blockchains.solana.currency.address ? Blockchains.solana.wrapped.address : paymentRoute.toToken.address
+    const token = paymentRoute.toToken.address
 
     const paymentReceiverTokenAccount = await getPaymentReceiverTokenAccount({ paymentRoute })
     if(paymentReceiverTokenAccount) {
@@ -296,13 +296,13 @@ const createFeeReceiverAccount = async({ paymentRoute })=> {
   
   } else {
 
-    const token = paymentRoute.toToken.address === Blockchains.solana.currency.address ? Blockchains.solana.wrapped.address : paymentRoute.toToken.address
+    const token = paymentRoute.toToken.address
 
     const feeReceiverTokenAccount = await getFeeReceiverTokenAccount({ paymentRoute })
+    
     if(feeReceiverTokenAccount) {
       return
     }
-
 
     return Token.solana.createAssociatedTokenAccountInstruction({
       token,
