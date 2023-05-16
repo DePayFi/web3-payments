@@ -202,7 +202,7 @@ describe('routeTwoHopOrcaSwapSolOut', ()=> {
 
   })
 
-  it.only('routes a payment through a twoHopOrcaSwapSolOut + fee', async ()=>{
+  it('routes a payment through a twoHopOrcaSwapSolOut + fee', async ()=>{
 
     let routes = await route({
       accept: [{

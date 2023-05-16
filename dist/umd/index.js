@@ -807,7 +807,7 @@
       api: transactionApi({ paymentRoute }),
       method: transactionMethod({ paymentRoute }),
       params: transactionParams({ paymentRoute, exchangeRoute, event }),
-      value: transactionValue({ paymentRoute, exchangeRoute })
+      value: transactionValue({ paymentRoute })
     };
 
     if(exchangeRoute) {
@@ -946,10 +946,10 @@
     return paymentPlugins
   };
 
-  let transactionValue = ({ paymentRoute, exchangeRoute })=> {
+  let transactionValue = ({ paymentRoute })=> {
     if(paymentRoute.fromToken.address == Blockchains__default["default"][paymentRoute.blockchain].currency.address) {
-      if(exchangeRoute) {
-        return exchangeRoute.amountIn.toString()
+      if(!paymentRoute.directTransfer) {
+        return paymentRoute.fromAmount.toString()
       } else { // direct payment
         return paymentRoute.toAmount.toString()
       }
