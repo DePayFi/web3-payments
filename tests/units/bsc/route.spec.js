@@ -40,6 +40,7 @@ describe('route', ()=> {
   let tokenAmountOutBN
   let fromAddress
   let toAddress
+  let transaction
 
   beforeEach(()=>{
     bnbBalanceBN = ethers.BigNumber.from('18000000000000000000')
@@ -128,12 +129,13 @@ describe('route', ()=> {
     expect(routes[0].toAddress).toEqual(toAddress)
     expect(routes[0].fromBalance).toEqual(BUSDBalanceBN.toString())
     expect(routes[0].exchangeRoutes).toEqual([])
-    expect(routes[0].transaction.blockchain).toEqual(blockchain)
-    expect(routes[0].transaction.to).toEqual(BUSD)
-    expect(routes[0].transaction.api).toEqual(Token[blockchain].DEFAULT)
-    expect(routes[0].transaction.method).toEqual('transfer')
-    expect(routes[0].transaction.params).toEqual([toAddress, tokenAmountOutBN.toString()])
-    expect(routes[0].transaction.value).toEqual(ethers.BigNumber.from('0').toString())
+    transaction = await routes[0].getTransaction()
+    expect(transaction.blockchain).toEqual(blockchain)
+    expect(transaction.to).toEqual(BUSD)
+    expect(transaction.api).toEqual(Token[blockchain].DEFAULT)
+    expect(transaction.method).toEqual('transfer')
+    expect(transaction.params).toEqual([toAddress, tokenAmountOutBN.toString()])
+    expect(transaction.value).toEqual(ethers.BigNumber.from('0').toString())
 
     // BNB/WBNB
     expect(routes[1].blockchain).toEqual(blockchain)
@@ -155,7 +157,8 @@ describe('route', ()=> {
     expect(exchangeTransaction.params.amountOutMin).toEqual(tokenAmountOutBN.toString())
     expect(exchangeTransaction.params.path).toEqual([WBNB, BUSD])
     expect(exchangeTransaction.value).toEqual(WBNBAmountInBN.add(WBNBAmountInSlippageBN).toString())
-    expect(routes[1].transaction.value).toEqual(WBNBAmountInBN.add(WBNBAmountInSlippageBN).toString())
+    transaction = await routes[1].getTransaction()
+    expect(transaction.value).toEqual(WBNBAmountInBN.add(WBNBAmountInSlippageBN).toString())
 
     // CAKE
     expect(routes[2].blockchain).toEqual(blockchain)
@@ -176,7 +179,8 @@ describe('route', ()=> {
     expect(exchangeTransaction.method).toEqual('swapExactTokensForTokens')
     expect(exchangeTransaction.params.amountOutMin).toEqual(tokenAmountOutBN.toString())
     expect(exchangeTransaction.params.path).toEqual([CAKE, WBNB, BUSD])
-    expect(routes[2].transaction.value).toEqual(ethers.BigNumber.from('0').toString())
+    transaction = await routes[2].getTransaction()
+    expect(transaction.value).toEqual(ethers.BigNumber.from('0').toString())
   });
 
   describe('exchange routes without plugins', ()=> {
@@ -355,7 +359,7 @@ describe('route', ()=> {
       })
 
       let wallet = (await getWallets())[0]
-      let sentTransaction = await wallet.sendTransaction(routes[0].transaction)
+      let sentTransaction = await wallet.sendTransaction(await routes[0].getTransaction())
       expect(sentTransaction.from).toEqual(accounts[0])
       expect(routeMock).toHaveBeenCalled()
     })
@@ -394,7 +398,7 @@ describe('route', ()=> {
       })
 
       let wallet = (await getWallets())[0]
-      let sentTransaction = await wallet.sendTransaction(routes[0].transaction)
+      let sentTransaction = await wallet.sendTransaction(await routes[0].getTransaction())
       expect(sentTransaction.from).toEqual(accounts[0])
       expect(routeMock).toHaveBeenCalled()
     })
@@ -440,7 +444,7 @@ describe('route', ()=> {
       })
 
       let wallet = (await getWallets())[0]
-      let sentTransaction = await wallet.sendTransaction(routes[0].transaction)
+      let sentTransaction = await wallet.sendTransaction(await routes[0].getTransaction())
       expect(sentTransaction.from).toEqual(accounts[0])
       expect(routeMock).toHaveBeenCalled()
     })
@@ -481,7 +485,7 @@ describe('route', ()=> {
         })
 
         let wallet = (await getWallets())[0]
-        let sentTransaction = await wallet.sendTransaction(routes[0].transaction)
+        let sentTransaction = await wallet.sendTransaction(await routes[0].getTransaction())
         expect(sentTransaction.from).toEqual(accounts[0])
         expect(transactionMock).toHaveBeenCalled()
       })
@@ -528,7 +532,7 @@ describe('route', ()=> {
         })
 
         let wallet = (await getWallets())[0]
-        let sentTransaction = await wallet.sendTransaction(routes[0].transaction)
+        let sentTransaction = await wallet.sendTransaction(await routes[0].getTransaction())
         expect(sentTransaction.from).toEqual(accounts[0])
         expect(routeMock).toHaveBeenCalled()
       })
@@ -571,6 +575,7 @@ describe('route', ()=> {
     expect(exchangeTransaction.method).toEqual('swapExactTokensForTokens')
     expect(exchangeTransaction.params.amountOutMin).toEqual(tokenAmountOutBN.toString())
     expect(exchangeTransaction.params.path).toEqual([CAKE, WBNB, BUSD])
-    expect(routes[0].transaction.value).toEqual('0')
+    transaction = await routes[0].getTransaction()
+    expect(transaction.value).toEqual('0')
   });
 })

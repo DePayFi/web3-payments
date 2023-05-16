@@ -35,6 +35,7 @@ describe('route', ()=> {
   let tokenAmountOutBN
   let fromAddress
   let toAddress
+  let transaction
 
   beforeEach(()=>{
     bnbBalanceBN = ethers.BigNumber.from('18000000000000000000')
@@ -113,17 +114,20 @@ describe('route', ()=> {
     })
 
     // not swapped, no event
-    expect(routes[0].transaction.method).toEqual('transfer')
+    transaction = await routes[0].getTransaction()
+    expect(transaction.method).toEqual('transfer')
 
     // swapped, event
-    expect(routes[1].transaction.method).toEqual('route')
-    expect(routes[1].transaction.params.plugins).toContain(plugins[blockchain].paymentWithEvent.address)
-    expect(routes[1].transaction.params.plugins).not.toContain(plugins[blockchain].payment.address)
+    transaction = await routes[1].getTransaction()
+    expect(transaction.method).toEqual('route')
+    expect(transaction.params.plugins).toContain(plugins[blockchain].paymentWithEvent.address)
+    expect(transaction.params.plugins).not.toContain(plugins[blockchain].payment.address)
 
     // swapped, event
-    expect(routes[2].transaction.method).toEqual('route')
-    expect(routes[2].transaction.params.plugins).toContain(plugins[blockchain].paymentWithEvent.address)
-    expect(routes[1].transaction.params.plugins).not.toContain(plugins[blockchain].payment.address)
+    transaction = await routes[2].getTransaction()
+    expect(transaction.method).toEqual('route')
+    expect(transaction.params.plugins).toContain(plugins[blockchain].paymentWithEvent.address)
+    expect(transaction.params.plugins).not.toContain(plugins[blockchain].payment.address)
 
   })
 
@@ -135,36 +139,38 @@ describe('route', ()=> {
         toAddress,
         blockchain,
         token: Blockchains[blockchain].currency.address,
-        amount: 0.0001
+        amount: 0.0001,
+        fee: {
+          receiver: '0x4e260bB2b25EC6F3A59B478fCDe5eD5B8D783B02',
+          amount: '1%'
+        }
       }],
       event: 'ifRoutedAndNative',
       from: { [blockchain]: fromAddress },
-      fee: {
-        receiver: '0x4e260bB2b25EC6F3A59B478fCDe5eD5B8D783B02',
-        amount: '1%'
-      }
     })
 
-    expect(routes[0].transaction.params.plugins[0]).toEqual(plugins[blockchain].paymentWithEvent.address)
-    expect(routes[0].transaction.params.plugins[1]).toEqual(plugins[blockchain].paymentFeeWithEvent.address)
+    transaction = await routes[0].getTransaction()
+    expect(transaction.params.plugins[0]).toEqual(plugins[blockchain].paymentWithEvent.address)
+    expect(transaction.params.plugins[1]).toEqual(plugins[blockchain].paymentFeeWithEvent.address)
 
     routes = await route({
       accept: [{
         toAddress,
         blockchain,
         token: Blockchains[blockchain].wrapped.address,
-        amount: 0.0001
+        amount: 0.0001,
+        fee: {
+          receiver: '0x4e260bB2b25EC6F3A59B478fCDe5eD5B8D783B02',
+          amount: '1%'
+        }
       }],
       event: 'ifRoutedAndNative',
       from: { [blockchain]: fromAddress },
-      fee: {
-        receiver: '0x4e260bB2b25EC6F3A59B478fCDe5eD5B8D783B02',
-        amount: '1%'
-      }
     })
 
-    expect(routes[0].transaction.params.plugins[0]).not.toEqual(plugins[blockchain].paymentWithEvent.address)
-    expect(routes[0].transaction.params.plugins[1]).toEqual(plugins[blockchain].payment.address)
-    expect(routes[0].transaction.params.plugins[2]).toEqual(plugins[blockchain].paymentFee.address)
+    transaction = await routes[0].getTransaction()
+    expect(transaction.params.plugins[0]).not.toEqual(plugins[blockchain].paymentWithEvent.address)
+    expect(transaction.params.plugins[1]).toEqual(plugins[blockchain].payment.address)
+    expect(transaction.params.plugins[2]).toEqual(plugins[blockchain].paymentFee.address)
   })
 })

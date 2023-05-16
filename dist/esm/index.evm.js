@@ -25,7 +25,7 @@ const prepareUniswapTransaction = (transaction)=>{
   return transaction
 };
 
-var plugins = {
+var plugins$1 = {
   ethereum: {
     payment: {
       address: '0x99F3F4685a7178F26EB4F4Ca8B75a1724F1577B9'
@@ -94,7 +94,9 @@ var plugins = {
   },
 };
 
-var routers = {
+var plugins = {... plugins$1};
+
+var routers$1 = {
   ethereum: {
     address: '0xae60aC8e69414C2Dc362D0e6a03af643d1D85b92',
     api: [{"inputs":[{"internalType":"address","name":"_configuration","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"ETH","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"configuration","outputs":[{"internalType":"contract DePayRouterV1Configuration","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"pluginAddress","type":"address"}],"name":"isApproved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"uint256[]","name":"amounts","type":"uint256[]"},{"internalType":"address[]","name":"addresses","type":"address[]"},{"internalType":"address[]","name":"plugins","type":"address[]"},{"internalType":"string[]","name":"data","type":"string[]"}],"name":"route","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdraw","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}]
@@ -108,6 +110,11 @@ var routers = {
     api: [{"inputs":[{"internalType":"address","name":"_configuration","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"ETH","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"configuration","outputs":[{"internalType":"contract DePayRouterV1Configuration","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"pluginAddress","type":"address"}],"name":"isApproved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"uint256[]","name":"amounts","type":"uint256[]"},{"internalType":"address[]","name":"addresses","type":"address[]"},{"internalType":"address[]","name":"plugins","type":"address[]"},{"internalType":"string[]","name":"data","type":"string[]"}],"name":"route","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdraw","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}]
   }
 };
+
+let solanaRouters = {};
+
+
+var routers = {... routers$1, ...solanaRouters};
 
 /**
  * Checks if `value` is the
@@ -688,15 +695,15 @@ function throttle(func, wait, options) {
 
 var throttle_1 = throttle;
 
-let getTransaction = async({ paymentRoute, event, fee })=> {
+let getTransaction$1 = async({ paymentRoute, event })=> {
   let exchangeRoute = paymentRoute.exchangeRoutes[0];
 
   let transaction = {
     blockchain: paymentRoute.blockchain,
-    to: transactionAddress({ paymentRoute, fee }),
-    api: transactionApi({ paymentRoute, fee }),
-    method: transactionMethod({ paymentRoute, fee }),
-    params: transactionParams({ paymentRoute, exchangeRoute, event, fee }),
+    to: transactionAddress({ paymentRoute }),
+    api: transactionApi({ paymentRoute }),
+    method: transactionMethod({ paymentRoute }),
+    params: transactionParams({ paymentRoute, exchangeRoute, event }),
     value: transactionValue({ paymentRoute, exchangeRoute })
   };
 
@@ -709,32 +716,32 @@ let getTransaction = async({ paymentRoute, event, fee })=> {
   return transaction
 };
 
-let transactionAddress = ({ paymentRoute, fee })=> {
-  if(paymentRoute.directTransfer && !fee) {
+let transactionAddress = ({ paymentRoute })=> {
+  if(paymentRoute.directTransfer && !paymentRoute.fee) {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return paymentRoute.toAddress
     } else {
       return paymentRoute.toToken.address
     }
   } else {
-    return routers[paymentRoute.blockchain].address
+    return routers$1[paymentRoute.blockchain].address
   }
 };
 
-let transactionApi = ({ paymentRoute, fee })=> {
-  if(paymentRoute.directTransfer && !fee) {
+let transactionApi = ({ paymentRoute })=> {
+  if(paymentRoute.directTransfer && !paymentRoute.fee) {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
     } else {
       return Token[paymentRoute.blockchain].DEFAULT
     }
   } else {
-    return routers[paymentRoute.blockchain].api
+    return routers$1[paymentRoute.blockchain].api
   }
 };
 
-let transactionMethod = ({ paymentRoute, fee })=> {
-  if(paymentRoute.directTransfer && !fee) {
+let transactionMethod = ({ paymentRoute })=> {
+  if(paymentRoute.directTransfer && !paymentRoute.fee) {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
     } else {
@@ -745,8 +752,8 @@ let transactionMethod = ({ paymentRoute, fee })=> {
   }
 };
 
-let transactionParams = ({ paymentRoute, exchangeRoute, event, fee })=> {
-  if(paymentRoute.directTransfer && !fee) {
+let transactionParams = ({ paymentRoute, exchangeRoute, event })=> {
+  if(paymentRoute.directTransfer && !paymentRoute.fee) {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
     } else {
@@ -755,9 +762,9 @@ let transactionParams = ({ paymentRoute, exchangeRoute, event, fee })=> {
   } else {
     return {
       path: transactionPath({ paymentRoute, exchangeRoute }),
-      amounts: transactionAmounts({ paymentRoute, exchangeRoute, fee }),
-      addresses: transactionAddresses({ paymentRoute, fee }),
-      plugins: transactionPlugins({ paymentRoute, exchangeRoute, event, fee }),
+      amounts: getTransactionAmounts({ paymentRoute, exchangeRoute }),
+      addresses: transactionAddresses({ paymentRoute }),
+      plugins: transactionPlugins({ paymentRoute, exchangeRoute, event }),
       data: []
     }
   }
@@ -771,29 +778,23 @@ let transactionPath = ({ paymentRoute, exchangeRoute })=> {
   }
 };
 
-let transactionAmounts = ({ paymentRoute, exchangeRoute, fee })=> {
+let getTransactionAmounts = ({ paymentRoute, exchangeRoute })=> {
   let amounts;
   if(exchangeRoute) {
     if(exchangeRoute && exchangeRoute.exchange.wrapper) {
-      amounts = [
-        exchangeRoute.amountIn.toString(),
-        subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee })
-      ];
+      amounts = [ paymentRoute.fromAmount, paymentRoute.toAmount ];
     } else {
       amounts = [
-        exchangeRoute.amountIn.toString(),
-        subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute, fee }),
+        paymentRoute.fromAmount,
+        paymentRoute.toAmount,
         Math.round(Date.now() / 1000) + 30 * 60, // 30 minutes
       ];
     }
   } else {
-    amounts = [
-      paymentRoute.toAmount, // from
-      subtractFee({ amount: paymentRoute.toAmount, paymentRoute, fee }) // to
-    ];
+    amounts = [ paymentRoute.fromAmount, paymentRoute.toAmount ];
   }
-  if(fee){
-    amounts[4] = transactionFeeAmount({ paymentRoute, fee });
+  if(paymentRoute.fee){
+    amounts[4] = paymentRoute.feeAmount;
   }
   for(var i = 0; i < amounts.length; i++) {
     if(amounts[i] == undefined){ amounts[i] = '0'; }
@@ -801,40 +802,19 @@ let transactionAmounts = ({ paymentRoute, exchangeRoute, fee })=> {
   return amounts
 };
 
-let subtractFee = ({ amount, paymentRoute, fee })=> {
-  if(fee) {
-    let feeAmount = transactionFeeAmount({ paymentRoute, fee });
-    return ethers.BigNumber.from(amount).sub(feeAmount).toString()
-  } else {
-    return amount
-  }
-};
-
-let transactionFeeAmount = ({ paymentRoute, fee })=> {
-  if(typeof fee.amount == 'string' && fee.amount.match('%')) {
-    return ethers.BigNumber.from(paymentRoute.toAmount).mul(parseFloat(fee.amount)*10).div(1000).toString()
-  } else if(typeof fee.amount == 'string') {
-    return fee.amount
-  } else if(typeof fee.amount == 'number') {
-    return ethers.utils.parseUnits(fee.amount.toString(), paymentRoute.toDecimals).toString()
-  } else {
-    throw('Unknown fee amount type!')
-  }
-};
-
-let transactionAddresses = ({ paymentRoute, fee })=> {
-  if(fee) {
-    return [paymentRoute.fromAddress, fee.receiver, paymentRoute.toAddress]
+let transactionAddresses = ({ paymentRoute })=> {
+  if(paymentRoute.fee) {
+    return [paymentRoute.fromAddress, paymentRoute.fee.receiver, paymentRoute.toAddress]
   } else {
     return [paymentRoute.fromAddress, paymentRoute.toAddress]
   }
 };
 
-let transactionPlugins = ({ paymentRoute, exchangeRoute, event, fee })=> {
+let transactionPlugins = ({ paymentRoute, exchangeRoute, event })=> {
   let paymentPlugins = [];
 
   if(exchangeRoute) {
-    paymentRoute.exchangePlugin = plugins[paymentRoute.blockchain][exchangeRoute.exchange.name];
+    paymentRoute.exchangePlugin = plugins$1[paymentRoute.blockchain][exchangeRoute.exchange.name];
     if(paymentRoute.exchangePlugin.wrap && paymentRoute.fromToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       paymentPlugins.push(paymentRoute.exchangePlugin.wrap.address);
     } else if(paymentRoute.exchangePlugin.wrap && paymentRoute.fromToken.address == Blockchains[paymentRoute.blockchain].wrapped.address) {
@@ -845,18 +825,18 @@ let transactionPlugins = ({ paymentRoute, exchangeRoute, event, fee })=> {
   }
 
   if(event == 'ifSwapped' && !paymentRoute.directTransfer) {
-    paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address);
+    paymentPlugins.push(plugins$1[paymentRoute.blockchain].paymentWithEvent.address);
   } else if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
-    paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address);
+    paymentPlugins.push(plugins$1[paymentRoute.blockchain].paymentWithEvent.address);
   } else {
-    paymentPlugins.push(plugins[paymentRoute.blockchain].payment.address);
+    paymentPlugins.push(plugins$1[paymentRoute.blockchain].payment.address);
   }
 
-  if(fee) {
+  if(paymentRoute.fee) {
     if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
-      paymentPlugins.push(plugins[paymentRoute.blockchain].paymentFeeWithEvent.address);
+      paymentPlugins.push(plugins$1[paymentRoute.blockchain].paymentFeeWithEvent.address);
     } else {
-      paymentPlugins.push(plugins[paymentRoute.blockchain].paymentFee.address);
+      paymentPlugins.push(plugins$1[paymentRoute.blockchain].paymentFee.address);
     }
   }
 
@@ -875,29 +855,66 @@ let transactionValue = ({ paymentRoute, exchangeRoute })=> {
   }
 };
 
+let supported = ['ethereum', 'bsc', 'polygon'];
+supported.evm = ['ethereum', 'bsc', 'polygon'];
+supported.solana = [];
+
+let solanaGetTransaction = ()=>{};
+
+const getTransaction = ({ paymentRoute, event, fee })=>{
+  if(supported.evm.includes(paymentRoute.blockchain)) {
+    return getTransaction$1({ paymentRoute, event, fee })
+  } else if(supported.solana.includes(paymentRoute.blockchain)) {
+    return solanaGetTransaction()
+  } else {
+    throw('Blockchain not supported!')
+  }
+};
+
 function _optionalChain(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 
 class PaymentRoute {
-  constructor({ blockchain, fromAddress, fromToken, fromDecimals, fromAmount, fromBalance, toToken, toDecimals, toAmount, toAddress }) {
+  constructor({
+    blockchain,
+    fromAddress,
+    fromToken,
+    fromAmount,
+    fromDecimals,
+    fromBalance,
+    toToken,
+    toAmount,
+    toDecimals,
+    toAddress,
+    fee,
+    feeAmount,
+    exchangeRoutes,
+    approvalRequired,
+    approvalTransaction,
+    directTransfer,
+    event,
+  }) {
     this.blockchain = blockchain;
     this.fromAddress = fromAddress;
     this.fromToken = fromToken;
-    this.fromAmount = _optionalChain([fromAmount, 'optionalAccess', _ => _.toString, 'call', _2 => _2()]);
+    this.fromAmount = _optionalChain([(fromAmount || toAmount), 'optionalAccess', _ => _.toString, 'call', _2 => _2()]);
     this.fromDecimals = fromDecimals;
     this.fromBalance = fromBalance;
     this.toToken = toToken;
     this.toAmount = _optionalChain([toAmount, 'optionalAccess', _3 => _3.toString, 'call', _4 => _4()]);
     this.toDecimals = toDecimals;
     this.toAddress = toAddress;
-    this.exchangeRoutes = [];
-    this.transaction = undefined;
-    this.approvalRequired = undefined;
-    this.approvalTransaction = undefined;
-    this.directTransfer = undefined;
+    this.fee = fee;
+    this.feeAmount = feeAmount;
+    this.exchangeRoutes = exchangeRoutes || [];
+    this.approvalRequired = approvalRequired;
+    this.approvalTransaction = approvalTransaction;
+    this.directTransfer = directTransfer;
+    this.event = event;
+    this.getTransaction = async ()=> await getTransaction({ paymentRoute: this, event });
   }
 }
 
-function convertToRoutes({ assets, accept, from }) {
+function convertToRoutes({ assets, accept, from, event }) {
   return Promise.all(assets.map(async (asset)=>{
     let relevantConfigurations = accept.filter((configuration)=>(configuration.blockchain == asset.blockchain));
     let fromToken = new Token(asset);
@@ -919,6 +936,8 @@ function convertToRoutes({ assets, accept, from }) {
           fromBalance: asset.balance,
           fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
+          fee: configuration.fee,
+          event
         })
       } else if(configuration.fromToken && configuration.fromAmount && fromToken.address.toLowerCase() == configuration.fromToken.toLowerCase()) {
         let blockchain = configuration.blockchain;
@@ -937,29 +956,31 @@ function convertToRoutes({ assets, accept, from }) {
           fromBalance: asset.balance,
           fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
+          fee: configuration.fee,
+          event
         })
       }
     }))
   })).then((routes)=> routes.flat().filter(el => el))
 }
 
-function assetsToRoutes({ assets, blacklist, accept, from, event, fee }) {
+function assetsToRoutes({ assets, blacklist, accept, from, event }) {
   return Promise.resolve(filterBlacklistedAssets({ assets, blacklist }))
-    .then((assets) => convertToRoutes({ assets, accept, from }))
-    .then((routes) => addDirectTransferStatus({ routes, fee }))
+    .then((assets) => convertToRoutes({ assets, accept, from, event }))
+    .then((routes) => addDirectTransferStatus({ routes }))
     .then(addExchangeRoutes)
     .then(filterExchangeRoutesWithoutPlugin)
     .then(filterNotRoutable)
     .then(filterInsufficientBalance)
-    .then((routes)=>addTransactions({ routes, event, fee }))
-    .then(addRouteAmounts)
+    .then((routes)=>addRouteAmounts({ routes }))
     .then(addApproval)
     .then(sortPaymentRoutes)
     .then(filterDuplicateFromTokens)
+    .then((routes)=>routes.map((route)=>new PaymentRoute(route)))
 }
 
-function route({ accept, from, whitelist, blacklist, event, fee, update }) {
-  if(fee && fee.amount && typeof(fee.amount) == 'string' && fee.amount.match(/\.\d\d+\%/)) {
+function route({ accept, from, whitelist, blacklist, event, update }) {
+  if(accept.some((accept)=>{ return accept && accept.fee && typeof(accept.fee.amount) == 'string' && accept.fee.amount.match(/\.\d\d+\%/) })) {
     throw('Only up to 1 decimal is supported for fee amounts!')
   }
 
@@ -980,8 +1001,8 @@ function route({ accept, from, whitelist, blacklist, event, fee, update }) {
 
     let throttledUpdate;
     if(update) {
-      throttledUpdate = throttle_1(async ({ assets, blacklist, accept, from, event, fee })=>{
-        update.callback(await assetsToRoutes({ assets, blacklist, accept, from, event, fee }));
+      throttledUpdate = throttle_1(async ({ assets, blacklist, accept, from, event })=>{
+        update.callback(await assetsToRoutes({ assets, blacklist, accept, from, event }));
       }, update.every);
     }
     
@@ -994,12 +1015,12 @@ function route({ accept, from, whitelist, blacklist, event, fee, update }) {
       drip: (asset)=>{
         if(update) {
           drippedAssets.push(asset);
-          throttledUpdate({ assets: drippedAssets, blacklist, accept, from, event, fee });
+          throttledUpdate({ assets: drippedAssets, blacklist, accept, from, event });
         }
       }
     });
 
-    let allPaymentRoutes = await assetsToRoutes({ assets: allAssets, blacklist, accept, from, event, fee });
+    let allPaymentRoutes = await assetsToRoutes({ assets: allAssets, blacklist, accept, from, event });
     resolveAll(allPaymentRoutes);
   })
 }
@@ -1054,7 +1075,8 @@ let addExchangeRoutes = async (routes) => {
 
 let filterExchangeRoutesWithoutPlugin = (routes) => {
   return routes.filter((route)=>{
-    if(route.exchangeRoutes.length == 0) { return true }
+    if(route.exchangeRoutes.length === 0) { return true }
+    if(route.blockchain === 'solana') { return true }
     return plugins[route.blockchain][route.exchangeRoutes[0].exchange.name] != undefined
   })
 };
@@ -1082,14 +1104,21 @@ let filterInsufficientBalance = async(routes) => {
 
 let addApproval = (routes) => {
   return Promise.all(routes.map(
-    (route) => route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address)
+    (route) => {
+      if(route.blockchain === 'solana') {
+        return Promise.resolve(Blockchains.solana.maxInt)
+      } else {
+        return route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address)
+      }
+    }
   )).then(
     (allowances) => {
-      routes.forEach((route, index) => {
+      routes.map((route, index) => {
         if(
           (
             route.directTransfer ||
-            route.fromToken.address.toLowerCase() == Blockchains[route.blockchain].currency.address.toLowerCase()
+            route.fromToken.address.toLowerCase() == Blockchains[route.blockchain].currency.address.toLowerCase() ||
+            route.blockchain === 'solana'
           )
         ) {
           routes[index].approvalRequired = false;
@@ -1111,30 +1140,86 @@ let addApproval = (routes) => {
   )
 };
 
-let addDirectTransferStatus = ({ routes, fee }) => {
+let addDirectTransferStatus = ({ routes }) => {
   return routes.map((route)=>{
-    route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && fee == undefined;
+    if(supported.evm.includes(route.blockchain)) {
+      route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && route.fee == undefined;
+    } else if (route.blockchain === 'solana') {
+      route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase();
+    }
     return route
   })
 };
 
-let addRouteAmounts = (routes)=> {
-  return routes.map((route)=>{
-    if(route.directTransfer && !route.fee) {
-      if(route.fromToken.address.toLowerCase() == Blockchains[route.blockchain].currency.address.toLowerCase()) {
-        route.fromAmount = route.transaction.value;
-        route.toAmount = route.transaction.value;
-      } else {
-        route.fromAmount = route.transaction.params[1];
-        route.toAmount = route.transaction.params[1];
-      }
+let calculateAmounts = ({ paymentRoute, exchangeRoute })=>{
+  let fromAmount;
+  let toAmount;
+  let feeAmount;
+  if(exchangeRoute) {
+    if(exchangeRoute && exchangeRoute.exchange.wrapper) {
+      fromAmount = exchangeRoute.amountIn.toString();
+      toAmount = subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute });
     } else {
-      route.fromAmount = route.transaction.params.amounts[0];
-      route.toAmount = route.transaction.params.amounts[1];
-      if(route.fee){
-        route.feeAmount = route.transaction.params.amounts[4];
-      }
+      fromAmount = exchangeRoute.amountIn.toString();
+      toAmount = subtractFee({ amount: exchangeRoute.amountOutMin.toString(), paymentRoute });
     }
+  } else {
+    fromAmount = paymentRoute.fromAmount;
+    toAmount = subtractFee({ amount: paymentRoute.fromAmount, paymentRoute });
+  }
+  if(paymentRoute.fee){
+    feeAmount = getFeeAmount({ paymentRoute });
+  }
+  return { fromAmount, toAmount, feeAmount }
+};
+
+let subtractFee = ({ amount, paymentRoute })=> {
+  if(paymentRoute.fee) {
+    let feeAmount = getFeeAmount({ paymentRoute });
+    return ethers.BigNumber.from(amount).sub(feeAmount).toString()
+  } else {
+    return amount
+  }
+};
+
+let getFeeAmount = ({ paymentRoute })=> {
+  if(typeof paymentRoute.fee.amount == 'string' && paymentRoute.fee.amount.match('%')) {
+    return ethers.BigNumber.from(paymentRoute.toAmount).mul(parseFloat(paymentRoute.fee.amount)*10).div(1000).toString()
+  } else if(typeof paymentRoute.fee.amount == 'string') {
+    return paymentRoute.fee.amount
+  } else if(typeof paymentRoute.fee.amount == 'number') {
+    return ethers.utils.parseUnits(paymentRoute.fee.amount.toString(), paymentRoute.toDecimals).toString()
+  } else {
+    throw('Unknown fee amount type!')
+  }
+};
+
+let addRouteAmounts = ({ routes })=> {
+  return routes.map((route)=>{
+
+    if(supported.evm.includes(route.blockchain)) {
+
+      if(route.directTransfer && !route.fee) {
+        route.fromAmount = route.toAmount;
+      } else {
+        let { fromAmount, toAmount, feeAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0] });
+        route.fromAmount = fromAmount;
+        route.toAmount = toAmount;
+        if(route.fee){
+          route.feeAmount = feeAmount;
+        }
+      }
+    } else if (supported.solana.includes(route.blockchain)) {
+
+      let { fromAmount, toAmount, feeAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0] });
+      route.fromAmount = fromAmount;
+      route.toAmount = toAmount;
+      if(route.fee){
+        route.feeAmount = feeAmount;
+      }
+
+    }
+    
     return route
   })
 };
@@ -1155,10 +1240,12 @@ let filterDuplicateFromTokens = (routes) => {
 
 let scoreBlockchainCost = (blockchain) => {
   switch(blockchain) {
+    case 'solana':
+      return 10
     case 'polygon':
-      return 50
+      return 30
     case 'bsc':
-      return 90
+      return 70
     case 'ethereum':
       return 99
     default:
@@ -1208,14 +1295,6 @@ let sortPaymentRoutes = (routes) => {
 
     return equal
   })
-};
-
-let addTransactions = ({ routes, event, fee }) => {
-  return Promise.all(routes.map(async (route)=>{
-    route.transaction = await getTransaction({ paymentRoute: route, event, fee });
-    route.fee = !!fee;
-    return route
-  }))
 };
 
 export { plugins, route, routers };

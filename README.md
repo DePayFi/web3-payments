@@ -45,12 +45,13 @@ This library supports the following blockchains:
 - [Ethereum](https://ethereum.org)
 - [BNB Smart Chain](https://www.binance.org/smartChain)
 - [Polygon](https://polygon.technology)
-- [Fantom](https://fantom.foundation)
-- [Velas](https://velas.com)
+- [Solana](https://fantom.foundation)
 
 ## Platform specific packaging
 
 In case you want to use and package only specific platforms, use the platform-specific package:
+
+### EVM platform specific packaging
 
 ```javascript
 import { route } from '@depay/web3-payments-evm'
@@ -59,13 +60,31 @@ import { route } from '@depay/web3-payments-evm'
 Make sure you install all required dependencies for evm specific packaging too:
 
 ```
-yarn add @depay/web3-assets-evm @depay/web3-constants @depay/web3-exchanges-evm @depay/web3-tokens-evm ethers
+yarn add @depay/web3-blockchains @depay/web3-assets-evm @depay/web3-exchanges-evm @depay/web3-tokens-evm ethers
 ```
 
 or if you use npm
 
 ```
-npm i @depay/web3-assets-evm @depay/web3-constants @depay/web3-exchanges-evm @depay/web3-tokens-evm ethers
+npm i @depay/web3-blockchains @depay/web3-assets-evm @depay/web3-exchanges-evm @depay/web3-tokens-evm ethers
+```
+
+### Solana platform specific packaging
+
+```javascript
+import { route } from '@depay/web3-payments-solana'
+```
+
+Make sure you install all required dependencies for solana specific packaging too:
+
+```
+yarn add @depay/web3-blockchains @depay/web3-assets-solana @depay/web3-exchanges-solana @depay/web3-tokens-solana @depay/solana-web3.js
+```
+
+or if you use npm
+
+```
+npm i @depay/web3-blockchains @depay/web3-assets-solana @depay/web3-exchanges-solana @depay/web3-tokens-solana @depay/solana-web3.js
 ```
 
 ## Functionalities
@@ -223,11 +242,14 @@ Events are not emitted if payment receiver is a smart contract. Make sure your s
 
 ```javascript
 let paymentRoutes = await route({
-  accept: [...],
-  fee: {
-    amount: '3%',
-    receiver: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
-  }
+  
+  accept: [{
+    //...
+    fee: {
+      amount: '3%',
+      receiver: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
+    }
+  }]
 })
 
 // splits 0.3 of the amount paid and sends it to the feeReceiver
@@ -237,22 +259,28 @@ let paymentRoutes = await route({
 
 ```javascript
 let paymentRoutes = await route({
-  accept: [...],
-  fee: {
-    amount: '300000000000000000',
-    receiver: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
-  }
+  
+  accept: [{
+    //...
+    fee: {
+      amount: '300000000000000000',
+      receiver: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
+    }
+  }]
 })
 // splits 0.3 of the amount paid and sends it to the feeReceiver
 ```
 
 ```javascript
 let paymentRoutes = await route({
-  accept: [...],
-  fee: {
-    amount: 0.3,
-    receiver: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
-  }
+  
+  accept: [{
+    //...
+    fee: {
+      amount: 0.3,
+      receiver: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
+    }
+  }]
 })
 // splits 0.3 of the amount paid and sends it to the feeReceiver
 ```
@@ -296,21 +324,23 @@ Payment routes are provided in the following structure:
 ```
 {
   blockchain: String (e.g. ethereum)
-  fromToken: Token (see @depay/web3-tokens)
-  fromBalance: BigNumber (e.g. <BigNumber '10000000000000000000'>)
   fromAddress: String (e.g. '0xd8da6bf26964af9d7eed9e03e53415d37aa96045')
+  fromToken: Token (see @depay/web3-tokens)
   fromAmount: BigNumber (e.g. <BigNumber '31000000000000000000'>)
   fromDecimals: number (e.g. 18)
+  fromBalance: BigNumber (e.g. <BigNumber '10000000000000000000'>)
   toToken: Token (see @depay/web3-tokens)
   toAmount: BigNumber (e.g. <BigNumber '21000000000000000000'>)
-  feeAmount: BigNumber (e.g. <BigNumber '2100000000000000000'>)
   toDecimals: number (e.g. 18)
   toAddress: String (e.g. '0x65aBbdEd9B937E38480A50eca85A8E4D2c8350E4')
+  fee: Object (e.g. undefined or fee object)
+  feeAmount: BigNumber (e.g. <BigNumber '2100000000000000000'>)
   exchangeRoutes: Array (list of exchange routes offering to convert )
-  transaction: Transaction (see @depay/web3-wallets for details)
   approvalRequired: Boolean (e.g. true)
   approvalTransaction: Transaction (to approve the fromToken being used from the payment router to perform the payment)
   directTransfer: Boolean (e.g. true)
+  event: String (e.g. 'ifSwapped')
+  getTransaction: async => Transaction (see @depay/web3-wallets for details)
 }
 ```
 

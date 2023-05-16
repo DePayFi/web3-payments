@@ -40,6 +40,7 @@ describe('route', ()=> {
   let tokenAmountOutBN
   let fromAddress
   let toAddress
+  let transaction
 
   beforeEach(()=>{
     etherBalanceBN = ethers.BigNumber.from('18000000000000000000')
@@ -131,12 +132,13 @@ describe('route', ()=> {
     expect(routes[0].fromBalance).toEqual(DEPAYBalanceBN.toString())
     expect(routes[0].fromAmount).toEqual(tokenAmountOutBN.toString())
     expect(routes[0].exchangeRoutes).toEqual([])
-    expect(routes[0].transaction.blockchain).toEqual(blockchain)
-    expect(routes[0].transaction.to).toEqual(DEPAY)
-    expect(routes[0].transaction.api).toEqual(Token[blockchain].DEFAULT)
-    expect(routes[0].transaction.method).toEqual('transfer')
-    expect(routes[0].transaction.params).toEqual([toAddress, tokenAmountOutBN.toString()])
-    expect(routes[0].transaction.value).toEqual('0')
+    transaction = await routes[0].getTransaction()
+    expect(transaction.blockchain).toEqual(blockchain)
+    expect(transaction.to).toEqual(DEPAY)
+    expect(transaction.api).toEqual(Token[blockchain].DEFAULT)
+    expect(transaction.method).toEqual('transfer')
+    expect(transaction.params).toEqual([toAddress, tokenAmountOutBN.toString()])
+    expect(transaction.value).toEqual('0')
 
     // ETH/WETH
     expect(routes[1].blockchain).toEqual(blockchain)
@@ -159,7 +161,8 @@ describe('route', ()=> {
     expect(exchangeTransaction.params.amountOutMin).toEqual(tokenAmountOutBN.toString())
     expect(exchangeTransaction.params.path).toEqual([WETH, DEPAY])
     expect(exchangeTransaction.value).toEqual(WETHAmountInBN.add(WETHAmountInSlippageBN).toString())
-    expect(routes[1].transaction.value).toEqual(WETHAmountInBN.add(WETHAmountInSlippageBN).toString())
+    transaction = await routes[1].getTransaction()
+    expect(transaction.value).toEqual(WETHAmountInBN.add(WETHAmountInSlippageBN).toString())
 
     // DAI
     expect(routes[2].blockchain).toEqual(blockchain)
@@ -181,7 +184,8 @@ describe('route', ()=> {
     expect(exchangeTransaction.method).toEqual('swapExactTokensForTokens')
     expect(exchangeTransaction.params.amountOutMin).toEqual(tokenAmountOutBN.toString())
     expect(exchangeTransaction.params.path).toEqual([DAI, WETH, DEPAY])
-    expect(routes[2].transaction.value).toEqual('0')
+    transaction = await routes[2].getTransaction()
+    expect(transaction.value).toEqual('0')
   });
 
   describe('exchange routes without plugins', ()=> {
@@ -485,7 +489,7 @@ describe('route', ()=> {
       })
 
       let wallet = (await getWallets())[0]
-      let sentTransaction = await wallet.sendTransaction(routes[0].transaction)
+      let sentTransaction = await wallet.sendTransaction(await routes[0].getTransaction())
       expect(sentTransaction.from).toEqual(accounts[0])
       expect(routeMock).toHaveBeenCalled()
     })
@@ -524,7 +528,7 @@ describe('route', ()=> {
       })
 
       let wallet = (await getWallets())[0]
-      let sentTransaction = await wallet.sendTransaction(routes[0].transaction)
+      let sentTransaction = await wallet.sendTransaction(await routes[0].getTransaction())
       expect(sentTransaction.from).toEqual(accounts[0])
       expect(routeMock).toHaveBeenCalled()
     })
@@ -570,7 +574,7 @@ describe('route', ()=> {
       })
 
       let wallet = (await getWallets())[0]
-      let sentTransaction = await wallet.sendTransaction(routes[0].transaction)
+      let sentTransaction = await wallet.sendTransaction(await routes[0].getTransaction())
       expect(sentTransaction.from).toEqual(accounts[0])
       expect(routeMock).toHaveBeenCalled()
     })
@@ -611,7 +615,7 @@ describe('route', ()=> {
         })
 
         let wallet = (await getWallets())[0]
-        let sentTransaction = await wallet.sendTransaction(routes[0].transaction)
+        let sentTransaction = await wallet.sendTransaction(await routes[0].getTransaction())
         expect(sentTransaction.from).toEqual(accounts[0])
         expect(transactionMock).toHaveBeenCalled()
       })
@@ -658,7 +662,7 @@ describe('route', ()=> {
         })
 
         let wallet = (await getWallets())[0]
-        let sentTransaction = await wallet.sendTransaction(routes[0].transaction)
+        let sentTransaction = await wallet.sendTransaction(await routes[0].getTransaction())
         expect(sentTransaction.from).toEqual(accounts[0])
         expect(routeMock).toHaveBeenCalled()
       })
@@ -702,6 +706,7 @@ describe('route', ()=> {
     expect(exchangeTransaction.method).toEqual('swapExactTokensForTokens')
     expect(exchangeTransaction.params.amountOutMin).toEqual(tokenAmountOutBN.toString())
     expect(exchangeTransaction.params.path).toEqual([DAI, WETH, DEPAY])
-    expect(routes[0].transaction.value).toEqual('0')
+    transaction = await routes[0].getTransaction()
+    expect(transaction.value).toEqual('0')
   });
 })
