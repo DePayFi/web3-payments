@@ -13,13 +13,13 @@ npm install --save @depay/web3-payments
 Make sure you install all required dependencies too:
 
 ```
-yarn add @depay/web3-assets @depay/web3-constants @depay/web3-exchanges @depay/web3-tokens ethers
+yarn add @depay/web3-assets @depay/web3-constants @depay/web3-exchanges @depay/web3-tokens ethers decimal.js
 ```
 
 or if you use npm
 
 ```
-npm i @depay/web3-assets @depay/web3-constants @depay/web3-exchanges @depay/web3-tokens ethers
+npm i @depay/web3-assets @depay/web3-constants @depay/web3-exchanges @depay/web3-tokens ethers decimal.js
 ```
 
 ```javascript
@@ -68,13 +68,13 @@ import { route } from '@depay/web3-payments-evm'
 Make sure you install all required dependencies for evm specific packaging too:
 
 ```
-yarn add @depay/web3-blockchains @depay/web3-assets-evm @depay/web3-exchanges-evm @depay/web3-tokens-evm ethers
+yarn add @depay/web3-blockchains @depay/web3-assets-evm @depay/web3-exchanges-evm @depay/web3-tokens-evm ethers decimal.js
 ```
 
 or if you use npm
 
 ```
-npm i @depay/web3-blockchains @depay/web3-assets-evm @depay/web3-exchanges-evm @depay/web3-tokens-evm ethers
+npm i @depay/web3-blockchains @depay/web3-assets-evm @depay/web3-exchanges-evm @depay/web3-tokens-evm ethers decimal.js
 ```
 
 ### Solana platform specific packaging
