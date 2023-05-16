@@ -26,14 +26,22 @@ npm i @depay/web3-assets @depay/web3-constants @depay/web3-exchanges @depay/web3
 import { route } from '@depay/web3-payments'
 
 let paymentRoutes = await route({
-  accept: [{
-    blockchain: 'ethereum',
-    token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
-    amount: 20,
-    toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
-  }],
+  accept: [
+    {
+      blockchain: 'ethereum',
+      token: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+      amount: 20,
+      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
+    },{
+      blockchain: 'solana',
+      token: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+      amount: 20,
+      toAddress: '3Hrw6AsNyJAp71Nkgo4tzJwvGM47DzqMdAtf8ojptkXk'
+    }
+  ],
   from: {
     ethereum: '0x317D875cA3B9f8d14f960486C0d1D1913be74e90',
+    solana: '2UgCJaHU5y8NC4uWQcZYeV9a5RyYLF7iKYCybCsdFFD1'
   }
 })
 ```
