@@ -1046,16 +1046,6 @@
   };
 
   let addExchangeRoutes = async (routes) => {
-    console.log(JSON.stringify(routes.map((route)=>{
-      return {
-          blockchain: route.blockchain,
-          tokenIn: route.fromToken.address,
-          tokenOut: route.toToken.address,
-          amountOutMin: route.toAmount,
-          fromAddress: route.fromAddress,
-          toAddress: route.toAddress
-        }
-    })));
     return await Promise.all(
       routes.map((route) => {
         if(route.directTransfer) { return [] }
