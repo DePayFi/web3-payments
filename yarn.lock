@@ -1011,20 +1011,20 @@
   resolved "https://registry.yarnpkg.com/@depay/web3-blockchains/-/web3-blockchains-8.0.2.tgz#4feb56bc4cb41d97e2fb1dd8722c9f0c5a820e94"
   integrity sha512-Gi3wA7eMiU3gj0ATLlnxyRr04FhHOjJhG3+27dZU9ifZDgQYfmKcCqFvYHhtqU7wIqmhOsgSkXreL0PhyX75Ug==
 
-"@depay/web3-client-evm@^10.12.1":
-  version "10.12.1"
-  resolved "https://registry.yarnpkg.com/@depay/web3-client-evm/-/web3-client-evm-10.12.1.tgz#de78e1db69db3a80d72f81cdb1eae4857f273c59"
-  integrity sha512-UzQyZKKDVouve2boNwQES0h9FEtl9DoPRZh41jrsEOa/yIMlJNH7VrNG9kW7qUXInjqwqB16N42Q8O+62c4dpg==
+"@depay/web3-client-evm@^10.13.0":
+  version "10.13.0"
+  resolved "https://registry.yarnpkg.com/@depay/web3-client-evm/-/web3-client-evm-10.13.0.tgz#20b8fd93aedf958c0f24f06da73e0e06b90e3e54"
+  integrity sha512-M66kroN/agpKJNzphIAA8P2lRtoc/HdRSt8t221P8IR17yssAbPMszjHErVCkoqVhtdkfH28Mw/Dg2uqQcGudA==
 
-"@depay/web3-client-solana@^10.12.1":
-  version "10.12.1"
-  resolved "https://registry.yarnpkg.com/@depay/web3-client-solana/-/web3-client-solana-10.12.1.tgz#abffacbfeac182422030ac1fcbc795fbc5d75880"
-  integrity sha512-KqGCC2wy7WZ6/40Ao8LtBdJR+W/ReU+Lq5zVnDbWGpNKWHBx/9EBQ21qIjuqlX+sUVHH2oBTlnZUJMOkLzjohA==
+"@depay/web3-client-solana@^10.13.0":
+  version "10.13.0"
+  resolved "https://registry.yarnpkg.com/@depay/web3-client-solana/-/web3-client-solana-10.13.0.tgz#b247197e85685b5e89337002c4bb37307ff9831c"
+  integrity sha512-NrD27lqXWH2jg5D7ArTF9zXQqJWLm0pjYwlLZwuk6Ki6kc8FMAanTsVSxdtq0lhC2d1brRFgtdg7WqA8gZHh9g==
 
-"@depay/web3-client@^10.12.1":
-  version "10.12.1"
-  resolved "https://registry.yarnpkg.com/@depay/web3-client/-/web3-client-10.12.1.tgz#f0af24509c43791222989fd60fd02727773ef29f"
-  integrity sha512-xn1toyCnLpM7Appuh1678UOEWo3UGuenLFJv6VlsKaLRYiyxBfiqWJSIWzxEEipYHG6fqCsM6tQiqQq+GNglxg==
+"@depay/web3-client@^10.13.0":
+  version "10.13.0"
+  resolved "https://registry.yarnpkg.com/@depay/web3-client/-/web3-client-10.13.0.tgz#7115e44ad048ffe7d83e49f641a39cb57bb9bb3f"
+  integrity sha512-c39DmZqtpIe8TAzDNlZIXimp0GCLJlWHuTudAB67PF180NUeGy5RxxV9xYEuuQ2ybh5N9d1b7g+y4mRMEBp8aA==
 
 "@depay/web3-exchanges-evm@^12.2.2":
   version "12.2.2"
