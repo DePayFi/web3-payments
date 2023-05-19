@@ -131,6 +131,7 @@ async function mockPool({
       to: exchange.router.v1.address,
       params: { filters: [
         { dataSize: exchange.router.v1.api.span },
+        { memcmp: { offset: 8, bytes: '2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ' }},
         { memcmp: { offset: 101, bytes: tokenA }},
         { memcmp: { offset: 181, bytes: tokenB }},
       ]},
@@ -146,6 +147,7 @@ async function mockPool({
       to: exchange.router.v1.address,
       params: { filters: [
         { dataSize: exchange.router.v1.api.span },
+        { memcmp: { offset: 8, bytes: '2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ' }},
         { memcmp: { offset: 101, bytes: tokenB }},
         { memcmp: { offset: 181, bytes: tokenA }},
       ]},
@@ -254,6 +256,7 @@ async function mockPools({
         to: exchange.router.v1.address,
         params: { filters: [
           { dataSize: exchange.router.v1.api.span },
+          { memcmp: { offset: 8, bytes: '2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ' }},
           { memcmp: { offset: 101, bytes: tokenA }},
           { memcmp: { offset: 181, bytes: stable }},
         ]},
@@ -269,6 +272,7 @@ async function mockPools({
         to: exchange.router.v1.address,
         params: { filters: [
           { dataSize: exchange.router.v1.api.span },
+          { memcmp: { offset: 8, bytes: '2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ' }},
           { memcmp: { offset: 101, bytes: stable }},
           { memcmp: { offset: 181, bytes: tokenA }},
         ]},
@@ -284,6 +288,7 @@ async function mockPools({
         to: exchange.router.v1.address,
         params: { filters: [
           { dataSize: exchange.router.v1.api.span },
+          { memcmp: { offset: 8, bytes: '2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ' }},
           { memcmp: { offset: 101, bytes: tokenB }},
           { memcmp: { offset: 181, bytes: stable }},
         ]},
@@ -299,6 +304,7 @@ async function mockPools({
         to: exchange.router.v1.address,
         params: { filters: [
           { dataSize: exchange.router.v1.api.span },
+          { memcmp: { offset: 8, bytes: '2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ' }},
           { memcmp: { offset: 101, bytes: stable }},
           { memcmp: { offset: 181, bytes: tokenB }},
         ]},
@@ -315,6 +321,7 @@ async function mockPools({
       to: exchange.router.v1.address,
       params: { filters: [
         { dataSize: exchange.router.v1.api.span },
+        { memcmp: { offset: 8, bytes: '2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ' }},
         { memcmp: { offset: 101, bytes: tokenA }},
         { memcmp: { offset: 181, bytes: tokenB }},
       ]},
@@ -330,6 +337,7 @@ async function mockPools({
       to: exchange.router.v1.address,
       params: { filters: [
         { dataSize: exchange.router.v1.api.span },
+        { memcmp: { offset: 8, bytes: '2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ' }},
         { memcmp: { offset: 101, bytes: tokenB }},
         { memcmp: { offset: 181, bytes: tokenA }},
       ]},
@@ -369,6 +377,7 @@ async function mockPools({
       to: exchange.router.v1.address,
       params: { filters: [
         { dataSize: exchange.router.v1.api.span },
+        { memcmp: { offset: 8, bytes: '2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ' }},
         { memcmp: { offset: 101, bytes: tokenA }},
         { memcmp: { offset: 181, bytes: tokenMiddle }},
       ]},
@@ -384,6 +393,7 @@ async function mockPools({
       to: exchange.router.v1.address,
       params: { filters: [
         { dataSize: exchange.router.v1.api.span },
+        { memcmp: { offset: 8, bytes: '2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ' }},
         { memcmp: { offset: 101, bytes: tokenMiddle }},
         { memcmp: { offset: 181, bytes: tokenA }},
       ]},
@@ -399,6 +409,7 @@ async function mockPools({
       to: exchange.router.v1.address,
       params: { filters: [
         { dataSize: exchange.router.v1.api.span },
+        { memcmp: { offset: 8, bytes: '2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ' }},
         { memcmp: { offset: 101, bytes: tokenA }},
         { memcmp: { offset: 181, bytes: Blockchains.solana.wrapped.address }},
       ]},
@@ -414,6 +425,7 @@ async function mockPools({
       to: exchange.router.v1.address,
       params: { filters: [
         { dataSize: exchange.router.v1.api.span },
+        { memcmp: { offset: 8, bytes: '2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ' }},
         { memcmp: { offset: 101, bytes: Blockchains.solana.wrapped.address }},
         { memcmp: { offset: 181, bytes: tokenA }},
       ]},
@@ -528,6 +540,7 @@ async function mockPools({
       to: exchange.router.v1.address,
       params: { filters: [
         { dataSize: exchange.router.v1.api.span },
+        { memcmp: { offset: 8, bytes: '2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ' }},
         { memcmp: { offset: 101, bytes: tokenB }},
         { memcmp: { offset: 181, bytes: tokenMiddle }},
       ]},
@@ -543,6 +556,7 @@ async function mockPools({
       to: exchange.router.v1.address,
       params: { filters: [
         { dataSize: exchange.router.v1.api.span },
+        { memcmp: { offset: 8, bytes: '2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ' }},
         { memcmp: { offset: 101, bytes: tokenMiddle }},
         { memcmp: { offset: 181, bytes: tokenB }},
       ]},
@@ -558,6 +572,7 @@ async function mockPools({
       to: exchange.router.v1.address,
       params: { filters: [
         { dataSize: exchange.router.v1.api.span },
+        { memcmp: { offset: 8, bytes: '2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ' }},
         { memcmp: { offset: 101, bytes: tokenB }},
         { memcmp: { offset: 181, bytes: Blockchains.solana.wrapped.address }},
       ]},
@@ -573,6 +588,7 @@ async function mockPools({
       to: exchange.router.v1.address,
       params: { filters: [
         { dataSize: exchange.router.v1.api.span },
+        { memcmp: { offset: 8, bytes: '2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ' }},
         { memcmp: { offset: 101, bytes: Blockchains.solana.wrapped.address }},
         { memcmp: { offset: 181, bytes: tokenB }},
       ]},
