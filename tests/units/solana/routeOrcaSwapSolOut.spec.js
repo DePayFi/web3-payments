@@ -88,6 +88,7 @@ describe('routeOrcaSwap', ()=> {
     expect(routes[0].directTransfer).toEqual(false)
 
     let transaction = await routes[0].getTransaction()
+    expect(transaction.deadline > Math.ceil(new Date().getTime()/1000)).toEqual(true)
     expect(transaction.blockchain).toEqual('solana')
     expect(transaction.signers.length).toEqual(1) // signs WSOL temp escrow
     expect(transaction.alts).toEqual(['EYGgx5fYCZtLN2pvnR4Bhn5KpMffKwyHCms4VhjSvF2K'])
@@ -147,6 +148,7 @@ describe('routeOrcaSwap', ()=> {
     expect(routeOrcaSwapPaymentInstructionData.aToB).toEqual(aToB)
     expect(routeOrcaSwapPaymentInstructionData.paymentAmount.toString()).toEqual('100000')
     expect(routeOrcaSwapPaymentInstructionData.feeAmount.toString()).toEqual('0')
+    expect(routeOrcaSwapPaymentInstructionData.deadline !== undefined).toEqual(true)
     expect(transaction.instructions[5].programId.toString()).toEqual(routers.solana.address)
     expect(transaction.instructions[5].keys.length).toEqual(17)
     expect(transaction.instructions[5].keys[0]).toEqual({ pubkey: SystemProgram.programId, isSigner: false, isWritable: false })

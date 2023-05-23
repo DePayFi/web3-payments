@@ -1,4 +1,4 @@
-import { BN, struct, u64, u128, bool } from '@depay/solana-web3.js'
+import { BN, struct, i64, u64, u128, bool } from '@depay/solana-web3.js'
 
 export default {
   solana: {
@@ -31,6 +31,7 @@ export default {
           u64("nonce"),
           u64("paymentAmount"),
           u64("feeAmount"),
+          i64("deadline"),
         ])
       },
       routeToken: {
@@ -40,6 +41,7 @@ export default {
           u64("nonce"),
           u64("paymentAmount"),
           u64("feeAmount"),
+          i64("deadline"),
         ])
       },
       routeOrcaSwap: {
@@ -53,6 +55,7 @@ export default {
           bool("aToB"),
           u64("paymentAmount"),
           u64("feeAmount"),
+          i64("deadline"),
         ])
       },
       routeOrcaSwapSolOut: {
@@ -66,6 +69,7 @@ export default {
           bool("aToB"),
           u64("paymentAmount"),
           u64("feeAmount"),
+          i64("deadline"),
         ])
       },
       routeOrcaTwoHopSwap: {
@@ -81,6 +85,7 @@ export default {
           u128("sqrtPriceLimitTwo"),
           u64("paymentAmount"),
           u64("feeAmount"),
+          i64("deadline"),
         ])
       },
       routeOrcaTwoHopSwapSolOut: {
@@ -96,6 +101,7 @@ export default {
           u128("sqrtPriceLimitTwo"),
           u64("paymentAmount"),
           u64("feeAmount"),
+          i64("deadline"),
         ])
       }
     }

@@ -69,6 +69,7 @@ describe('routeSol', ()=> {
     expect(routes[0].directTransfer).toEqual(true)
 
     let transaction = await routes[0].getTransaction()
+    expect(transaction.deadline > Math.ceil(new Date().getTime()/1000)).toEqual(true)
     expect(transaction.blockchain).toEqual('solana')
     expect(transaction.signers.length).toEqual(0)
     expect(transaction.alts).toEqual(['EYGgx5fYCZtLN2pvnR4Bhn5KpMffKwyHCms4VhjSvF2K'])
@@ -97,6 +98,7 @@ describe('routeSol', ()=> {
     expect(routeSolPaymentInstructionData.nonce.toString()).toEqual('0')
     expect(routeSolPaymentInstructionData.paymentAmount.toString()).toEqual('1000')
     expect(routeSolPaymentInstructionData.feeAmount.toString()).toEqual('0')
+    expect(routeSolPaymentInstructionData.deadline !== undefined).toEqual(true)
     expect(transaction.instructions[2].programId.toString()).toEqual(routers.solana.address)
     expect(transaction.instructions[2].keys.length).toEqual(5)
     expect(transaction.instructions[2].keys[0]).toEqual({ pubkey: SystemProgram.programId, isSigner: false, isWritable: false })

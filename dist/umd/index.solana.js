@@ -643,6 +643,7 @@
             solanaWeb3_js.u64("nonce"),
             solanaWeb3_js.u64("paymentAmount"),
             solanaWeb3_js.u64("feeAmount"),
+            solanaWeb3_js.i64("deadline"),
           ])
         },
         routeToken: {
@@ -652,6 +653,7 @@
             solanaWeb3_js.u64("nonce"),
             solanaWeb3_js.u64("paymentAmount"),
             solanaWeb3_js.u64("feeAmount"),
+            solanaWeb3_js.i64("deadline"),
           ])
         },
         routeOrcaSwap: {
@@ -665,6 +667,7 @@
             solanaWeb3_js.bool("aToB"),
             solanaWeb3_js.u64("paymentAmount"),
             solanaWeb3_js.u64("feeAmount"),
+            solanaWeb3_js.i64("deadline"),
           ])
         },
         routeOrcaSwapSolOut: {
@@ -678,6 +681,7 @@
             solanaWeb3_js.bool("aToB"),
             solanaWeb3_js.u64("paymentAmount"),
             solanaWeb3_js.u64("feeAmount"),
+            solanaWeb3_js.i64("deadline"),
           ])
         },
         routeOrcaTwoHopSwap: {
@@ -693,6 +697,7 @@
             solanaWeb3_js.u128("sqrtPriceLimitTwo"),
             solanaWeb3_js.u64("paymentAmount"),
             solanaWeb3_js.u64("feeAmount"),
+            solanaWeb3_js.i64("deadline"),
           ])
         },
         routeOrcaTwoHopSwapSolOut: {
@@ -708,6 +713,7 @@
             solanaWeb3_js.u128("sqrtPriceLimitTwo"),
             solanaWeb3_js.u64("paymentAmount"),
             solanaWeb3_js.u64("feeAmount"),
+            solanaWeb3_js.i64("deadline"),
           ])
         }
       }
@@ -3721,6 +3727,8 @@
     ...instructions
   };
 
+  let currentDeadline;
+
   const getWSolSenderAccountKeypairIfNeeded = async ({ paymentRoute })=> {
 
     if(
@@ -4193,6 +4201,11 @@
     }
   };
 
+  const getDeadline = ()=>{
+    currentDeadline = Math.ceil(new Date().getTime()/1000)+600; // 10 Minutes (lower causes wallet simulation issues)
+    return currentDeadline
+  };
+
   const routeSol = async({ paymentRoute, paymentsAccountData }) =>{
 
     const paymentReceiverPublicKey = new solanaWeb3_js.PublicKey(paymentRoute.toAddress);
@@ -4211,7 +4224,8 @@
       anchorDiscriminator: routers.solana.api.routeSol.anchorDiscriminator,
       nonce: paymentsAccountData ? paymentsAccountData.nonce : new solanaWeb3_js.BN('0'),
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
-      feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString())
+      feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString()),
+      deadline: new solanaWeb3_js.BN(getDeadline()),
     }, data);
     
     return new solanaWeb3_js.TransactionInstruction({
@@ -4241,7 +4255,8 @@
       anchorDiscriminator: routers.solana.api.routeToken.anchorDiscriminator,
       nonce: paymentsAccountData ? paymentsAccountData.nonce : new solanaWeb3_js.BN('0'),
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
-      feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString())
+      feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString()),
+      deadline: new solanaWeb3_js.BN(getDeadline()),
     }, data);
     
     return new solanaWeb3_js.TransactionInstruction({ 
@@ -4312,7 +4327,8 @@
       amountSpecifiedIsInput: exchangeRouteSwapInstructionData.amountSpecifiedIsInput,
       aToB: exchangeRouteSwapInstructionData.aToB,
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
-      feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString())
+      feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString()),
+      deadline: new solanaWeb3_js.BN(getDeadline()),
     }, data);
     
     return new solanaWeb3_js.TransactionInstruction({ 
@@ -4385,7 +4401,8 @@
       amountSpecifiedIsInput: exchangeRouteSwapInstructionData.amountSpecifiedIsInput,
       aToB: exchangeRouteSwapInstructionData.aToB,
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
-      feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString())
+      feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString()),
+      deadline: new solanaWeb3_js.BN(getDeadline()),
     }, data);
     
     return new solanaWeb3_js.TransactionInstruction({ 
@@ -4477,7 +4494,8 @@
       sqrtPriceLimitOne: exchangeRouteSwapInstructionData.sqrtPriceLimitOne,
       sqrtPriceLimitTwo: exchangeRouteSwapInstructionData.sqrtPriceLimitTwo,
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
-      feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString())
+      feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString()),
+      deadline: new solanaWeb3_js.BN(getDeadline()),
     }, data);
     
     return new solanaWeb3_js.TransactionInstruction({ 
@@ -4570,7 +4588,8 @@
       sqrtPriceLimitOne: exchangeRouteSwapInstructionData.sqrtPriceLimitOne,
       sqrtPriceLimitTwo: exchangeRouteSwapInstructionData.sqrtPriceLimitTwo,
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
-      feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString())
+      feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString()),
+      deadline: new solanaWeb3_js.BN(getDeadline()),
     }, data);
     
     return new solanaWeb3_js.TransactionInstruction({ 
@@ -4637,6 +4656,8 @@
     };
 
     // debug(transaction, paymentRoute)
+
+    transaction.deadline = currentDeadline;
 
     return transaction
   };

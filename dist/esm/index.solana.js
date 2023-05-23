@@ -3,7 +3,7 @@ import { route as route$1 } from '@depay/web3-exchanges-solana';
 import { Token as Token$1 } from '@depay/web3-tokens-solana';
 import Blockchains from '@depay/web3-blockchains';
 import { ethers } from 'ethers';
-import { BN, struct, u64, u128, bool, ACCOUNT_LAYOUT, PublicKey, Connection, u32, publicKey, u8, rustEnum, str, u16, option, vec, Buffer, TransactionInstruction, SystemProgram, Keypair } from '@depay/solana-web3.js';
+import { BN, struct, u64, i64, u128, bool, ACCOUNT_LAYOUT, PublicKey, Connection, u32, publicKey, u8, rustEnum, str, u16, option, vec, Buffer, TransactionInstruction, SystemProgram, Keypair } from '@depay/solana-web3.js';
 
 let evmPlugins = {};
 
@@ -640,6 +640,7 @@ var routers = {
           u64("nonce"),
           u64("paymentAmount"),
           u64("feeAmount"),
+          i64("deadline"),
         ])
       },
       routeToken: {
@@ -649,6 +650,7 @@ var routers = {
           u64("nonce"),
           u64("paymentAmount"),
           u64("feeAmount"),
+          i64("deadline"),
         ])
       },
       routeOrcaSwap: {
@@ -662,6 +664,7 @@ var routers = {
           bool("aToB"),
           u64("paymentAmount"),
           u64("feeAmount"),
+          i64("deadline"),
         ])
       },
       routeOrcaSwapSolOut: {
@@ -675,6 +678,7 @@ var routers = {
           bool("aToB"),
           u64("paymentAmount"),
           u64("feeAmount"),
+          i64("deadline"),
         ])
       },
       routeOrcaTwoHopSwap: {
@@ -690,6 +694,7 @@ var routers = {
           u128("sqrtPriceLimitTwo"),
           u64("paymentAmount"),
           u64("feeAmount"),
+          i64("deadline"),
         ])
       },
       routeOrcaTwoHopSwapSolOut: {
@@ -705,6 +710,7 @@ var routers = {
           u128("sqrtPriceLimitTwo"),
           u64("paymentAmount"),
           u64("feeAmount"),
+          i64("deadline"),
         ])
       }
     }
@@ -3718,6 +3724,8 @@ Token.solana = {
   ...instructions
 };
 
+let currentDeadline;
+
 const getWSolSenderAccountKeypairIfNeeded = async ({ paymentRoute })=> {
 
   if(
@@ -4190,6 +4198,11 @@ const getPaymentMethod = ({ paymentRoute })=>{
   }
 };
 
+const getDeadline = ()=>{
+  currentDeadline = Math.ceil(new Date().getTime()/1000)+600; // 10 Minutes (lower causes wallet simulation issues)
+  return currentDeadline
+};
+
 const routeSol = async({ paymentRoute, paymentsAccountData }) =>{
 
   const paymentReceiverPublicKey = new PublicKey(paymentRoute.toAddress);
@@ -4208,7 +4221,8 @@ const routeSol = async({ paymentRoute, paymentsAccountData }) =>{
     anchorDiscriminator: routers.solana.api.routeSol.anchorDiscriminator,
     nonce: paymentsAccountData ? paymentsAccountData.nonce : new BN('0'),
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
-    feeAmount: new BN((paymentRoute.feeAmount || '0').toString())
+    feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
+    deadline: new BN(getDeadline()),
   }, data);
   
   return new TransactionInstruction({
@@ -4238,7 +4252,8 @@ const routeToken = async({ paymentRoute, paymentsAccountData }) =>{
     anchorDiscriminator: routers.solana.api.routeToken.anchorDiscriminator,
     nonce: paymentsAccountData ? paymentsAccountData.nonce : new BN('0'),
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
-    feeAmount: new BN((paymentRoute.feeAmount || '0').toString())
+    feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
+    deadline: new BN(getDeadline()),
   }, data);
   
   return new TransactionInstruction({ 
@@ -4309,7 +4324,8 @@ const routeOrcaSwap = async({ paymentRoute, paymentsAccountData, wSolSenderAccou
     amountSpecifiedIsInput: exchangeRouteSwapInstructionData.amountSpecifiedIsInput,
     aToB: exchangeRouteSwapInstructionData.aToB,
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
-    feeAmount: new BN((paymentRoute.feeAmount || '0').toString())
+    feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
+    deadline: new BN(getDeadline()),
   }, data);
   
   return new TransactionInstruction({ 
@@ -4382,7 +4398,8 @@ const routeOrcaSwapSolOut = async({ paymentRoute, paymentsAccountData, wSolEscro
     amountSpecifiedIsInput: exchangeRouteSwapInstructionData.amountSpecifiedIsInput,
     aToB: exchangeRouteSwapInstructionData.aToB,
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
-    feeAmount: new BN((paymentRoute.feeAmount || '0').toString())
+    feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
+    deadline: new BN(getDeadline()),
   }, data);
   
   return new TransactionInstruction({ 
@@ -4474,7 +4491,8 @@ const routeOrcaTwoHopSwap = async({ paymentRoute, paymentsAccountData, wSolSende
     sqrtPriceLimitOne: exchangeRouteSwapInstructionData.sqrtPriceLimitOne,
     sqrtPriceLimitTwo: exchangeRouteSwapInstructionData.sqrtPriceLimitTwo,
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
-    feeAmount: new BN((paymentRoute.feeAmount || '0').toString())
+    feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
+    deadline: new BN(getDeadline()),
   }, data);
   
   return new TransactionInstruction({ 
@@ -4567,7 +4585,8 @@ const routeOrcaTwoHopSwapSolOut = async({ paymentRoute, paymentsAccountData, wSo
     sqrtPriceLimitOne: exchangeRouteSwapInstructionData.sqrtPriceLimitOne,
     sqrtPriceLimitTwo: exchangeRouteSwapInstructionData.sqrtPriceLimitTwo,
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
-    feeAmount: new BN((paymentRoute.feeAmount || '0').toString())
+    feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
+    deadline: new BN(getDeadline()),
   }, data);
   
   return new TransactionInstruction({ 
@@ -4634,6 +4653,8 @@ const getTransaction$1 = async({ paymentRoute })=> {
   };
 
   // debug(transaction, paymentRoute)
+
+  transaction.deadline = currentDeadline;
 
   return transaction
 };

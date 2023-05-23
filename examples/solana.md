@@ -162,7 +162,7 @@ let paymentRoutes = await Web3Payments.route({
   accept: [{
     blockchain: 'solana',
     token: Web3Blockchains.solana.wrapped.address,
-    amount: 0.01,
+    amount: 0.001,
     toAddress: '5AcFMJZkXo14r3Hj99iYd1HScPiM4hAcLZf552DfZkxa',
     fee: {
       amount: '1%',
@@ -174,7 +174,7 @@ let paymentRoutes = await Web3Payments.route({
   }
 })
 
-let transaction = await paymentRoutes[7].getTransaction()
+let transaction = await paymentRoutes[8].getTransaction()
 
 console.log('transaction', transaction)
 
@@ -195,7 +195,7 @@ let paymentRoutes = await Web3Payments.route({
   accept: [{
     blockchain: 'solana',
     token: Web3Blockchains.solana.currency.address,
-    amount: 0.01,
+    amount: 0.001,
     toAddress: '5AcFMJZkXo14r3Hj99iYd1HScPiM4hAcLZf552DfZkxa',
     fee: {
       amount: '1%',
@@ -207,9 +207,7 @@ let paymentRoutes = await Web3Payments.route({
   }
 })
 
-let transaction = await paymentRoutes[5].getTransaction()
-
-console.log('transaction', transaction)
+let transaction = await paymentRoutes[8].getTransaction()
 
 let wallet = (await Web3Wallets.getWallets())[0]
 

@@ -100,6 +100,7 @@ describe('routeTwoHopOrcaSwapSolOut', ()=> {
     expect(routes[0].directTransfer).toEqual(false)
 
     let transaction = await routes[0].getTransaction()
+    expect(transaction.deadline > Math.ceil(new Date().getTime()/1000)).toEqual(true)
     expect(transaction.blockchain).toEqual('solana')
     expect(transaction.signers.length).toEqual(1)
     expect(transaction.alts).toEqual(['EYGgx5fYCZtLN2pvnR4Bhn5KpMffKwyHCms4VhjSvF2K'])
@@ -171,6 +172,7 @@ describe('routeTwoHopOrcaSwapSolOut', ()=> {
     expect(routeOrcaTwoHopSwapSolOutPaymentInstructionData.sqrtPriceLimitTwo.toString()).toEqual('79226673515401279992447579055')
     expect(routeOrcaTwoHopSwapSolOutPaymentInstructionData.paymentAmount.toString()).toEqual('100000')
     expect(routeOrcaTwoHopSwapSolOutPaymentInstructionData.feeAmount.toString()).toEqual('0')
+    expect(routeOrcaTwoHopSwapSolOutPaymentInstructionData.deadline !== undefined).toEqual(true)
     expect(transaction.instructions[6].programId.toString()).toEqual(routers.solana.address)
     expect(transaction.instructions[6].keys.length).toEqual(25)
     expect(transaction.instructions[6].keys[0]).toEqual({ pubkey: SystemProgram.programId, isSigner: false, isWritable: false })

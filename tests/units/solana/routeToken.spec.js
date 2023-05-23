@@ -68,6 +68,7 @@ describe('routeToken', ()=> {
     expect(routes[0].directTransfer).toEqual(true)
 
     let transaction = await routes[0].getTransaction()
+    expect(transaction.deadline > Math.ceil(new Date().getTime()/1000)).toEqual(true)
     expect(transaction.blockchain).toEqual('solana')
     expect(transaction.signers.length).toEqual(0)
     expect(transaction.alts).toEqual(['EYGgx5fYCZtLN2pvnR4Bhn5KpMffKwyHCms4VhjSvF2K'])
@@ -98,6 +99,7 @@ describe('routeToken', ()=> {
     expect(routeTokenPaymentInstructionData.nonce.toString()).toEqual('0')
     expect(routeTokenPaymentInstructionData.paymentAmount.toString()).toEqual('1000000')
     expect(routeTokenPaymentInstructionData.feeAmount.toString()).toEqual('0')
+    expect(routeTokenPaymentInstructionData.deadline !== undefined).toEqual(true)
     expect(transaction.instructions[2].programId.toString()).toEqual(routers.solana.address)
     expect(transaction.instructions[2].keys.length).toEqual(6)
     expect(transaction.instructions[2].keys[0]).toEqual({ pubkey: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'), isSigner: false, isWritable: false })
