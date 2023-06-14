@@ -167,7 +167,7 @@ describe('routeTwoHopOrcaSwap', ()=> {
     let routeOrcaTwoHopSwapPaymentInstructionData = routers.solana.api.routeOrcaTwoHopSwap.layout.decode(transaction.instructions[6].data)
     expect(routeOrcaTwoHopSwapPaymentInstructionData.anchorDiscriminator.toString()).toEqual(routers.solana.api.routeOrcaTwoHopSwap.anchorDiscriminator.toString())
     expect(routeOrcaTwoHopSwapPaymentInstructionData.nonce.toString()).toEqual('0')
-    expect(routeOrcaTwoHopSwapPaymentInstructionData.amountIn.toString()).toEqual('64')
+    expect(routeOrcaTwoHopSwapPaymentInstructionData.amountIn.toString()).toEqual('630597')
     expect(routeOrcaTwoHopSwapPaymentInstructionData.amountSpecifiedIsInput).toEqual(true)
     expect(routeOrcaTwoHopSwapPaymentInstructionData.aToBOne).toEqual(false)
     expect(routeOrcaTwoHopSwapPaymentInstructionData.aToBTwo).toEqual(false)
