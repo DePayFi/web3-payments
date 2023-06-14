@@ -173,7 +173,7 @@ describe('routeTwoHopOrcaSwap', ()=> {
     expect(routeOrcaTwoHopSwapPaymentInstructionData.aToBTwo).toEqual(false)
     expect(routeOrcaTwoHopSwapPaymentInstructionData.sqrtPriceLimitOne.toString()).toEqual('79226673515401279992447579055')
     expect(routeOrcaTwoHopSwapPaymentInstructionData.sqrtPriceLimitTwo.toString()).toEqual('79226673515401279992447579055')
-    expect(routeOrcaTwoHopSwapPaymentInstructionData.paymentAmount.toString()).toEqual('100000')
+    expect(routeOrcaTwoHopSwapPaymentInstructionData.paymentAmount.toString()).toEqual('1000000000')
     expect(routeOrcaTwoHopSwapPaymentInstructionData.feeAmount.toString()).toEqual('0')
     expect(transaction.instructions[6].programId.toString()).toEqual(routers.solana.address)
     expect(transaction.instructions[6].keys.length).toEqual(23)
