@@ -115,7 +115,7 @@ describe('routeTwoHopOrcaSwap', ()=> {
 
     // create temp WSOL account
     let createTempWSolEscrowAccountInstructionData = struct([ u32('instruction'), u64('amount') ]).decode(transaction.instructions[1].data)
-    expect(createTempWSolEscrowAccountInstructionData.amount.toString()).toEqual('2039344')
+    expect(createTempWSolEscrowAccountInstructionData.amount.toString()).toEqual('2669877')
     expect(transaction.instructions[1].programId.toString()).toEqual(SystemProgram.programId.toString())
     expect(transaction.instructions[1].keys.length).toEqual(2)
     expect(transaction.instructions[1].keys[0]).toEqual({ pubkey: new PublicKey(fromAddress), isSigner: true, isWritable: true })
