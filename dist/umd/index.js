@@ -1623,7 +1623,7 @@
       } else if(method === 'getTokenAccountBalance') {
         return await provider.getTokenAccountBalance(new solanaWeb3_js.PublicKey(address))
       } else if (method === 'latestBlockNumber') {
-        return await provider.getSlot()  
+        return await provider.getSlot(params ? params : undefined)
       } else if (method === 'balance') {
         return await balance({ address, provider })
       }

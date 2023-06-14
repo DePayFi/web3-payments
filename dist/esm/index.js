@@ -1620,7 +1620,7 @@ const singleRequest = async({ blockchain, address, api, method, params, block, p
     } else if(method === 'getTokenAccountBalance') {
       return await provider.getTokenAccountBalance(new PublicKey(address))
     } else if (method === 'latestBlockNumber') {
-      return await provider.getSlot()  
+      return await provider.getSlot(params ? params : undefined)
     } else if (method === 'balance') {
       return await balance({ address, provider })
     }
