@@ -89,7 +89,7 @@ describe('routeTwoHopOrcaSwap', ()=> {
     expect(routes[0].fromBalance).toEqual('100000000')
     expect(routes[0].toToken.address).toEqual(toToken)
     expect(routes[0].toAmount).toEqual('1000000000')
-    expect(routes[0].toDecimals).toEqual(5)
+    expect(routes[0].toDecimals).toEqual(9)
     expect(routes[0].toAddress).toEqual(toAddress)
     expect(routes[0].fee).toEqual(undefined)
     expect(routes[0].feeAmount).toEqual(undefined)
