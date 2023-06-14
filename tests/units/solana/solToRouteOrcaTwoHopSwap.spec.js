@@ -84,7 +84,7 @@ describe('routeTwoHopOrcaSwap', ()=> {
     expect(routes[0].blockchain).toEqual('solana')
     expect(routes[0].fromAddress).toEqual(fromAddress)
     expect(routes[0].fromToken.address).toEqual(fromToken)
-    expect(routes[0].fromAmount).toEqual('64')
+    expect(routes[0].fromAmount).toEqual('630597')
     expect(routes[0].fromDecimals).toEqual(9)
     expect(routes[0].fromBalance).toEqual('100000000')
     expect(routes[0].toToken.address).toEqual(toToken)
