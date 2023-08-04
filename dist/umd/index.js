@@ -1356,8 +1356,7 @@
   };
 
   const getDeadline = ()=>{
-    currentDeadline = Math.ceil(new Date().getTime()/1000)+600; // 10 Minutes (lower causes wallet simulation issues)
-    return currentDeadline
+    return 0 // testing no deadline
   };
 
   const routeSol = async({ paymentRoute, paymentsAccountData }) =>{
