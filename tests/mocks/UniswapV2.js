@@ -3,7 +3,15 @@ import Exchanges from '@depay/web3-exchanges'
 import { mock } from '@depay/web3-mock'
 
 let mockPair = ({ blockchain, provider, pair, params })=>{
-  const exchange = Exchanges.uniswap_v2[blockchain]
+  let exchange
+  switch (blockchain) {
+    case 'ethereum':
+      exchange = Exchanges.uniswap_v2.ethereum
+    break;
+    case 'bsc':
+      exchange = Exchanges.pancakeswap.bsc
+    break;
+  }
   mock({
     provider: provider,
     blockchain,
@@ -48,7 +56,15 @@ let mockPair = ({ blockchain, provider, pair, params })=>{
 }
 
 let mockAmounts = ({ blockchain, provider, method, params, amounts })=>{
-  const exchange = Exchanges.uniswap_v2[blockchain]
+  let exchange
+  switch (blockchain) {
+    case 'ethereum':
+      exchange = Exchanges.uniswap_v2.ethereum
+    break;
+    case 'bsc':
+      exchange = Exchanges.pancakeswap.bsc
+    break;
+  }
   return mock({
     provider,
     blockchain,

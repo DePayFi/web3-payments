@@ -45876,21 +45876,28 @@
     return new Promise(async (resolveAll, rejectAll)=>{
 
       let priority = [];
+      let blockchains = [];
       if(whitelist) {
         for (const blockchain in whitelist) {
           (whitelist[blockchain] || []).forEach((address)=>{
+            blockchains.push(blockchain);
             priority.push({ blockchain, address });
           });
         }
       } else {
         accept.forEach((accepted)=>{
+          blockchains.push(accepted.blockchain);
           priority.push({ blockchain: accepted.blockchain, address: accepted.token || accepted.toToken });
         });
       }
 
+      [...new Set(blockchains)].forEach((blockchain)=>{
+        priority.push({ blockchain, address: Blockchains__default["default"][blockchain].currency.address });
+      });
+
       const allAssets = await web3AssetsEvm.dripAssets({
         accounts: from,
-        priority: priority,
+        priority,
         only: whitelist,
         exclude: blacklist,
         drip: !drip ? undefined : (asset)=>{
@@ -46113,16 +46120,28 @@
     })
   };
 
-  let scoreBlockchainCost = (blockchain) => {
+  // lower blockchain cost is better
+  let getBlockchainCost = (blockchain) => {
+    // in $USD
     switch(blockchain) {
       case 'solana':
-        return 10
+        return 0.000125
+      case 'gnosis':
+        return 0.009
       case 'polygon':
-        return 30
+        return 0.01
+      case 'fantom':
+        return 0.05
+      case 'avalanche':
+        return 0.10
       case 'bsc':
-        return 70
+        return 0.20
+      case 'arbitrum':
+        return 0.30
+      case 'optimism':
+        return 0.40
       case 'ethereum':
-        return 99
+        return 10.0
       default:
         return 100
     }
@@ -46133,10 +46152,10 @@
     let bWins = 1;
     let equal = 0;
     return routes.sort((a, b) => {
-      if (scoreBlockchainCost(a.fromToken.blockchain) < scoreBlockchainCost(b.fromToken.blockchain)) {
+      if (getBlockchainCost(a.fromToken.blockchain) < getBlockchainCost(b.fromToken.blockchain)) {
         return aWins
       }
-      if (scoreBlockchainCost(b.fromToken.blockchain) < scoreBlockchainCost(a.fromToken.blockchain)) {
+      if (getBlockchainCost(b.fromToken.blockchain) < getBlockchainCost(a.fromToken.blockchain)) {
         return bWins
       }
 
