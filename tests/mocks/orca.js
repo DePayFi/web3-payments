@@ -3,7 +3,7 @@ import { ACCOUNT_LAYOUT, Buffer, PublicKey, BN, struct, bool, i32, u64, u128, i1
 import { find } from '@depay/web3-exchanges'
 import { mock } from '@depay/web3-mock'
 import { request } from '@depay/web3-client'
-import { Token } from '@depay/web3-tokens'
+import Token from '@depay/web3-tokens'
 
 const blockchain = 'solana'
 const exchange = find('solana', 'orca')

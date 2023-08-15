@@ -8,7 +8,7 @@ import { mockPair as mockPancakeSwapPair, mockAmounts as mockPancakeSwapAmounts 
 import { mockPair as mockUniswapPair, mockAmounts as mockUniswapAmounts } from 'tests/mocks/UniswapV2'
 import { resetCache, getProvider } from '@depay/web3-client-evm'
 import { route, plugins, routers } from 'dist/esm/index.evm'
-import { Token } from '@depay/web3-tokens-evm'
+import Token from '@depay/web3-tokens-evm'
 
 describe('route', ()=> {
 

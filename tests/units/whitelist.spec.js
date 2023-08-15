@@ -1,5 +1,4 @@
 import Blockchains from '@depay/web3-blockchains'
-import plugins from 'src/plugins'
 import routers from 'src/routers'
 import { ethers } from 'ethers'
 import { mock, connect, resetMocks, mockJsonRpcProvider } from '@depay/web3-mock'
@@ -8,7 +7,7 @@ import { mockPair as mockPancakeSwapPair, mockAmounts as mockPancakeSwapAmounts 
 import { mockPair as mockUniswapPair, mockAmounts as mockUniswapAmounts } from 'tests/mocks/UniswapV2'
 import { resetCache, getProvider } from '@depay/web3-client'
 import { route } from 'src'
-import { Token } from '@depay/web3-tokens'
+import Token from '@depay/web3-tokens'
 
 describe('route', ()=> {
 

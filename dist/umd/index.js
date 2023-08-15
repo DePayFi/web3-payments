@@ -1966,6 +1966,7 @@
   };
 
   const getExchangeType = ({ exchangeRoute, blockchain })=> {
+    if( typeof exchangeRoute === 'undefined' ) { return 0 }
     if(exchangeRoute.exchange.name === 'uniswap_v3') {
       return 2 // push
     } else if(exchangeRoute.exchange[blockchain].address === Blockchains__default["default"][blockchain].wrapped.address) {
@@ -2021,18 +2022,18 @@
       const deadline = Math.ceil(new Date()/1000)+86400; // 1 day
       const exchangeRoute = paymentRoute.exchangeRoutes[0];
       const exchangeType = getExchangeType({ exchangeRoute, blockchain: paymentRoute.blockchain });
-      const exchangeTransaction = await exchangeRoute.getTransaction({
+      const exchangeTransaction = !exchangeRoute ? undefined : await exchangeRoute.getTransaction({
         account: routers$1[paymentRoute.blockchain].address,
         inputTokenPushed: exchangeType === 2
       });
-      const exchangeCallData = getExchangeCallData({ exchangeTransaction });
+      const exchangeCallData = !exchangeTransaction ? Blockchains__default["default"][paymentRoute.blockchain].zero : getExchangeCallData({ exchangeTransaction });
       return {
         payment: {
           amountIn: paymentRoute.fromAmount,
           paymentAmount: paymentRoute.toAmount,
           feeAmount: paymentRoute.feeAmount || 0,
           tokenInAddress: paymentRoute.fromToken.address,
-          exchangeAddress: exchangeRoute.exchange[paymentRoute.blockchain].router.address,
+          exchangeAddress: !exchangeRoute ? Blockchains__default["default"][paymentRoute.blockchain].zero : exchangeRoute.exchange[paymentRoute.blockchain].router.address,
           tokenOutAddress: paymentRoute.toToken.address,
           paymentReceiverAddress: paymentRoute.toAddress,
           feeReceiverAddress: paymentRoute.fee ? paymentRoute.fee.receiver : Blockchains__default["default"][paymentRoute.blockchain].zero,

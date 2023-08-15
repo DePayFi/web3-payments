@@ -4,7 +4,7 @@ import { ethers } from 'ethers'
 import { getProvider } from '@depay/web3-client'
 import { mock } from '@depay/web3-mock'
 import { routers } from 'src'
-import { Token } from '@depay/web3-tokens'
+import Token from '@depay/web3-tokens'
 
 const blockchain = 'solana'
 

@@ -6,7 +6,7 @@ import { mockPool } from '../../mocks/orca'
 import { resetCache, getProvider } from '@depay/web3-client'
 import { route, routers } from 'src'
 import { struct, u32, u64, PublicKey, SystemProgram } from '@depay/solana-web3.js'
-import { Token } from '@depay/web3-tokens'
+import Token from '@depay/web3-tokens'
 import { 
   mockBasics,
   getPaymentsAccountPublicKey,
