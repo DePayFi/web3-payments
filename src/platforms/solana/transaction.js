@@ -2,7 +2,7 @@ import Blockchains from '@depay/web3-blockchains'
 import routers from './routers'
 import { BN, PublicKey, Buffer, TransactionMessage, VersionedTransaction, TransactionInstruction, SystemProgram, Keypair, struct, u64, u128, bool, publicKey } from '@depay/solana-web3.js'
 import { request, getProvider } from '@depay/web3-client'
-import { Token } from '@depay/web3-tokens'
+import Token from '@depay/web3-tokens'
 
 let currentDeadline
 

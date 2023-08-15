@@ -2,7 +2,7 @@ import Blockchains from '@depay/web3-blockchains';
 import { ethers } from 'ethers';
 import { dripAssets } from '@depay/web3-assets-evm';
 import { route as route$1 } from '@depay/web3-exchanges-evm';
-import { Token as Token$1 } from '@depay/web3-tokens-evm';
+import Token$1 from '@depay/web3-tokens-evm';
 
 var _global$1 = (typeof global !== "undefined" ? global :
   typeof self !== "undefined" ? self :
@@ -8122,6 +8122,451 @@ var require$$1$1 = /*@__PURE__*/getAugmentedNamespace(_polyfillNode_buffer);
 
 var BN$1 = bn$1.exports;
 
+var safeBuffer$1 = {exports: {}};
+
+/*! safe-buffer. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
+
+(function (module, exports) {
+  /* eslint-disable node/no-deprecated-api */
+  var buffer = require$$1$1;
+  var Buffer = buffer.Buffer; // alternative to using Object.keys for old browsers
+
+  function copyProps(src, dst) {
+    for (var key in src) {
+      dst[key] = src[key];
+    }
+  }
+
+  if (Buffer.from && Buffer.alloc && Buffer.allocUnsafe && Buffer.allocUnsafeSlow) {
+    module.exports = buffer;
+  } else {
+    // Copy properties from require('buffer')
+    copyProps(buffer, exports);
+    exports.Buffer = SafeBuffer;
+  }
+
+  function SafeBuffer(arg, encodingOrOffset, length) {
+    return Buffer(arg, encodingOrOffset, length);
+  }
+
+  SafeBuffer.prototype = Object.create(Buffer.prototype); // Copy static methods from Buffer
+
+  copyProps(Buffer, SafeBuffer);
+
+  SafeBuffer.from = function (arg, encodingOrOffset, length) {
+    if (typeof arg === 'number') {
+      throw new TypeError('Argument must not be a number');
+    }
+
+    return Buffer(arg, encodingOrOffset, length);
+  };
+
+  SafeBuffer.alloc = function (size, fill, encoding) {
+    if (typeof size !== 'number') {
+      throw new TypeError('Argument must be a number');
+    }
+
+    var buf = Buffer(size);
+
+    if (fill !== undefined) {
+      if (typeof encoding === 'string') {
+        buf.fill(fill, encoding);
+      } else {
+        buf.fill(fill);
+      }
+    } else {
+      buf.fill(0);
+    }
+
+    return buf;
+  };
+
+  SafeBuffer.allocUnsafe = function (size) {
+    if (typeof size !== 'number') {
+      throw new TypeError('Argument must be a number');
+    }
+
+    return Buffer(size);
+  };
+
+  SafeBuffer.allocUnsafeSlow = function (size) {
+    if (typeof size !== 'number') {
+      throw new TypeError('Argument must be a number');
+    }
+
+    return buffer.SlowBuffer(size);
+  };
+})(safeBuffer$1, safeBuffer$1.exports);
+
+// Copyright (c) 2018 base-x contributors
+// Copyright (c) 2014-2018 The Bitcoin Core developers (base58.cpp)
+// Distributed under the MIT software license, see the accompanying
+// file LICENSE or http://www.opensource.org/licenses/mit-license.php.
+// @ts-ignore
+
+
+var _Buffer$1 = safeBuffer$1.exports.Buffer;
+
+function base$2(ALPHABET) {
+  if (ALPHABET.length >= 255) {
+    throw new TypeError('Alphabet too long');
+  }
+
+  var BASE_MAP = new Uint8Array(256);
+
+  for (var j = 0; j < BASE_MAP.length; j++) {
+    BASE_MAP[j] = 255;
+  }
+
+  for (var i = 0; i < ALPHABET.length; i++) {
+    var x = ALPHABET.charAt(i);
+    var xc = x.charCodeAt(0);
+
+    if (BASE_MAP[xc] !== 255) {
+      throw new TypeError(x + ' is ambiguous');
+    }
+
+    BASE_MAP[xc] = i;
+  }
+
+  var BASE = ALPHABET.length;
+  var LEADER = ALPHABET.charAt(0);
+  var FACTOR = Math.log(BASE) / Math.log(256); // log(BASE) / log(256), rounded up
+
+  var iFACTOR = Math.log(256) / Math.log(BASE); // log(256) / log(BASE), rounded up
+
+  function encode(source) {
+    if (Array.isArray(source) || source instanceof Uint8Array) {
+      source = _Buffer$1.from(source);
+    }
+
+    if (!_Buffer$1.isBuffer(source)) {
+      throw new TypeError('Expected Buffer');
+    }
+
+    if (source.length === 0) {
+      return '';
+    } // Skip & count leading zeroes.
+
+
+    var zeroes = 0;
+    var length = 0;
+    var pbegin = 0;
+    var pend = source.length;
+
+    while (pbegin !== pend && source[pbegin] === 0) {
+      pbegin++;
+      zeroes++;
+    } // Allocate enough space in big-endian base58 representation.
+
+
+    var size = (pend - pbegin) * iFACTOR + 1 >>> 0;
+    var b58 = new Uint8Array(size); // Process the bytes.
+
+    while (pbegin !== pend) {
+      var carry = source[pbegin]; // Apply "b58 = b58 * 256 + ch".
+
+      var i = 0;
+
+      for (var it1 = size - 1; (carry !== 0 || i < length) && it1 !== -1; it1--, i++) {
+        carry += 256 * b58[it1] >>> 0;
+        b58[it1] = carry % BASE >>> 0;
+        carry = carry / BASE >>> 0;
+      }
+
+      if (carry !== 0) {
+        throw new Error('Non-zero carry');
+      }
+
+      length = i;
+      pbegin++;
+    } // Skip leading zeroes in base58 result.
+
+
+    var it2 = size - length;
+
+    while (it2 !== size && b58[it2] === 0) {
+      it2++;
+    } // Translate the result into a string.
+
+
+    var str = LEADER.repeat(zeroes);
+
+    for (; it2 < size; ++it2) {
+      str += ALPHABET.charAt(b58[it2]);
+    }
+
+    return str;
+  }
+
+  function decodeUnsafe(source) {
+    if (typeof source !== 'string') {
+      throw new TypeError('Expected String');
+    }
+
+    if (source.length === 0) {
+      return _Buffer$1.alloc(0);
+    }
+
+    var psz = 0; // Skip and count leading '1's.
+
+    var zeroes = 0;
+    var length = 0;
+
+    while (source[psz] === LEADER) {
+      zeroes++;
+      psz++;
+    } // Allocate enough space in big-endian base256 representation.
+
+
+    var size = (source.length - psz) * FACTOR + 1 >>> 0; // log(58) / log(256), rounded up.
+
+    var b256 = new Uint8Array(size); // Process the characters.
+
+    while (source[psz]) {
+      // Decode character
+      var carry = BASE_MAP[source.charCodeAt(psz)]; // Invalid character
+
+      if (carry === 255) {
+        return;
+      }
+
+      var i = 0;
+
+      for (var it3 = size - 1; (carry !== 0 || i < length) && it3 !== -1; it3--, i++) {
+        carry += BASE * b256[it3] >>> 0;
+        b256[it3] = carry % 256 >>> 0;
+        carry = carry / 256 >>> 0;
+      }
+
+      if (carry !== 0) {
+        throw new Error('Non-zero carry');
+      }
+
+      length = i;
+      psz++;
+    } // Skip leading zeroes in b256.
+
+
+    var it4 = size - length;
+
+    while (it4 !== size && b256[it4] === 0) {
+      it4++;
+    }
+
+    var vch = _Buffer$1.allocUnsafe(zeroes + (size - it4));
+
+    vch.fill(0x00, 0, zeroes);
+    var j = zeroes;
+
+    while (it4 !== size) {
+      vch[j++] = b256[it4++];
+    }
+
+    return vch;
+  }
+
+  function decode(string) {
+    var buffer = decodeUnsafe(string);
+
+    if (buffer) {
+      return buffer;
+    }
+
+    throw new Error('Non-base' + BASE + ' character');
+  }
+
+  return {
+    encode: encode,
+    decodeUnsafe: decodeUnsafe,
+    decode: decode
+  };
+}
+
+var src$2 = base$2;
+
+var basex$2 = src$2;
+var ALPHABET$2 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+var bs58$4 = basex$2(ALPHABET$2);
+var bs58$5 = bs58$4;
+
+var Chi = function Chi(a, b, c) {
+  return a & b ^ ~a & c;
+}; // Majority function, true if any two inpust is true
+
+
+var Maj = function Maj(a, b, c) {
+  return a & b ^ a & c ^ b & c;
+}; // Round constants:
+// first 32 bits of the fractional parts of the cube roots of the first 64 primes 2..311)
+// prettier-ignore
+
+
+var SHA256_K = new Uint32Array([0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2]); // Initial state (first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19):
+// prettier-ignore
+
+var IV = new Uint32Array([0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]); // Temporary buffer, not used to store anything between runs
+// Named this way because it matches specification.
+
+var SHA256_W = new Uint32Array(64);
+
+var SHA256 = /*#__PURE__*/function (_SHA) {
+  _inherits(SHA256, _SHA);
+
+  var _super = _createSuper(SHA256);
+
+  function SHA256() {
+    var _this;
+
+    _classCallCheck(this, SHA256);
+
+    _this = _super.call(this, 64, 32, 8, false); // We cannot use array here since array allows indexing by variable
+    // which means optimizer/compiler cannot use registers.
+
+    _this.A = IV[0] | 0;
+    _this.B = IV[1] | 0;
+    _this.C = IV[2] | 0;
+    _this.D = IV[3] | 0;
+    _this.E = IV[4] | 0;
+    _this.F = IV[5] | 0;
+    _this.G = IV[6] | 0;
+    _this.H = IV[7] | 0;
+    return _this;
+  }
+
+  _createClass(SHA256, [{
+    key: "get",
+    value: function get() {
+      var A = this.A,
+          B = this.B,
+          C = this.C,
+          D = this.D,
+          E = this.E,
+          F = this.F,
+          G = this.G,
+          H = this.H;
+      return [A, B, C, D, E, F, G, H];
+    } // prettier-ignore
+
+  }, {
+    key: "set",
+    value: function set(A, B, C, D, E, F, G, H) {
+      this.A = A | 0;
+      this.B = B | 0;
+      this.C = C | 0;
+      this.D = D | 0;
+      this.E = E | 0;
+      this.F = F | 0;
+      this.G = G | 0;
+      this.H = H | 0;
+    }
+  }, {
+    key: "process",
+    value: function process(view, offset) {
+      // Extend the first 16 words into the remaining 48 words w[16..63] of the message schedule array
+      for (var i = 0; i < 16; i++, offset += 4) SHA256_W[i] = view.getUint32(offset, false);
+
+      for (var _i2 = 16; _i2 < 64; _i2++) {
+        var W15 = SHA256_W[_i2 - 15];
+        var W2 = SHA256_W[_i2 - 2];
+        var s0 = rotr(W15, 7) ^ rotr(W15, 18) ^ W15 >>> 3;
+        var s1 = rotr(W2, 17) ^ rotr(W2, 19) ^ W2 >>> 10;
+        SHA256_W[_i2] = s1 + SHA256_W[_i2 - 7] + s0 + SHA256_W[_i2 - 16] | 0;
+      } // Compression function main loop, 64 rounds
+
+
+      var A = this.A,
+          B = this.B,
+          C = this.C,
+          D = this.D,
+          E = this.E,
+          F = this.F,
+          G = this.G,
+          H = this.H;
+
+      for (var _i4 = 0; _i4 < 64; _i4++) {
+        var sigma1 = rotr(E, 6) ^ rotr(E, 11) ^ rotr(E, 25);
+        var T1 = H + sigma1 + Chi(E, F, G) + SHA256_K[_i4] + SHA256_W[_i4] | 0;
+        var sigma0 = rotr(A, 2) ^ rotr(A, 13) ^ rotr(A, 22);
+        var T2 = sigma0 + Maj(A, B, C) | 0;
+        H = G;
+        G = F;
+        F = E;
+        E = D + T1 | 0;
+        D = C;
+        C = B;
+        B = A;
+        A = T1 + T2 | 0;
+      } // Add the compressed chunk to the current hash value
+
+
+      A = A + this.A | 0;
+      B = B + this.B | 0;
+      C = C + this.C | 0;
+      D = D + this.D | 0;
+      E = E + this.E | 0;
+      F = F + this.F | 0;
+      G = G + this.G | 0;
+      H = H + this.H | 0;
+      this.set(A, B, C, D, E, F, G, H);
+    }
+  }, {
+    key: "roundClean",
+    value: function roundClean() {
+      SHA256_W.fill(0);
+    }
+  }, {
+    key: "destroy",
+    value: function destroy() {
+      this.set(0, 0, 0, 0, 0, 0, 0, 0);
+      this.buffer.fill(0);
+    }
+  }]);
+
+  return SHA256;
+}(SHA2); // Constants from https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf
+
+
+var SHA224 = /*#__PURE__*/function (_SHA2) {
+  _inherits(SHA224, _SHA2);
+
+  var _super2 = _createSuper(SHA224);
+
+  function SHA224() {
+    var _this2;
+
+    _classCallCheck(this, SHA224);
+
+    _this2 = _super2.call(this);
+    _this2.A = 0xc1059ed8 | 0;
+    _this2.B = 0x367cd507 | 0;
+    _this2.C = 0x3070dd17 | 0;
+    _this2.D = 0xf70e5939 | 0;
+    _this2.E = 0xffc00b31 | 0;
+    _this2.F = 0x68581511 | 0;
+    _this2.G = 0x64f98fa7 | 0;
+    _this2.H = 0xbefa4fa4 | 0;
+    _this2.outputLen = 28;
+    return _this2;
+  }
+
+  return _createClass(SHA224);
+}(SHA256);
+/**
+ * SHA2-256 hash function
+ * @param message - data that would be hashed
+ */
+
+
+var sha256 = wrapConstructor(function () {
+  return new SHA256();
+});
+wrapConstructor(function () {
+  return new SHA224();
+});
+
+var lib$1 = {};
+
 var safeBuffer = {exports: {}};
 
 /*! safe-buffer. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
@@ -8387,185 +8832,7 @@ var src$1 = base$1;
 
 var basex$1 = src$1;
 var ALPHABET$1 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-var bs58$2 = basex$1(ALPHABET$1);
-var bs58$3 = bs58$2;
-
-var Chi = function Chi(a, b, c) {
-  return a & b ^ ~a & c;
-}; // Majority function, true if any two inpust is true
-
-
-var Maj = function Maj(a, b, c) {
-  return a & b ^ a & c ^ b & c;
-}; // Round constants:
-// first 32 bits of the fractional parts of the cube roots of the first 64 primes 2..311)
-// prettier-ignore
-
-
-var SHA256_K = new Uint32Array([0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2]); // Initial state (first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19):
-// prettier-ignore
-
-var IV = new Uint32Array([0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]); // Temporary buffer, not used to store anything between runs
-// Named this way because it matches specification.
-
-var SHA256_W = new Uint32Array(64);
-
-var SHA256 = /*#__PURE__*/function (_SHA) {
-  _inherits(SHA256, _SHA);
-
-  var _super = _createSuper(SHA256);
-
-  function SHA256() {
-    var _this;
-
-    _classCallCheck(this, SHA256);
-
-    _this = _super.call(this, 64, 32, 8, false); // We cannot use array here since array allows indexing by variable
-    // which means optimizer/compiler cannot use registers.
-
-    _this.A = IV[0] | 0;
-    _this.B = IV[1] | 0;
-    _this.C = IV[2] | 0;
-    _this.D = IV[3] | 0;
-    _this.E = IV[4] | 0;
-    _this.F = IV[5] | 0;
-    _this.G = IV[6] | 0;
-    _this.H = IV[7] | 0;
-    return _this;
-  }
-
-  _createClass(SHA256, [{
-    key: "get",
-    value: function get() {
-      var A = this.A,
-          B = this.B,
-          C = this.C,
-          D = this.D,
-          E = this.E,
-          F = this.F,
-          G = this.G,
-          H = this.H;
-      return [A, B, C, D, E, F, G, H];
-    } // prettier-ignore
-
-  }, {
-    key: "set",
-    value: function set(A, B, C, D, E, F, G, H) {
-      this.A = A | 0;
-      this.B = B | 0;
-      this.C = C | 0;
-      this.D = D | 0;
-      this.E = E | 0;
-      this.F = F | 0;
-      this.G = G | 0;
-      this.H = H | 0;
-    }
-  }, {
-    key: "process",
-    value: function process(view, offset) {
-      // Extend the first 16 words into the remaining 48 words w[16..63] of the message schedule array
-      for (var i = 0; i < 16; i++, offset += 4) SHA256_W[i] = view.getUint32(offset, false);
-
-      for (var _i2 = 16; _i2 < 64; _i2++) {
-        var W15 = SHA256_W[_i2 - 15];
-        var W2 = SHA256_W[_i2 - 2];
-        var s0 = rotr(W15, 7) ^ rotr(W15, 18) ^ W15 >>> 3;
-        var s1 = rotr(W2, 17) ^ rotr(W2, 19) ^ W2 >>> 10;
-        SHA256_W[_i2] = s1 + SHA256_W[_i2 - 7] + s0 + SHA256_W[_i2 - 16] | 0;
-      } // Compression function main loop, 64 rounds
-
-
-      var A = this.A,
-          B = this.B,
-          C = this.C,
-          D = this.D,
-          E = this.E,
-          F = this.F,
-          G = this.G,
-          H = this.H;
-
-      for (var _i4 = 0; _i4 < 64; _i4++) {
-        var sigma1 = rotr(E, 6) ^ rotr(E, 11) ^ rotr(E, 25);
-        var T1 = H + sigma1 + Chi(E, F, G) + SHA256_K[_i4] + SHA256_W[_i4] | 0;
-        var sigma0 = rotr(A, 2) ^ rotr(A, 13) ^ rotr(A, 22);
-        var T2 = sigma0 + Maj(A, B, C) | 0;
-        H = G;
-        G = F;
-        F = E;
-        E = D + T1 | 0;
-        D = C;
-        C = B;
-        B = A;
-        A = T1 + T2 | 0;
-      } // Add the compressed chunk to the current hash value
-
-
-      A = A + this.A | 0;
-      B = B + this.B | 0;
-      C = C + this.C | 0;
-      D = D + this.D | 0;
-      E = E + this.E | 0;
-      F = F + this.F | 0;
-      G = G + this.G | 0;
-      H = H + this.H | 0;
-      this.set(A, B, C, D, E, F, G, H);
-    }
-  }, {
-    key: "roundClean",
-    value: function roundClean() {
-      SHA256_W.fill(0);
-    }
-  }, {
-    key: "destroy",
-    value: function destroy() {
-      this.set(0, 0, 0, 0, 0, 0, 0, 0);
-      this.buffer.fill(0);
-    }
-  }]);
-
-  return SHA256;
-}(SHA2); // Constants from https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf
-
-
-var SHA224 = /*#__PURE__*/function (_SHA2) {
-  _inherits(SHA224, _SHA2);
-
-  var _super2 = _createSuper(SHA224);
-
-  function SHA224() {
-    var _this2;
-
-    _classCallCheck(this, SHA224);
-
-    _this2 = _super2.call(this);
-    _this2.A = 0xc1059ed8 | 0;
-    _this2.B = 0x367cd507 | 0;
-    _this2.C = 0x3070dd17 | 0;
-    _this2.D = 0xf70e5939 | 0;
-    _this2.E = 0xffc00b31 | 0;
-    _this2.F = 0x68581511 | 0;
-    _this2.G = 0x64f98fa7 | 0;
-    _this2.H = 0xbefa4fa4 | 0;
-    _this2.outputLen = 28;
-    return _this2;
-  }
-
-  return _createClass(SHA224);
-}(SHA256);
-/**
- * SHA2-256 hash function
- * @param message - data that would be hashed
- */
-
-
-var sha256 = wrapConstructor(function () {
-  return new SHA256();
-});
-wrapConstructor(function () {
-  return new SHA224();
-});
-
-var lib$1 = {};
+var bs58$3 = basex$1(ALPHABET$1);
 
 function inRange(a, min, max) {
   return min <= a && a <= max;
@@ -9223,7 +9490,7 @@ var deserializeUnchecked_1 = lib$1.deserializeUnchecked = deserialize_1 = lib$1.
 
 var bn_js_1 = __importDefault(bn$1.exports);
 
-var bs58_1 = __importDefault(bs58$2); // TODO: Make sure this polyfill not included when not required
+var bs58_1 = __importDefault(bs58$3); // TODO: Make sure this polyfill not included when not required
 
 
 var encoding = __importStar(require$$2);
@@ -13310,14 +13577,14 @@ var StructError = /*#__PURE__*/function (_TypeError) {
 
 
 function isIterable(x) {
-  return isObject$1(x) && typeof x[Symbol.iterator] === 'function';
+  return isObject(x) && typeof x[Symbol.iterator] === 'function';
 }
 /**
  * Check if a value is a plain object.
  */
 
 
-function isObject$1(x) {
+function isObject(x) {
   return _typeof$1(x) === 'object' && x != null;
 }
 /**
@@ -13462,7 +13729,7 @@ function run(value, struct) {
           if (coerce) {
             value = struct.coercer(value, ctx);
 
-            if (mask && struct.type !== 'type' && isObject$1(struct.schema) && isObject$1(value) && !Array.isArray(value)) {
+            if (mask && struct.type !== 'type' && isObject(struct.schema) && isObject(value) && !Array.isArray(value)) {
               for (key in value) {
                 if (struct.schema[key] === undefined) {
                   delete value[key];
@@ -13564,7 +13831,7 @@ function run(value, struct) {
               value.set(k, v);
             } else if (value instanceof Set) {
               value.add(v);
-            } else if (isObject$1(value)) {
+            } else if (isObject(value)) {
               value[k] = v;
             }
           }
@@ -14101,7 +14368,7 @@ function record(Key, Value) {
       return _regeneratorRuntime().wrap(function entries$(_context13) {
         while (1) switch (_context13.prev = _context13.next) {
           case 0:
-            if (!isObject$1(value)) {
+            if (!isObject(value)) {
               _context13.next = 11;
               break;
             }
@@ -14134,7 +14401,7 @@ function record(Key, Value) {
       }, entries);
     }),
     validator: function validator(value) {
-      return isObject$1(value) || "Expected an object, but received: " + print(value);
+      return isObject(value) || "Expected an object, but received: " + print(value);
     }
   });
 }
@@ -14211,7 +14478,7 @@ function type(schema) {
       return _regeneratorRuntime().wrap(function entries$(_context16) {
         while (1) switch (_context16.prev = _context16.next) {
           case 0:
-            if (!isObject$1(value)) {
+            if (!isObject(value)) {
               _context16.next = 18;
               break;
             }
@@ -14259,7 +14526,7 @@ function type(schema) {
       }, entries, null, [[2, 12, 15, 18]]);
     }),
     validator: function validator(value) {
-      return isObject$1(value) || "Expected an object, but received: " + print(value);
+      return isObject(value) || "Expected an object, but received: " + print(value);
     }
   });
 }
@@ -18970,7 +19237,7 @@ var PublicKey = /*#__PURE__*/function (_Struct2, _Symbol$toStringTag2) {
     } else {
       if (typeof value === 'string') {
         // assume base 58 encoding by default
-        var decoded = bs58$3.decode(value);
+        var decoded = bs58$5.decode(value);
 
         if (decoded.length != PUBLIC_KEY_LENGTH) {
           throw new Error("Invalid public key input");
@@ -19014,7 +19281,7 @@ var PublicKey = /*#__PURE__*/function (_Struct2, _Symbol$toStringTag2) {
   }, {
     key: "toBase58",
     value: function toBase58() {
-      return bs58$3.encode(this.toBytes());
+      return bs58$5.encode(this.toBytes());
     }
   }, {
     key: "toJSON",
@@ -19899,7 +20166,7 @@ var Message = /*#__PURE__*/function () {
         return {
           programIdIndex: ix.programIdIndex,
           accountKeyIndexes: ix.accounts,
-          data: bs58$3.decode(ix.data)
+          data: bs58$5.decode(ix.data)
         };
       });
     }
@@ -19961,7 +20228,7 @@ var Message = /*#__PURE__*/function () {
       var instructions = this.instructions.map(function (instruction) {
         var accounts = instruction.accounts,
             programIdIndex = instruction.programIdIndex;
-        var data = Array.from(bs58$3.decode(instruction.data));
+        var data = Array.from(bs58$5.decode(instruction.data));
         var keyIndicesCount = [];
         encodeLength(keyIndicesCount, accounts.length);
         var dataCount = [];
@@ -19994,7 +20261,7 @@ var Message = /*#__PURE__*/function () {
         keys: this.accountKeys.map(function (key) {
           return toBuffer(key.toBytes());
         }),
-        recentBlockhash: bs58$3.decode(this.recentBlockhash)
+        recentBlockhash: bs58$5.decode(this.recentBlockhash)
       };
       var signData = Buffer$1.alloc(2048);
       var length = signDataLayout.encode(transaction, signData);
@@ -20020,7 +20287,7 @@ var Message = /*#__PURE__*/function () {
         return {
           programIdIndex: ix.programIdIndex,
           accounts: ix.accountKeyIndexes,
-          data: bs58$3.encode(ix.data)
+          data: bs58$5.encode(ix.data)
         };
       });
       return new Message({
@@ -20067,7 +20334,7 @@ var Message = /*#__PURE__*/function () {
         byteArray = byteArray.slice(_accountCount);
         var dataLength = decodeLength(byteArray);
         var dataSlice = byteArray.slice(0, dataLength);
-        var data = bs58$3.encode(Buffer$1.from(dataSlice));
+        var data = bs58$5.encode(Buffer$1.from(dataSlice));
         byteArray = byteArray.slice(dataLength);
         instructions.push({
           programIdIndex: programIdIndex,
@@ -20082,7 +20349,7 @@ var Message = /*#__PURE__*/function () {
           numReadonlySignedAccounts: numReadonlySignedAccounts,
           numReadonlyUnsignedAccounts: numReadonlyUnsignedAccounts
         },
-        recentBlockhash: bs58$3.encode(Buffer$1.from(recentBlockhash)),
+        recentBlockhash: bs58$5.encode(Buffer$1.from(recentBlockhash)),
         accountKeys: accountKeys,
         instructions: instructions
       };
@@ -20278,7 +20545,7 @@ var MessageV0 = /*#__PURE__*/function () {
         staticAccountKeys: this.staticAccountKeys.map(function (key) {
           return key.toBytes();
         }),
-        recentBlockhash: bs58$3.decode(this.recentBlockhash),
+        recentBlockhash: bs58$5.decode(this.recentBlockhash),
         instructionsLength: new Uint8Array(encodedInstructionsLength),
         serializedInstructions: serializedInstructions,
         addressTableLookupsLength: new Uint8Array(encodedAddressTableLookupsLength),
@@ -20430,7 +20697,7 @@ var MessageV0 = /*#__PURE__*/function () {
         staticAccountKeys.push(new PublicKey(byteArray.splice(0, PUBLIC_KEY_LENGTH)));
       }
 
-      var recentBlockhash = bs58$3.encode(byteArray.splice(0, PUBLIC_KEY_LENGTH));
+      var recentBlockhash = bs58$5.encode(byteArray.splice(0, PUBLIC_KEY_LENGTH));
       var instructionCount = decodeLength(byteArray);
       var compiledInstructions = [];
 
@@ -20902,7 +21169,7 @@ var Transaction = /*#__PURE__*/function () {
           accounts: instruction.keys.map(function (meta) {
             return accountKeys.indexOf(meta.pubkey.toString());
           }),
-          data: bs58$3.encode(data)
+          data: bs58$5.encode(data)
         };
       });
       compiledInstructions.forEach(function (instruction) {
@@ -21315,7 +21582,7 @@ var Transaction = /*#__PURE__*/function () {
         var _signature2 = byteArray.slice(0, SIGNATURE_LENGTH_IN_BYTES);
 
         byteArray = byteArray.slice(SIGNATURE_LENGTH_IN_BYTES);
-        signatures.push(bs58$3.encode(Buffer$1.from(_signature2)));
+        signatures.push(bs58$5.encode(Buffer$1.from(_signature2)));
       }
 
       return Transaction.populate(Message.from(byteArray), signatures);
@@ -21337,7 +21604,7 @@ var Transaction = /*#__PURE__*/function () {
 
       signatures.forEach(function (signature, index) {
         var sigPubkeyPair = {
-          signature: signature == bs58$3.encode(DEFAULT_SIGNATURE) ? null : bs58$3.decode(signature),
+          signature: signature == bs58$5.encode(DEFAULT_SIGNATURE) ? null : bs58$5.decode(signature),
           publicKey: message.accountKeys[index]
         };
         transaction.signatures.push(sigPubkeyPair);
@@ -21356,7 +21623,7 @@ var Transaction = /*#__PURE__*/function () {
         transaction.instructions.push(new TransactionInstruction({
           keys: keys,
           programId: message.accountKeys[instruction.programIdIndex],
-          data: bs58$3.decode(instruction.data)
+          data: bs58$5.decode(instruction.data)
         }));
       });
       transaction._message = message;
@@ -23513,7 +23780,7 @@ function versionedMessageFromResponse(version, response) {
         return {
           programIdIndex: ix.programIdIndex,
           accountKeyIndexes: ix.accounts,
-          data: bs58$3.decode(ix.data)
+          data: bs58$5.decode(ix.data)
         };
       }),
       addressTableLookups: response.addressTableLookups
@@ -25799,7 +26066,7 @@ var Connection = /*#__PURE__*/function () {
 
             case 8:
               _context31.prev = 8;
-              decodedSignature = bs58$3.decode(rawSignature);
+              decodedSignature = bs58$5.decode(rawSignature);
               _context31.next = 15;
               break;
 
@@ -34505,14 +34772,14 @@ var src = base;
 
 var basex = src;
 var ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-var bs58$1 = basex(ALPHABET);
+var bs58$2 = basex(ALPHABET);
 
 Object.defineProperty(cjs$1, '__esModule', {
   value: true
 });
 var web3_js = require$$1;
 var mobileWalletAdapterProtocol = cjs;
-var bs58 = bs58$1;
+var bs58$1 = bs58$2;
 
 function _interopDefaultLegacy(e) {
   return e && _typeof$1(e) === 'object' && 'default' in e ? e : {
@@ -34520,7 +34787,7 @@ function _interopDefaultLegacy(e) {
   };
 }
 
-var bs58__default = /*#__PURE__*/_interopDefaultLegacy(bs58);
+var bs58__default = /*#__PURE__*/_interopDefaultLegacy(bs58$1);
 /******************************************************************************
 Copyright (c) Microsoft Corporation.
 
@@ -42674,8 +42941,8 @@ var Solana = {
   setProvider: setProvider$1,
 };
 
-let supported$2 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'velas'];
-supported$2.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'velas'];
+let supported$2 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism'];
+supported$2.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism'];
 supported$2.solana = ['solana'];
 
 function _optionalChain$1$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
@@ -42810,9 +43077,17 @@ let paramsToContractArgs = ({ contract, method, params }) => {
 };
 
 const contractCall = ({ address, api, method, params, provider, block }) => {
-  let contract = new ethers.Contract(address, api, provider);
-  let args = paramsToContractArgs({ contract, method, params });
-  return contract[method](...args, { blockTag: block })
+  const contract = new ethers.Contract(address, api, provider);
+  const args = paramsToContractArgs({ contract, method, params });
+  const fragment = contract.interface.fragments.find((fragment)=>fragment.name === method);
+  if(contract[method] === undefined) {
+    method = `${method}(${fragment.inputs.map((input)=>input.type).join(',')})`;
+  }
+  if(fragment && fragment.stateMutability === 'nonpayable') {
+    return contract.callStatic[method](...args, { blockTag: block })
+  } else {
+    return contract[method](...args, { blockTag: block })
+  }
 };
 
 const balance$1 = ({ address, provider }) => {
@@ -42842,17 +43117,25 @@ var requestEVM = async ({ blockchain, address, api, method, params, block, timeo
 
   if(strategy === 'fastest') {
 
-    return Promise.race((await EVM.getProviders(blockchain)).map((provider)=>{
-
-      const request = singleRequest$1({ blockchain, address, api, method, params, block, provider });
+    const providers = await EVM.getProviders(blockchain);
     
-      if(timeout) {
-        const timeoutPromise = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout));
-        return Promise.race([request, timeoutPromise])
-      } else {
-        return request
-      }
-    }))
+    let allRequestsFailed = [];
+
+    const allRequestsInParallel = providers.map((provider)=>{
+      return new Promise((resolve)=>{
+        allRequestsFailed.push(
+          singleRequest$1({ blockchain, address, api, method, params, block, provider }).then(resolve)
+        );
+      })
+    });
+    
+    const timeoutPromise = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout || 10000));
+
+    allRequestsFailed = Promise.all(allRequestsFailed.map((request)=>{
+      return new Promise((resolve)=>{ request.catch(resolve); })
+    })).then(()=>{ return });
+
+    return Promise.race([...allRequestsInParallel, timeoutPromise, allRequestsFailed])
 
   } else { // failover
 
@@ -42927,17 +43210,24 @@ var requestSolana = async ({ blockchain, address, api, method, params, block, ti
 
   if(strategy === 'fastest') {
 
-    return Promise.race(providers.map((provider)=>{
+    let allRequestsFailed = [];
 
-      const succeedingRequest = new Promise((resolve)=>{
-        singleRequest({ blockchain, address, api, method, params, block, provider }).then(resolve);
-      }); // failing requests are ignored during race/fastest
+    const allRequestsInParallel = providers.map((provider)=>{
+      return new Promise((resolve)=>{
+        allRequestsFailed.push(
+          singleRequest({ blockchain, address, api, method, params, block, provider }).then(resolve)
+        );
+      })
+    });
     
-      const timeoutPromise = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout || 10000));
-        
-      return Promise.race([succeedingRequest, timeoutPromise])
-    }))
-    
+    const timeoutPromise = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout || 10000));
+
+    allRequestsFailed = Promise.all(allRequestsFailed.map((request)=>{
+      return new Promise((resolve)=>{ request.catch(resolve); })
+    })).then(()=>{ return });
+
+    return Promise.race([...allRequestsInParallel, timeoutPromise, allRequestsFailed])
+
   } else { // failover
 
     const provider = await Solana.getProvider(blockchain);
@@ -43044,402 +43334,17 @@ var balanceOnEVM = async ({ blockchain, address, account, api, id })=>{
   }
 };
 
-var BEP20 = [
-  {
-    "inputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "Approval",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "previousOwner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "OwnershipTransferred",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "Transfer",
-    "type": "event"
-  },
-  {
-    "constant": true,
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      }
-    ],
-    "name": "allowance",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "approve",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "balanceOf",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [],
-    "name": "decimals",
-    "outputs": [
-      {
-        "internalType": "uint8",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "subtractedValue",
-        "type": "uint256"
-      }
-    ],
-    "name": "decreaseAllowance",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [],
-    "name": "getOwner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "addedValue",
-        "type": "uint256"
-      }
-    ],
-    "name": "increaseAllowance",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "mint",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [],
-    "name": "name",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [],
-    "name": "renounceOwnership",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [],
-    "name": "symbol",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [],
-    "name": "totalSupply",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "recipient",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "transfer",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "recipient",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "transferFrom",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "transferOwnership",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  }
-];
+var decimalsOnEVM = ({ blockchain, address, api })=>{
+  return request({
+    blockchain,
+    address,
+    api,
+    method: 'decimals',
+    cache: 86400000, // 1 day
+  })
+};
 
-var bsc1155 = [
+var ERC1155 = [
   {
     "anonymous": false,
     "inputs": [
@@ -43753,16 +43658,6 @@ var bsc1155 = [
     "type": "function"
   }
 ];
-
-var decimalsOnEVM = ({ blockchain, address, api })=>{
-  return request({
-    blockchain,
-    address,
-    api,
-    method: 'decimals',
-    cache: 86400000, // 1 day
-  })
-};
 
 var ERC20 = [
   {
@@ -43882,870 +43777,284 @@ var ERC20 = [
   },
 ];
 
-var ERC20onPolygon = [
+var WETH = [
   {
-    constant: true,
-    inputs: [],
-    name: 'name',
-    outputs: [{ name: '', type: 'string' }],
-    payable: false,
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    constant: false,
-    inputs: [
-      { name: '_spender', type: 'address' },
-      { name: '_value', type: 'uint256' },
+    "constant": true,
+    "inputs": [],
+    "name": "name",
+    "outputs": [
+      {
+        "name": "",
+        "type": "string"
+      }
     ],
-    name: 'approve',
-    outputs: [{ name: '', type: 'bool' }],
-    payable: false,
-    stateMutability: 'nonpayable',
-    type: 'function',
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    constant: true,
-    inputs: [],
-    name: 'totalSupply',
-    outputs: [{ name: '', type: 'uint256' }],
-    payable: false,
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    constant: false,
-    inputs: [
-      { name: '_from', type: 'address' },
-      { name: '_to', type: 'address' },
-      { name: '_value', type: 'uint256' },
-    ],
-    name: 'transferFrom',
-    outputs: [{ name: '', type: 'bool' }],
-    payable: false,
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: 'decimals',
-    outputs: [{ name: '', type: 'uint8' }],
-    payable: false,
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    constant: true,
-    inputs: [{ name: '_owner', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: 'balance', type: 'uint256' }],
-    payable: false,
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: 'symbol',
-    outputs: [{ name: '', type: 'string' }],
-    payable: false,
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    constant: false,
-    inputs: [
-      { name: '_to', type: 'address' },
-      { name: '_value', type: 'uint256' },
-    ],
-    name: 'transfer',
-    outputs: [{ name: '', type: 'bool' }],
-    payable: false,
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    constant: true,
-    inputs: [
-      { name: '_owner', type: 'address' },
-      { name: '_spender', type: 'address' },
-    ],
-    name: 'allowance',
-    outputs: [{ name: '', type: 'uint256' }],
-    payable: false,
-    stateMutability: 'view',
-    type: 'function',
-  },
-  { payable: true, stateMutability: 'payable', type: 'fallback' },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'owner', type: 'address' },
-      { indexed: true, name: 'spender', type: 'address' },
-      { indexed: false, name: 'value', type: 'uint256' },
-    ],
-    name: 'Approval',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'from', type: 'address' },
-      { indexed: true, name: 'to', type: 'address' },
-      { indexed: false, name: 'value', type: 'uint256' },
-    ],
-    name: 'Transfer',
-    type: 'event'
-  },
-];
-
-var ethereum1155 = [
-  {
-    "anonymous": false,
+    "constant": false,
     "inputs": [
       {
-        "indexed": true,
-        "internalType": "address",
-        "name": "account",
+        "name": "guy",
         "type": "address"
       },
       {
-        "indexed": true,
-        "internalType": "address",
-        "name": "operator",
-        "type": "address"
-      },
+        "name": "wad",
+        "type": "uint256"
+      }
+    ],
+    "name": "approve",
+    "outputs": [
       {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "approved",
+        "name": "",
         "type": "bool"
       }
     ],
-    "name": "ApprovalForAll",
-    "type": "event"
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
-    "anonymous": false,
-    "inputs": [
+    "constant": true,
+    "inputs": [],
+    "name": "totalSupply",
+    "outputs": [
       {
-        "indexed": true,
-        "internalType": "address",
-        "name": "operator",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256[]",
-        "name": "ids",
-        "type": "uint256[]"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256[]",
-        "name": "values",
-        "type": "uint256[]"
-      }
-    ],
-    "name": "TransferBatch",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "operator",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "id",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "value",
+        "name": "",
         "type": "uint256"
       }
     ],
-    "name": "TransferSingle",
-    "type": "event"
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    "anonymous": false,
+    "constant": false,
     "inputs": [
       {
-        "indexed": false,
-        "internalType": "string",
-        "name": "value",
-        "type": "string"
-      },
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "id",
-        "type": "uint256"
-      }
-    ],
-    "name": "URI",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
+        "name": "src",
         "type": "address"
       },
       {
-        "internalType": "uint256",
-        "name": "id",
+        "name": "dst",
+        "type": "address"
+      },
+      {
+        "name": "wad",
         "type": "uint256"
+      }
+    ],
+    "name": "transferFrom",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "wad",
+        "type": "uint256"
+      }
+    ],
+    "name": "withdraw",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "decimals",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "",
+        "type": "address"
       }
     ],
     "name": "balanceOf",
     "outputs": [
       {
-        "internalType": "uint256",
         "name": "",
         "type": "uint256"
       }
     ],
+    "payable": false,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address[]",
-        "name": "accounts",
-        "type": "address[]"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "ids",
-        "type": "uint256[]"
-      }
-    ],
-    "name": "balanceOfBatch",
+    "constant": true,
+    "inputs": [],
+    "name": "symbol",
     "outputs": [
       {
-        "internalType": "uint256[]",
-        "name": "",
-        "type": "uint256[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "operator",
-        "type": "address"
-      }
-    ],
-    "name": "isApprovedForAll",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "ids",
-        "type": "uint256[]"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "amounts",
-        "type": "uint256[]"
-      },
-      {
-        "internalType": "bytes",
-        "name": "data",
-        "type": "bytes"
-      }
-    ],
-    "name": "safeBatchTransferFrom",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "id",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes",
-        "name": "data",
-        "type": "bytes"
-      }
-    ],
-    "name": "safeTransferFrom",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "operator",
-        "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "approved",
-        "type": "bool"
-      }
-    ],
-    "name": "setApprovalForAll",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "interfaceId",
-        "type": "bytes4"
-      }
-    ],
-    "name": "supportsInterface",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "id",
-        "type": "uint256"
-      }
-    ],
-    "name": "uri",
-    "outputs": [
-      {
-        "internalType": "string",
         "name": "",
         "type": "string"
       }
     ],
+    "payable": false,
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "dst",
+        "type": "address"
+      },
+      {
+        "name": "wad",
+        "type": "uint256"
+      }
+    ],
+    "name": "transfer",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [],
+    "name": "deposit",
+    "outputs": [],
+    "payable": true,
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "",
+        "type": "address"
+      },
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "allowance",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "payable": true,
+    "stateMutability": "payable",
+    "type": "fallback"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "src",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "guy",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "wad",
+        "type": "uint256"
+      }
+    ],
+    "name": "Approval",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "src",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "dst",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "wad",
+        "type": "uint256"
+      }
+    ],
+    "name": "Transfer",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "dst",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "wad",
+        "type": "uint256"
+      }
+    ],
+    "name": "Deposit",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "src",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "wad",
+        "type": "uint256"
+      }
+    ],
+    "name": "Withdrawal",
+    "type": "event"
   }
-];
-
-var ftm1155 = [
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "operator",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "approved",
-        "type": "bool"
-      }
-    ],
-    "name": "ApprovalForAll",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "operator",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256[]",
-        "name": "ids",
-        "type": "uint256[]"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256[]",
-        "name": "values",
-        "type": "uint256[]"
-      }
-    ],
-    "name": "TransferBatch",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "operator",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "id",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "TransferSingle",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "value",
-        "type": "string"
-      },
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "id",
-        "type": "uint256"
-      }
-    ],
-    "name": "URI",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "id",
-        "type": "uint256"
-      }
-    ],
-    "name": "balanceOf",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address[]",
-        "name": "accounts",
-        "type": "address[]"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "ids",
-        "type": "uint256[]"
-      }
-    ],
-    "name": "balanceOfBatch",
-    "outputs": [
-      {
-        "internalType": "uint256[]",
-        "name": "",
-        "type": "uint256[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "operator",
-        "type": "address"
-      }
-    ],
-    "name": "isApprovedForAll",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "ids",
-        "type": "uint256[]"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "amounts",
-        "type": "uint256[]"
-      },
-      {
-        "internalType": "bytes",
-        "name": "data",
-        "type": "bytes"
-      }
-    ],
-    "name": "safeBatchTransferFrom",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "id",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes",
-        "name": "data",
-        "type": "bytes"
-      }
-    ],
-    "name": "safeTransferFrom",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "operator",
-        "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "approved",
-        "type": "bool"
-      }
-    ],
-    "name": "setApprovalForAll",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "interfaceId",
-        "type": "bytes4"
-      }
-    ],
-    "name": "supportsInterface",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "id",
-        "type": "uint256"
-      }
-    ],
-    "name": "uri",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  }
-];
-
-var FTM20 = [
-  {
-    constant: true,
-    inputs: [],
-    name: 'name',
-    outputs: [{ name: '', type: 'string' }],
-    payable: false,
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    constant: false,
-    inputs: [
-      { name: '_spender', type: 'address' },
-      { name: '_value', type: 'uint256' },
-    ],
-    name: 'approve',
-    outputs: [{ name: '', type: 'bool' }],
-    payable: false,
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: 'totalSupply',
-    outputs: [{ name: '', type: 'uint256' }],
-    payable: false,
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    constant: false,
-    inputs: [
-      { name: '_from', type: 'address' },
-      { name: '_to', type: 'address' },
-      { name: '_value', type: 'uint256' },
-    ],
-    name: 'transferFrom',
-    outputs: [{ name: '', type: 'bool' }],
-    payable: false,
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: 'decimals',
-    outputs: [{ name: '', type: 'uint8' }],
-    payable: false,
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    constant: true,
-    inputs: [{ name: '_owner', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: 'balance', type: 'uint256' }],
-    payable: false,
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: 'symbol',
-    outputs: [{ name: '', type: 'string' }],
-    payable: false,
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    constant: false,
-    inputs: [
-      { name: '_to', type: 'address' },
-      { name: '_value', type: 'uint256' },
-    ],
-    name: 'transfer',
-    outputs: [{ name: '', type: 'bool' }],
-    payable: false,
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    constant: true,
-    inputs: [
-      { name: '_owner', type: 'address' },
-      { name: '_spender', type: 'address' },
-    ],
-    name: 'allowance',
-    outputs: [{ name: '', type: 'uint256' }],
-    payable: false,
-    stateMutability: 'view',
-    type: 'function',
-  },
-  { payable: true, stateMutability: 'payable', type: 'fallback' },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'owner', type: 'address' },
-      { indexed: true, name: 'spender', type: 'address' },
-      { indexed: false, name: 'value', type: 'uint256' },
-    ],
-    name: 'Approval',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'from', type: 'address' },
-      { indexed: true, name: 'to', type: 'address' },
-      { indexed: false, name: 'value', type: 'uint256' },
-    ],
-    name: 'Transfer',
-    type: 'event',
-  },
 ];
 
 const uriAPI = [{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"uri","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"}];
@@ -44808,8 +44117,6 @@ var symbolOnEVM = ({ blockchain, address, api })=>{
     }
   )
 };
-
-var VRC20 = [{"name": "Approval", "type": "event", "inputs": [{"name": "src", "type": "address", "indexed": true, "internalType": "address"}, {"name": "guy", "type": "address", "indexed": true, "internalType": "address"}, {"name": "wad", "type": "uint256", "indexed": false, "internalType": "uint256"}], "anonymous": false}, {"name": "Deposit", "type": "event", "inputs": [{"name": "dst", "type": "address", "indexed": true, "internalType": "address"}, {"name": "wad", "type": "uint256", "indexed": false, "internalType": "uint256"}], "anonymous": false}, {"name": "Transfer", "type": "event", "inputs": [{"name": "src", "type": "address", "indexed": true, "internalType": "address"}, {"name": "dst", "type": "address", "indexed": true, "internalType": "address"}, {"name": "wad", "type": "uint256", "indexed": false, "internalType": "uint256"}], "anonymous": false}, {"name": "Withdrawal", "type": "event", "inputs": [{"name": "src", "type": "address", "indexed": true, "internalType": "address"}, {"name": "wad", "type": "uint256", "indexed": false, "internalType": "uint256"}], "anonymous": false}, {"type": "fallback", "stateMutability": "payable"}, {"name": "allowance", "type": "function", "inputs": [{"name": "", "type": "address", "internalType": "address"}, {"name": "", "type": "address", "internalType": "address"}], "outputs": [{"name": "", "type": "uint256", "internalType": "uint256"}], "stateMutability": "view"}, {"name": "approve", "type": "function", "inputs": [{"name": "guy", "type": "address", "internalType": "address"}, {"name": "wad", "type": "uint256", "internalType": "uint256"}], "outputs": [{"name": "", "type": "bool", "internalType": "bool"}], "stateMutability": "nonpayable"}, {"name": "balanceOf", "type": "function", "inputs": [{"name": "", "type": "address", "internalType": "address"}], "outputs": [{"name": "", "type": "uint256", "internalType": "uint256"}], "stateMutability": "view"}, {"name": "decimals", "type": "function", "inputs": [], "outputs": [{"name": "", "type": "uint8", "internalType": "uint8"}], "stateMutability": "view"}, {"name": "deposit", "type": "function", "inputs": [], "outputs": [], "stateMutability": "payable"}, {"name": "name", "type": "function", "inputs": [], "outputs": [{"name": "", "type": "string", "internalType": "string"}], "stateMutability": "view"}, {"name": "symbol", "type": "function", "inputs": [], "outputs": [{"name": "", "type": "string", "internalType": "string"}], "stateMutability": "view"}, {"name": "totalSupply", "type": "function", "inputs": [], "outputs": [{"name": "", "type": "uint256", "internalType": "uint256"}], "stateMutability": "view"}, {"name": "transfer", "type": "function", "inputs": [{"name": "dst", "type": "address", "internalType": "address"}, {"name": "wad", "type": "uint256", "internalType": "uint256"}], "outputs": [{"name": "", "type": "bool", "internalType": "bool"}], "stateMutability": "nonpayable"}, {"name": "transferFrom", "type": "function", "inputs": [{"name": "src", "type": "address", "internalType": "address"}, {"name": "dst", "type": "address", "internalType": "address"}, {"name": "wad", "type": "uint256", "internalType": "uint256"}], "outputs": [{"name": "", "type": "bool", "internalType": "bool"}], "stateMutability": "nonpayable"}, {"name": "withdraw", "type": "function", "inputs": [{"name": "wad", "type": "uint256", "internalType": "uint256"}], "outputs": [], "stateMutability": "nonpayable"}];
 
 const TOKEN_PROGRAM = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
 const ASSOCIATED_TOKEN_PROGRAM = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
@@ -45077,8 +44384,8 @@ var symbolOnSolana = async ({ blockchain, address })=>{
   return _optionalChain$1([metaData, 'optionalAccess', _ => _.symbol])
 };
 
-let supported$1 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'velas'];
-supported$1.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'velas'];
+let supported$1 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism'];
+supported$1.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism'];
 supported$1.solana = ['solana'];
 
 function _optionalChain$5(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
@@ -45202,37 +44509,67 @@ Token.safeAmount = ({ amount, decimals }) => {
 
 Token.ethereum = { 
   DEFAULT: ERC20,
-  ERC20,
+  ERC20: ERC20,
   20: ERC20,
-  1155: ethereum1155,
+  1155: ERC1155,
+  WRAPPED: WETH,
 };
 
 Token.bsc = { 
-  DEFAULT: BEP20,
-  BEP20,
-  20: BEP20,
-  1155: bsc1155,
+  DEFAULT: ERC20,
+  BEP20: ERC20,
+  20: ERC20,
+  1155: ERC1155,
+  WRAPPED: WETH,
 };
 
 Token.polygon = { 
-  DEFAULT: ERC20onPolygon,
-  ERC20: ERC20onPolygon,
-  20: ERC20onPolygon,
-  1155: bsc1155,
+  DEFAULT: ERC20,
+  ERC20: ERC20,
+  20: ERC20,
+  1155: ERC1155,
+  WRAPPED: WETH,
 };
 
 Token.fantom = {
-  DEFAULT: FTM20,
-  FTM20,
-  20: FTM20,
-  1155: ftm1155,
+  DEFAULT: ERC20,
+  FTM20: ERC20,
+  20: ERC20,
+  1155: ERC1155,
+  WRAPPED: WETH,
 };
 
-Token.velas = {
-  DEFAULT: VRC20,
-  VRC20,
-  20: VRC20,
-  1155: bsc1155,
+Token.arbitrum = {
+  DEFAULT: ERC20,
+  ERC20: ERC20,
+  20: ERC20,
+  1155: ERC1155,
+  WRAPPED: WETH,
+};
+
+Token.avalanche = {
+  DEFAULT: ERC20,
+  ERC20: ERC20,
+  ARC20: ERC20,
+  20: ERC20,
+  1155: ERC1155,
+  WRAPPED: WETH,
+};
+
+Token.gnosis = {
+  DEFAULT: ERC20,
+  ERC20: ERC20,
+  20: ERC20,
+  1155: ERC1155,
+  WRAPPED: WETH,
+};
+
+Token.optimism = {
+  DEFAULT: ERC20,
+  ERC20: ERC20,
+  20: ERC20,
+  1155: ERC1155,
+  WRAPPED: WETH,
 };
 
 Token.solana = {
@@ -45246,6 +44583,7 @@ Token.solana = {
   findProgramAddress,
   findAccount,
   getMetaData,
+  getMetaDataPDA,
   ...instructions
 };
 
@@ -46184,149 +45522,56 @@ const getTransaction$3 = async({ paymentRoute })=> {
   return transaction
 };
 
-const prepareUniswapTransaction = (transaction)=>{
-  transaction.params.path = transaction.params.path.filter((token, index, path)=>{
-    if(
-      index == 1 &&
-      token == Blockchains[transaction.blockchain].wrapped.address &&
-      path[0] == Blockchains[transaction.blockchain].currency.address
-    ) { 
-      return false
-    } else if (
-      index == path.length-2 &&
-      token == Blockchains[transaction.blockchain].wrapped.address &&
-      path[path.length-1] == Blockchains[transaction.blockchain].currency.address
-    ) {
-      return false
-    } else {
-      return true
-    }
-  });
-  return transaction
-};
-
-var plugins$1 = {
-  ethereum: {
-    payment: {
-      address: '0x99F3F4685a7178F26EB4F4Ca8B75a1724F1577B9'
-    },
-    weth: {
-      wrap: { address: '0xF4cc97D00dD0639c3e383D7CafB3d815616cbB2C' },
-      unwrap: { address: '0xcA575c6C5305e8127F3D376bb22776eAD370De4a' },
-    },
-    uniswap_v2: {
-      address: '0xe04b08Dfc6CaA0F4Ec523a3Ae283Ece7efE00019',
-      prepareTransaction: prepareUniswapTransaction
-    },
-    paymentWithEvent: {
-      address: '0xD8fBC10787b019fE4059Eb5AA5fB11a5862229EF'
-    },
-    paymentFee: {
-      address: '0x874Cb669D7BFff79d4A6A30F4ea52c5e413BD6A7',
-    },
-    paymentFeeWithEvent: {
-      address: '0x981cAd45c768d56136FDBb2C5E115F33D971bE6C'
-    }
-  },
-  bsc: {
-    payment: {
-      address: '0x8B127D169D232D5F3ebE1C3D06CE343FD7C1AA11',
-    },
-    wbnb: {
-      wrap: { address: '0xf361888459a4C863a8498ee344C2688C9196Be51' },
-      unwrap: { address: '0x65693291C20271f5e5030261766D1D6b3AC9d44E' },
-    },
-    pancakeswap: {
-      address: '0xAC3Ec4e420DD78bA86d932501E1f3867dbbfb77B',
-      prepareTransaction: prepareUniswapTransaction
-    },
-    paymentWithEvent: {
-      address: '0x1869E236c03eE67B9FfEd3aCA139f4AeBA79Dc21'
-    },
-    paymentFee: {
-      address: '0xae33f10AD57A38113f74FCdc1ffA6B1eC47B94E3',
-    },
-    paymentFeeWithEvent: {
-      address: '0xF1a05D715AaBFA380543719F7bA8754d0331c5A9'
-    }
-  },
-  polygon: {
-    payment: {
-      address: '0x78C0F1c712A9AA2004C1F401A7307d8bCB62abBd'
-    },
-    wmatic: {
-      wrap: { address: '0x8B62F604499c1204573664447D445690E0A0011b' },
-      unwrap: { address: '0x2fd0a07a4F73285d0eBa8176426BF9B8c0121206' },
-    },
-    quickswap: {
-      address: '0x0Dfb7137bC64b63F7a0de7Cb9CDa178702666220',
-      prepareTransaction: prepareUniswapTransaction
-    },
-    paymentWithEvent: {
-      address: '0xfAD2F276D464EAdB71435127BA2c2e9dDefb93a4'
-    },
-    paymentFee: {
-      address: '0xd625c7087E940b2A91ed8bD8db45cB24D3526B56',
-    },
-    paymentFeeWithEvent: {
-      address: '0xBC56ED8E32b64a33f64Ed7A5fF9EACdFC117e07a'
-    }
-  },
-};
-
-var plugins = {... plugins$1};
+const API = [{"inputs":[{"internalType":"address","name":"_PERMIT2","type":"address"},{"internalType":"address","name":"_FORWARDER","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"exchange","type":"address"}],"name":"Disabled","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"exchange","type":"address"}],"name":"Enabled","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"inputs":[],"name":"FORWARDER","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PERMIT2","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"exchange","type":"address"},{"internalType":"bool","name":"enabled","type":"bool"}],"name":"enable","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"exchanges","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"components":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"bool","name":"permit2","type":"bool"},{"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount","type":"uint256"},{"internalType":"address","name":"tokenInAddress","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"address","name":"tokenOutAddress","type":"address"},{"internalType":"address","name":"paymentReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress","type":"address"},{"internalType":"uint8","name":"exchangeType","type":"uint8"},{"internalType":"uint8","name":"receiverType","type":"uint8"},{"internalType":"bytes","name":"exchangeCallData","type":"bytes"},{"internalType":"bytes","name":"receiverCallData","type":"bytes"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"internalType":"struct IDePayRouterV2.Payment","name":"payment","type":"tuple"}],"name":"pay","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"components":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"bool","name":"permit2","type":"bool"},{"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount","type":"uint256"},{"internalType":"address","name":"tokenInAddress","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"address","name":"tokenOutAddress","type":"address"},{"internalType":"address","name":"paymentReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress","type":"address"},{"internalType":"uint8","name":"exchangeType","type":"uint8"},{"internalType":"uint8","name":"receiverType","type":"uint8"},{"internalType":"bytes","name":"exchangeCallData","type":"bytes"},{"internalType":"bytes","name":"receiverCallData","type":"bytes"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"internalType":"struct IDePayRouterV2.Payment","name":"payment","type":"tuple"},{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"uint48","name":"expiration","type":"uint48"},{"internalType":"uint48","name":"nonce","type":"uint48"}],"internalType":"struct IPermit2.PermitDetails","name":"details","type":"tuple"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"sigDeadline","type":"uint256"}],"internalType":"struct IPermit2.PermitSingle","name":"permitSingle","type":"tuple"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"pay","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdraw","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}];
 
 var routers$1 = {
+
   ethereum: {
-    address: '0xae60aC8e69414C2Dc362D0e6a03af643d1D85b92',
-    api: [{"inputs":[{"internalType":"address","name":"_configuration","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"ETH","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"configuration","outputs":[{"internalType":"contract DePayRouterV1Configuration","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"pluginAddress","type":"address"}],"name":"isApproved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"uint256[]","name":"amounts","type":"uint256[]"},{"internalType":"address[]","name":"addresses","type":"address[]"},{"internalType":"address[]","name":"plugins","type":"address[]"},{"internalType":"string[]","name":"data","type":"string[]"}],"name":"route","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdraw","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}]
+    address: '0xF491525C7655f362716335D526E57b387799d058',
+    api: API
   },
+
   bsc: {
-    address: '0x0Dfb7137bC64b63F7a0de7Cb9CDa178702666220',
-    api: [{"inputs":[{"internalType":"address","name":"_configuration","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"ETH","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"configuration","outputs":[{"internalType":"contract DePayRouterV1Configuration","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"pluginAddress","type":"address"}],"name":"isApproved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"uint256[]","name":"amounts","type":"uint256[]"},{"internalType":"address[]","name":"addresses","type":"address[]"},{"internalType":"address[]","name":"plugins","type":"address[]"},{"internalType":"string[]","name":"data","type":"string[]"}],"name":"route","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdraw","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}]
+    address: '0xdb3f47b1D7B577E919D639B4FD0EBcEFD4aABb70',
+    api: API
   },
+
   polygon: {
-    address: '0x2CA727BC33915823e3D05fe043d310B8c5b2dC5b',
-    api: [{"inputs":[{"internalType":"address","name":"_configuration","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"ETH","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"configuration","outputs":[{"internalType":"contract DePayRouterV1Configuration","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"pluginAddress","type":"address"}],"name":"isApproved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"uint256[]","name":"amounts","type":"uint256[]"},{"internalType":"address[]","name":"addresses","type":"address[]"},{"internalType":"address[]","name":"plugins","type":"address[]"},{"internalType":"string[]","name":"data","type":"string[]"}],"name":"route","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdraw","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}]
-  }
+    address: '0x39E7C98BF4ac3E4C394dD600397f5f7Ee3779BE8',
+    api: API
+  },
+
+  fantom: {
+    address: '0x78C0F1c712A9AA2004C1F401A7307d8bCB62abBd',
+    api: API
+  },
+
+  avalanche: {
+    address: '0x5EC3153BACebb5e49136cF2d457f26f5Df1B6780',
+    api: API
+  },
+
+  gnosis: {
+    address: '0x5EC3153BACebb5e49136cF2d457f26f5Df1B6780',
+    api: API
+  },
+
+  arbitrum: {
+    address: '0x5EC3153BACebb5e49136cF2d457f26f5Df1B6780',
+    api: API
+  },
+
+  optimism: {
+    address: '0x5EC3153BACebb5e49136cF2d457f26f5Df1B6780',
+    api: API
+  },
+
 };
 
 let solanaRouters = {};
 
 
 var routers = {... routers$1, ...solanaRouters};
-
-/**
- * Checks if `value` is the
- * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
- * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an object, else `false`.
- * @example
- *
- * _.isObject({});
- * // => true
- *
- * _.isObject([1, 2, 3]);
- * // => true
- *
- * _.isObject(_.noop);
- * // => true
- *
- * _.isObject(null);
- * // => false
- */
-function isObject(value) {
-  var type = typeof value;
-  return value != null && (type == 'object' || type == 'function');
-}
-
-var isObject_1 = isObject;
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -46344,559 +45589,32 @@ var root = _freeGlobal || freeSelf || Function('return this')();
 
 var _root = root;
 
-/**
- * Gets the timestamp of the number of milliseconds that have elapsed since
- * the Unix epoch (1 January 1970 00:00:00 UTC).
- *
- * @static
- * @memberOf _
- * @since 2.4.0
- * @category Date
- * @returns {number} Returns the timestamp.
- * @example
- *
- * _.defer(function(stamp) {
- *   console.log(_.now() - stamp);
- * }, _.now());
- * // => Logs the number of milliseconds it took for the deferred invocation.
- */
-var now = function() {
-  return _root.Date.now();
-};
-
-var now_1 = now;
-
-/** Used to match a single whitespace character. */
-var reWhitespace = /\s/;
-
-/**
- * Used by `_.trim` and `_.trimEnd` to get the index of the last non-whitespace
- * character of `string`.
- *
- * @private
- * @param {string} string The string to inspect.
- * @returns {number} Returns the index of the last non-whitespace character.
- */
-function trimmedEndIndex(string) {
-  var index = string.length;
-
-  while (index-- && reWhitespace.test(string.charAt(index))) {}
-  return index;
-}
-
-var _trimmedEndIndex = trimmedEndIndex;
-
-/** Used to match leading whitespace. */
-var reTrimStart = /^\s+/;
-
-/**
- * The base implementation of `_.trim`.
- *
- * @private
- * @param {string} string The string to trim.
- * @returns {string} Returns the trimmed string.
- */
-function baseTrim(string) {
-  return string
-    ? string.slice(0, _trimmedEndIndex(string) + 1).replace(reTrimStart, '')
-    : string;
-}
-
-var _baseTrim = baseTrim;
-
 /** Built-in value references. */
 var Symbol$1 = _root.Symbol;
 
 var _Symbol = Symbol$1;
 
-/** Used for built-in method references. */
-var objectProto$1 = Object.prototype;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty = objectProto$1.hasOwnProperty;
-
-/**
- * Used to resolve the
- * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
- * of values.
- */
-var nativeObjectToString$1 = objectProto$1.toString;
+/** Built-in value references. */
+_Symbol ? _Symbol.toStringTag : undefined;
 
 /** Built-in value references. */
-var symToStringTag$1 = _Symbol ? _Symbol.toStringTag : undefined;
+_Symbol ? _Symbol.toStringTag : undefined;
 
-/**
- * A specialized version of `baseGetTag` which ignores `Symbol.toStringTag` values.
- *
- * @private
- * @param {*} value The value to query.
- * @returns {string} Returns the raw `toStringTag`.
- */
-function getRawTag(value) {
-  var isOwn = hasOwnProperty.call(value, symToStringTag$1),
-      tag = value[symToStringTag$1];
+const getTransaction$2 = async({ paymentRoute })=> {
 
-  try {
-    value[symToStringTag$1] = undefined;
-    var unmasked = true;
-  } catch (e) {}
-
-  var result = nativeObjectToString$1.call(value);
-  if (unmasked) {
-    if (isOwn) {
-      value[symToStringTag$1] = tag;
-    } else {
-      delete value[symToStringTag$1];
-    }
-  }
-  return result;
-}
-
-var _getRawTag = getRawTag;
-
-/** Used for built-in method references. */
-var objectProto = Object.prototype;
-
-/**
- * Used to resolve the
- * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
- * of values.
- */
-var nativeObjectToString = objectProto.toString;
-
-/**
- * Converts `value` to a string using `Object.prototype.toString`.
- *
- * @private
- * @param {*} value The value to convert.
- * @returns {string} Returns the converted string.
- */
-function objectToString(value) {
-  return nativeObjectToString.call(value);
-}
-
-var _objectToString = objectToString;
-
-/** `Object#toString` result references. */
-var nullTag = '[object Null]',
-    undefinedTag = '[object Undefined]';
-
-/** Built-in value references. */
-var symToStringTag = _Symbol ? _Symbol.toStringTag : undefined;
-
-/**
- * The base implementation of `getTag` without fallbacks for buggy environments.
- *
- * @private
- * @param {*} value The value to query.
- * @returns {string} Returns the `toStringTag`.
- */
-function baseGetTag(value) {
-  if (value == null) {
-    return value === undefined ? undefinedTag : nullTag;
-  }
-  return (symToStringTag && symToStringTag in Object(value))
-    ? _getRawTag(value)
-    : _objectToString(value);
-}
-
-var _baseGetTag = baseGetTag;
-
-/**
- * Checks if `value` is object-like. A value is object-like if it's not `null`
- * and has a `typeof` result of "object".
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
- * @example
- *
- * _.isObjectLike({});
- * // => true
- *
- * _.isObjectLike([1, 2, 3]);
- * // => true
- *
- * _.isObjectLike(_.noop);
- * // => false
- *
- * _.isObjectLike(null);
- * // => false
- */
-function isObjectLike(value) {
-  return value != null && typeof value == 'object';
-}
-
-var isObjectLike_1 = isObjectLike;
-
-/** `Object#toString` result references. */
-var symbolTag = '[object Symbol]';
-
-/**
- * Checks if `value` is classified as a `Symbol` primitive or object.
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a symbol, else `false`.
- * @example
- *
- * _.isSymbol(Symbol.iterator);
- * // => true
- *
- * _.isSymbol('abc');
- * // => false
- */
-function isSymbol(value) {
-  return typeof value == 'symbol' ||
-    (isObjectLike_1(value) && _baseGetTag(value) == symbolTag);
-}
-
-var isSymbol_1 = isSymbol;
-
-/** Used as references for various `Number` constants. */
-var NAN = 0 / 0;
-
-/** Used to detect bad signed hexadecimal string values. */
-var reIsBadHex = /^[-+]0x[0-9a-f]+$/i;
-
-/** Used to detect binary string values. */
-var reIsBinary = /^0b[01]+$/i;
-
-/** Used to detect octal string values. */
-var reIsOctal = /^0o[0-7]+$/i;
-
-/** Built-in method references without a dependency on `root`. */
-var freeParseInt = parseInt;
-
-/**
- * Converts `value` to a number.
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to process.
- * @returns {number} Returns the number.
- * @example
- *
- * _.toNumber(3.2);
- * // => 3.2
- *
- * _.toNumber(Number.MIN_VALUE);
- * // => 5e-324
- *
- * _.toNumber(Infinity);
- * // => Infinity
- *
- * _.toNumber('3.2');
- * // => 3.2
- */
-function toNumber(value) {
-  if (typeof value == 'number') {
-    return value;
-  }
-  if (isSymbol_1(value)) {
-    return NAN;
-  }
-  if (isObject_1(value)) {
-    var other = typeof value.valueOf == 'function' ? value.valueOf() : value;
-    value = isObject_1(other) ? (other + '') : other;
-  }
-  if (typeof value != 'string') {
-    return value === 0 ? value : +value;
-  }
-  value = _baseTrim(value);
-  var isBinary = reIsBinary.test(value);
-  return (isBinary || reIsOctal.test(value))
-    ? freeParseInt(value.slice(2), isBinary ? 2 : 8)
-    : (reIsBadHex.test(value) ? NAN : +value);
-}
-
-var toNumber_1 = toNumber;
-
-/** Error message constants. */
-var FUNC_ERROR_TEXT$1 = 'Expected a function';
-
-/* Built-in method references for those with the same name as other `lodash` methods. */
-var nativeMax = Math.max,
-    nativeMin = Math.min;
-
-/**
- * Creates a debounced function that delays invoking `func` until after `wait`
- * milliseconds have elapsed since the last time the debounced function was
- * invoked. The debounced function comes with a `cancel` method to cancel
- * delayed `func` invocations and a `flush` method to immediately invoke them.
- * Provide `options` to indicate whether `func` should be invoked on the
- * leading and/or trailing edge of the `wait` timeout. The `func` is invoked
- * with the last arguments provided to the debounced function. Subsequent
- * calls to the debounced function return the result of the last `func`
- * invocation.
- *
- * **Note:** If `leading` and `trailing` options are `true`, `func` is
- * invoked on the trailing edge of the timeout only if the debounced function
- * is invoked more than once during the `wait` timeout.
- *
- * If `wait` is `0` and `leading` is `false`, `func` invocation is deferred
- * until to the next tick, similar to `setTimeout` with a timeout of `0`.
- *
- * See [David Corbacho's article](https://css-tricks.com/debouncing-throttling-explained-examples/)
- * for details over the differences between `_.debounce` and `_.throttle`.
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Function
- * @param {Function} func The function to debounce.
- * @param {number} [wait=0] The number of milliseconds to delay.
- * @param {Object} [options={}] The options object.
- * @param {boolean} [options.leading=false]
- *  Specify invoking on the leading edge of the timeout.
- * @param {number} [options.maxWait]
- *  The maximum time `func` is allowed to be delayed before it's invoked.
- * @param {boolean} [options.trailing=true]
- *  Specify invoking on the trailing edge of the timeout.
- * @returns {Function} Returns the new debounced function.
- * @example
- *
- * // Avoid costly calculations while the window size is in flux.
- * jQuery(window).on('resize', _.debounce(calculateLayout, 150));
- *
- * // Invoke `sendMail` when clicked, debouncing subsequent calls.
- * jQuery(element).on('click', _.debounce(sendMail, 300, {
- *   'leading': true,
- *   'trailing': false
- * }));
- *
- * // Ensure `batchLog` is invoked once after 1 second of debounced calls.
- * var debounced = _.debounce(batchLog, 250, { 'maxWait': 1000 });
- * var source = new EventSource('/stream');
- * jQuery(source).on('message', debounced);
- *
- * // Cancel the trailing debounced invocation.
- * jQuery(window).on('popstate', debounced.cancel);
- */
-function debounce(func, wait, options) {
-  var lastArgs,
-      lastThis,
-      maxWait,
-      result,
-      timerId,
-      lastCallTime,
-      lastInvokeTime = 0,
-      leading = false,
-      maxing = false,
-      trailing = true;
-
-  if (typeof func != 'function') {
-    throw new TypeError(FUNC_ERROR_TEXT$1);
-  }
-  wait = toNumber_1(wait) || 0;
-  if (isObject_1(options)) {
-    leading = !!options.leading;
-    maxing = 'maxWait' in options;
-    maxWait = maxing ? nativeMax(toNumber_1(options.maxWait) || 0, wait) : maxWait;
-    trailing = 'trailing' in options ? !!options.trailing : trailing;
-  }
-
-  function invokeFunc(time) {
-    var args = lastArgs,
-        thisArg = lastThis;
-
-    lastArgs = lastThis = undefined;
-    lastInvokeTime = time;
-    result = func.apply(thisArg, args);
-    return result;
-  }
-
-  function leadingEdge(time) {
-    // Reset any `maxWait` timer.
-    lastInvokeTime = time;
-    // Start the timer for the trailing edge.
-    timerId = setTimeout(timerExpired, wait);
-    // Invoke the leading edge.
-    return leading ? invokeFunc(time) : result;
-  }
-
-  function remainingWait(time) {
-    var timeSinceLastCall = time - lastCallTime,
-        timeSinceLastInvoke = time - lastInvokeTime,
-        timeWaiting = wait - timeSinceLastCall;
-
-    return maxing
-      ? nativeMin(timeWaiting, maxWait - timeSinceLastInvoke)
-      : timeWaiting;
-  }
-
-  function shouldInvoke(time) {
-    var timeSinceLastCall = time - lastCallTime,
-        timeSinceLastInvoke = time - lastInvokeTime;
-
-    // Either this is the first call, activity has stopped and we're at the
-    // trailing edge, the system time has gone backwards and we're treating
-    // it as the trailing edge, or we've hit the `maxWait` limit.
-    return (lastCallTime === undefined || (timeSinceLastCall >= wait) ||
-      (timeSinceLastCall < 0) || (maxing && timeSinceLastInvoke >= maxWait));
-  }
-
-  function timerExpired() {
-    var time = now_1();
-    if (shouldInvoke(time)) {
-      return trailingEdge(time);
-    }
-    // Restart the timer.
-    timerId = setTimeout(timerExpired, remainingWait(time));
-  }
-
-  function trailingEdge(time) {
-    timerId = undefined;
-
-    // Only invoke if we have `lastArgs` which means `func` has been
-    // debounced at least once.
-    if (trailing && lastArgs) {
-      return invokeFunc(time);
-    }
-    lastArgs = lastThis = undefined;
-    return result;
-  }
-
-  function cancel() {
-    if (timerId !== undefined) {
-      clearTimeout(timerId);
-    }
-    lastInvokeTime = 0;
-    lastArgs = lastCallTime = lastThis = timerId = undefined;
-  }
-
-  function flush() {
-    return timerId === undefined ? result : trailingEdge(now_1());
-  }
-
-  function debounced() {
-    var time = now_1(),
-        isInvoking = shouldInvoke(time);
-
-    lastArgs = arguments;
-    lastThis = this;
-    lastCallTime = time;
-
-    if (isInvoking) {
-      if (timerId === undefined) {
-        return leadingEdge(lastCallTime);
-      }
-      if (maxing) {
-        // Handle invocations in a tight loop.
-        clearTimeout(timerId);
-        timerId = setTimeout(timerExpired, wait);
-        return invokeFunc(lastCallTime);
-      }
-    }
-    if (timerId === undefined) {
-      timerId = setTimeout(timerExpired, wait);
-    }
-    return result;
-  }
-  debounced.cancel = cancel;
-  debounced.flush = flush;
-  return debounced;
-}
-
-var debounce_1 = debounce;
-
-/** Error message constants. */
-var FUNC_ERROR_TEXT = 'Expected a function';
-
-/**
- * Creates a throttled function that only invokes `func` at most once per
- * every `wait` milliseconds. The throttled function comes with a `cancel`
- * method to cancel delayed `func` invocations and a `flush` method to
- * immediately invoke them. Provide `options` to indicate whether `func`
- * should be invoked on the leading and/or trailing edge of the `wait`
- * timeout. The `func` is invoked with the last arguments provided to the
- * throttled function. Subsequent calls to the throttled function return the
- * result of the last `func` invocation.
- *
- * **Note:** If `leading` and `trailing` options are `true`, `func` is
- * invoked on the trailing edge of the timeout only if the throttled function
- * is invoked more than once during the `wait` timeout.
- *
- * If `wait` is `0` and `leading` is `false`, `func` invocation is deferred
- * until to the next tick, similar to `setTimeout` with a timeout of `0`.
- *
- * See [David Corbacho's article](https://css-tricks.com/debouncing-throttling-explained-examples/)
- * for details over the differences between `_.throttle` and `_.debounce`.
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Function
- * @param {Function} func The function to throttle.
- * @param {number} [wait=0] The number of milliseconds to throttle invocations to.
- * @param {Object} [options={}] The options object.
- * @param {boolean} [options.leading=true]
- *  Specify invoking on the leading edge of the timeout.
- * @param {boolean} [options.trailing=true]
- *  Specify invoking on the trailing edge of the timeout.
- * @returns {Function} Returns the new throttled function.
- * @example
- *
- * // Avoid excessively updating the position while scrolling.
- * jQuery(window).on('scroll', _.throttle(updatePosition, 100));
- *
- * // Invoke `renewToken` when the click event is fired, but not more than once every 5 minutes.
- * var throttled = _.throttle(renewToken, 300000, { 'trailing': false });
- * jQuery(element).on('click', throttled);
- *
- * // Cancel the trailing throttled invocation.
- * jQuery(window).on('popstate', throttled.cancel);
- */
-function throttle(func, wait, options) {
-  var leading = true,
-      trailing = true;
-
-  if (typeof func != 'function') {
-    throw new TypeError(FUNC_ERROR_TEXT);
-  }
-  if (isObject_1(options)) {
-    leading = 'leading' in options ? !!options.leading : leading;
-    trailing = 'trailing' in options ? !!options.trailing : trailing;
-  }
-  return debounce_1(func, wait, {
-    'leading': leading,
-    'maxWait': wait,
-    'trailing': trailing
-  });
-}
-
-var throttle_1 = throttle;
-
-let getTransaction$2 = async({ paymentRoute, event })=> {
-  let exchangeRoute = paymentRoute.exchangeRoutes[0];
-
-  let transaction = {
+  const transaction = {
     blockchain: paymentRoute.blockchain,
     to: transactionAddress({ paymentRoute }),
     api: transactionApi({ paymentRoute }),
     method: transactionMethod({ paymentRoute }),
-    params: transactionParams({ paymentRoute, exchangeRoute, event }),
+    params: await transactionParams({ paymentRoute }),
     value: transactionValue({ paymentRoute })
   };
-
-  if(exchangeRoute) {
-    if(paymentRoute.exchangePlugin && paymentRoute.exchangePlugin.prepareTransaction) {
-      transaction = paymentRoute.exchangePlugin.prepareTransaction(transaction);
-    }
-  }
 
   return transaction
 };
 
-let transactionAddress = ({ paymentRoute })=> {
+const transactionAddress = ({ paymentRoute })=> {
   if(paymentRoute.directTransfer && !paymentRoute.fee) {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return paymentRoute.toAddress
@@ -46908,7 +45626,7 @@ let transactionAddress = ({ paymentRoute })=> {
   }
 };
 
-let transactionApi = ({ paymentRoute })=> {
+const transactionApi = ({ paymentRoute })=> {
   if(paymentRoute.directTransfer && !paymentRoute.fee) {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
@@ -46920,110 +45638,100 @@ let transactionApi = ({ paymentRoute })=> {
   }
 };
 
-let transactionMethod = ({ paymentRoute })=> {
+const transactionMethod = ({ paymentRoute })=> {
   if(paymentRoute.directTransfer && !paymentRoute.fee) {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
-    } else {
+    } else { // standard token transfer
       return 'transfer'
     }
   } else {
-    return 'route'
+    return 'pay'
   }
 };
 
-let transactionParams = ({ paymentRoute, exchangeRoute, event })=> {
+const getExchangeType = ({ exchangeRoute, blockchain })=> {
+  if(exchangeRoute.exchange.name === 'uniswap_v3') {
+    return 2 // push
+  } else if(exchangeRoute.exchange[blockchain].address === Blockchains[blockchain].wrapped.address) {
+    return 0 // do nothing
+  } else {
+    return 1 // pull
+  }
+};
+
+const getExchangeCallData = ({ exchangeTransaction })=>{
+  const contract = new ethers.Contract(exchangeTransaction.to, exchangeTransaction.api);
+  const method = exchangeTransaction.method;
+  const params = exchangeTransaction.params;
+  
+  let contractMethod;
+  let fragment;
+  fragment = contract.interface.fragments.find((fragment) => {
+    return(
+      fragment.name == method &&
+      (fragment.inputs && params && typeof(params) === 'object' ? fragment.inputs.length == Object.keys(params).length : true)
+    )
+  });
+  let paramsToEncode;
+  if(fragment.inputs.length === 1 && fragment.inputs[0].type === 'tuple') {
+    contractMethod = method;
+    paramsToEncode = [params[fragment.inputs[0].name]];
+  } else {
+    contractMethod = `${method}(${fragment.inputs.map((input)=>input.type).join(',')})`;
+    paramsToEncode = fragment.inputs.map((input) => {
+      if(input.type === 'tuple') {
+        let tuple = {};
+        input.components.forEach((component, index)=>{
+          tuple[component.name] = params[input.name][index];
+        });
+        contractMethod = method;
+        return tuple
+      } else {
+        return params[input.name]
+      }
+    });
+  }
+  return contract.interface.encodeFunctionData(contractMethod, paramsToEncode)
+};
+
+const transactionParams = async ({ paymentRoute })=> {
   if(paymentRoute.directTransfer && !paymentRoute.fee) {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
-    } else {
+    } else { // standard token transfer
       return [paymentRoute.toAddress, paymentRoute.toAmount]
     }
   } else {
+    const deadline = Math.ceil(new Date()/1000)+86400; // 1 day
+    const exchangeRoute = paymentRoute.exchangeRoutes[0];
+    const exchangeType = getExchangeType({ exchangeRoute, blockchain: paymentRoute.blockchain });
+    const exchangeTransaction = await exchangeRoute.getTransaction({
+      account: routers$1[paymentRoute.blockchain].address,
+      inputTokenPushed: exchangeType === 2
+    });
+    const exchangeCallData = getExchangeCallData({ exchangeTransaction });
     return {
-      path: transactionPath({ paymentRoute, exchangeRoute }),
-      amounts: getTransactionAmounts({ paymentRoute, exchangeRoute }),
-      addresses: transactionAddresses({ paymentRoute }),
-      plugins: transactionPlugins({ paymentRoute, exchangeRoute, event }),
-      data: []
+      payment: {
+        amountIn: paymentRoute.fromAmount,
+        paymentAmount: paymentRoute.toAmount,
+        feeAmount: paymentRoute.feeAmount || 0,
+        tokenInAddress: paymentRoute.fromToken.address,
+        exchangeAddress: exchangeRoute.exchange[paymentRoute.blockchain].router.address,
+        tokenOutAddress: paymentRoute.toToken.address,
+        paymentReceiverAddress: paymentRoute.toAddress,
+        feeReceiverAddress: paymentRoute.fee ? paymentRoute.fee.receiver : Blockchains[paymentRoute.blockchain].zero,
+        exchangeType: exchangeType,
+        receiverType: 0,
+        exchangeCallData: exchangeCallData,
+        receiverCallData: Blockchains[paymentRoute.blockchain].zero,
+        deadline,
+      }
     }
   }
 };
 
-let transactionPath = ({ paymentRoute, exchangeRoute })=> {
-  if(exchangeRoute) {
-    return exchangeRoute.path
-  } else {
-    return [paymentRoute.toToken.address]
-  }
-};
-
-let getTransactionAmounts = ({ paymentRoute, exchangeRoute })=> {
-  let amounts;
-  if(exchangeRoute) {
-    if(exchangeRoute && exchangeRoute.exchange.wrapper) {
-      amounts = [ paymentRoute.fromAmount, paymentRoute.toAmount ];
-    } else {
-      amounts = [
-        paymentRoute.fromAmount,
-        paymentRoute.toAmount,
-        Math.round(Date.now() / 1000) + 30 * 60, // 30 minutes
-      ];
-    }
-  } else {
-    amounts = [ paymentRoute.fromAmount, paymentRoute.toAmount ];
-  }
-  if(paymentRoute.fee){
-    amounts[4] = paymentRoute.feeAmount;
-  }
-  for(var i = 0; i < amounts.length; i++) {
-    if(amounts[i] == undefined){ amounts[i] = '0'; }
-  }
-  return amounts
-};
-
-let transactionAddresses = ({ paymentRoute })=> {
-  if(paymentRoute.fee) {
-    return [paymentRoute.fromAddress, paymentRoute.fee.receiver, paymentRoute.toAddress]
-  } else {
-    return [paymentRoute.fromAddress, paymentRoute.toAddress]
-  }
-};
-
-let transactionPlugins = ({ paymentRoute, exchangeRoute, event })=> {
-  let paymentPlugins = [];
-
-  if(exchangeRoute) {
-    paymentRoute.exchangePlugin = plugins$1[paymentRoute.blockchain][exchangeRoute.exchange.name];
-    if(paymentRoute.exchangePlugin.wrap && paymentRoute.fromToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
-      paymentPlugins.push(paymentRoute.exchangePlugin.wrap.address);
-    } else if(paymentRoute.exchangePlugin.wrap && paymentRoute.fromToken.address == Blockchains[paymentRoute.blockchain].wrapped.address) {
-      paymentPlugins.push(paymentRoute.exchangePlugin.unwrap.address);
-    } else {
-      paymentPlugins.push(paymentRoute.exchangePlugin.address);
-    }
-  }
-
-  if(event == 'ifSwapped' && !paymentRoute.directTransfer) {
-    paymentPlugins.push(plugins$1[paymentRoute.blockchain].paymentWithEvent.address);
-  } else if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
-    paymentPlugins.push(plugins$1[paymentRoute.blockchain].paymentWithEvent.address);
-  } else {
-    paymentPlugins.push(plugins$1[paymentRoute.blockchain].payment.address);
-  }
-
-  if(paymentRoute.fee) {
-    if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
-      paymentPlugins.push(plugins$1[paymentRoute.blockchain].paymentFeeWithEvent.address);
-    } else {
-      paymentPlugins.push(plugins$1[paymentRoute.blockchain].paymentFee.address);
-    }
-  }
-
-  return paymentPlugins
-};
-
-let transactionValue = ({ paymentRoute })=> {
+const transactionValue = ({ paymentRoute })=> {
   if(paymentRoute.fromToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
     if(!paymentRoute.directTransfer) {
       return paymentRoute.fromAmount.toString()
@@ -47035,15 +45743,15 @@ let transactionValue = ({ paymentRoute })=> {
   }
 };
 
-let supported = ['ethereum', 'bsc', 'polygon'];
-supported.evm = ['ethereum', 'bsc', 'polygon'];
+let supported = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism'];
+supported.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism'];
 supported.solana = [];
 
 let solanaGetTransaction = ()=>{};
 
-const getTransaction$1 = ({ paymentRoute, event, fee })=>{
+const getTransaction$1 = ({ paymentRoute, fee })=>{
   if(supported.evm.includes(paymentRoute.blockchain)) {
-    return getTransaction$2({ paymentRoute, event, fee })
+    return getTransaction$2({ paymentRoute, fee })
   } else if(supported.solana.includes(paymentRoute.blockchain)) {
     return solanaGetTransaction()
   } else {
@@ -47071,7 +45779,6 @@ class PaymentRoute {
     approvalRequired,
     approvalTransaction,
     directTransfer,
-    event,
   }) {
     this.blockchain = blockchain;
     this.fromAddress = fromAddress;
@@ -47089,12 +45796,11 @@ class PaymentRoute {
     this.approvalRequired = approvalRequired;
     this.approvalTransaction = approvalTransaction;
     this.directTransfer = directTransfer;
-    this.event = event;
-    this.getTransaction = async ()=> await getTransaction$1({ paymentRoute: this, event });
+    this.getTransaction = async ()=> await getTransaction$1({ paymentRoute: this });
   }
 }
 
-function convertToRoutes({ assets, accept, from, event }) {
+function convertToRoutes({ assets, accept, from }) {
   return Promise.all(assets.map(async (asset)=>{
     let relevantConfigurations = accept.filter((configuration)=>(configuration.blockchain == asset.blockchain));
     let fromToken = new Token$1(asset);
@@ -47117,7 +45823,6 @@ function convertToRoutes({ assets, accept, from, event }) {
           fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
           fee: configuration.fee,
-          event
         })
       } else if(configuration.fromToken && configuration.fromAmount && fromToken.address.toLowerCase() == configuration.fromToken.toLowerCase()) {
         let blockchain = configuration.blockchain;
@@ -47137,19 +45842,17 @@ function convertToRoutes({ assets, accept, from, event }) {
           fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
           fee: configuration.fee,
-          event
         })
       }
     }))
   })).then((routes)=> routes.flat().filter(el => el))
 }
 
-function assetsToRoutes({ assets, blacklist, accept, from, event }) {
+function assetsToRoutes({ assets, blacklist, accept, from }) {
   return Promise.resolve(filterBlacklistedAssets({ assets, blacklist }))
-    .then((assets) => convertToRoutes({ assets, accept, from, event }))
+    .then((assets) => convertToRoutes({ assets, accept, from }))
     .then((routes) => addDirectTransferStatus({ routes }))
     .then(addExchangeRoutes)
-    .then(filterExchangeRoutesWithoutPlugin)
     .then(filterNotRoutable)
     .then(filterInsufficientBalance)
     .then((routes)=>addRouteAmounts({ routes }))
@@ -47159,7 +45862,7 @@ function assetsToRoutes({ assets, blacklist, accept, from, event }) {
     .then((routes)=>routes.map((route)=>new PaymentRoute(route)))
 }
 
-function route({ accept, from, whitelist, blacklist, event, update }) {
+function route({ accept, from, whitelist, blacklist, drip }) {
   if(accept.some((accept)=>{ return accept && accept.fee && typeof(accept.fee.amount) == 'string' && accept.fee.amount.match(/\.\d\d+\%/) })) {
     throw('Only up to 1 decimal is supported for fee amounts!')
   }
@@ -47179,28 +45882,21 @@ function route({ accept, from, whitelist, blacklist, event, update }) {
       });
     }
 
-    let throttledUpdate;
-    if(update) {
-      throttledUpdate = throttle_1(async ({ assets, blacklist, accept, from, event })=>{
-        update.callback(await assetsToRoutes({ assets, blacklist, accept, from, event }));
-      }, update.every);
-    }
-    
-    let drippedAssets = [];
     const allAssets = await dripAssets({
       accounts: from,
       priority: priority,
       only: whitelist,
       exclude: blacklist,
-      drip: (asset)=>{
-        if(update) {
-          drippedAssets.push(asset);
-          throttledUpdate({ assets: drippedAssets, blacklist, accept, from, event });
-        }
+      drip: !drip ? undefined : (asset)=>{
+        assetsToRoutes({ assets: [asset], blacklist, accept, from }).then((routes)=>{
+          if(_optionalChain([routes, 'optionalAccess', _5 => _5.length])){
+            drip(routes[0]);
+          }
+        });
       }
     });
 
-    let allPaymentRoutes = await assetsToRoutes({ assets: allAssets, blacklist, accept, from, event });
+    let allPaymentRoutes = await assetsToRoutes({ assets: allAssets, blacklist, accept, from });
     resolveAll(allPaymentRoutes);
   })
 }
@@ -47253,14 +45949,6 @@ let addExchangeRoutes = async (routes) => {
   })
 };
 
-let filterExchangeRoutesWithoutPlugin = (routes) => {
-  return routes.filter((route)=>{
-    if(route.exchangeRoutes.length === 0) { return true }
-    if(route.blockchain === 'solana') { return true }
-    return plugins[route.blockchain][route.exchangeRoutes[0].exchange.name] != undefined
-  })
-};
-
 let filterNotRoutable = (routes) => {
   return routes.filter((route) => {
     return (
@@ -47288,7 +45976,7 @@ let addApproval = (routes) => {
       if(route.blockchain === 'solana') {
         return Promise.resolve(Blockchains.solana.maxInt)
       } else {
-        return route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address)
+        return route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address).catch(()=>{})
       }
     }
   )).then(
@@ -47296,6 +45984,7 @@ let addApproval = (routes) => {
       routes.map((route, index) => {
         if(
           (
+            allowances[index] === undefined ||
             route.directTransfer ||
             route.fromToken.address.toLowerCase() == Blockchains[route.blockchain].currency.address.toLowerCase() ||
             route.blockchain === 'solana'
@@ -47483,4 +46172,4 @@ const getTransaction = (paymentRoute)=>{
   }
 };
 
-export { getTransaction, plugins, route, routers };
+export { getTransaction, route, routers };

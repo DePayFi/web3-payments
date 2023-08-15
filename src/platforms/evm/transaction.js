@@ -1,42 +1,34 @@
 /*#if _EVM
 
-import { Token } from '@depay/web3-tokens-evm'
+import Token from '@depay/web3-tokens-evm'
 
 /*#elif _SOLANA
 
 //#else */
 
-import { Token } from '@depay/web3-tokens'
+import Token from '@depay/web3-tokens'
 
 //#endif
 
 import Blockchains from '@depay/web3-blockchains'
-import plugins from './plugins'
 import routers from './routers'
 import { ethers } from 'ethers'
 
-let getTransaction = async({ paymentRoute, event })=> {
-  let exchangeRoute = paymentRoute.exchangeRoutes[0]
+const getTransaction = async({ paymentRoute })=> {
 
-  let transaction = {
+  const transaction = {
     blockchain: paymentRoute.blockchain,
     to: transactionAddress({ paymentRoute }),
     api: transactionApi({ paymentRoute }),
     method: transactionMethod({ paymentRoute }),
-    params: transactionParams({ paymentRoute, exchangeRoute, event }),
+    params: await transactionParams({ paymentRoute }),
     value: transactionValue({ paymentRoute })
-  }
-
-  if(exchangeRoute) {
-    if(paymentRoute.exchangePlugin && paymentRoute.exchangePlugin.prepareTransaction) {
-      transaction = paymentRoute.exchangePlugin.prepareTransaction(transaction)
-    }
   }
 
   return transaction
 }
 
-let transactionAddress = ({ paymentRoute })=> {
+const transactionAddress = ({ paymentRoute })=> {
   if(paymentRoute.directTransfer && !paymentRoute.fee) {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return paymentRoute.toAddress
@@ -48,7 +40,7 @@ let transactionAddress = ({ paymentRoute })=> {
   }
 }
 
-let transactionApi = ({ paymentRoute })=> {
+const transactionApi = ({ paymentRoute })=> {
   if(paymentRoute.directTransfer && !paymentRoute.fee) {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
@@ -60,110 +52,100 @@ let transactionApi = ({ paymentRoute })=> {
   }
 }
 
-let transactionMethod = ({ paymentRoute })=> {
+const transactionMethod = ({ paymentRoute })=> {
   if(paymentRoute.directTransfer && !paymentRoute.fee) {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
-    } else {
+    } else { // standard token transfer
       return 'transfer'
     }
   } else {
-    return 'route'
+    return 'pay'
   }
 }
 
-let transactionParams = ({ paymentRoute, exchangeRoute, event })=> {
+const getExchangeType = ({ exchangeRoute, blockchain })=> {
+  if(exchangeRoute.exchange.name === 'uniswap_v3') {
+    return 2 // push
+  } else if(exchangeRoute.exchange[blockchain].address === Blockchains[blockchain].wrapped.address) {
+    return 0 // do nothing
+  } else {
+    return 1 // pull
+  }
+}
+
+const getExchangeCallData = ({ exchangeTransaction })=>{
+  const contract = new ethers.Contract(exchangeTransaction.to, exchangeTransaction.api)
+  const method = exchangeTransaction.method
+  const params = exchangeTransaction.params
+  
+  let contractMethod
+  let fragment
+  fragment = contract.interface.fragments.find((fragment) => {
+    return(
+      fragment.name == method &&
+      (fragment.inputs && params && typeof(params) === 'object' ? fragment.inputs.length == Object.keys(params).length : true)
+    )
+  })
+  let paramsToEncode
+  if(fragment.inputs.length === 1 && fragment.inputs[0].type === 'tuple') {
+    contractMethod = method
+    paramsToEncode = [params[fragment.inputs[0].name]]
+  } else {
+    contractMethod = `${method}(${fragment.inputs.map((input)=>input.type).join(',')})`
+    paramsToEncode = fragment.inputs.map((input) => {
+      if(input.type === 'tuple') {
+        let tuple = {}
+        input.components.forEach((component, index)=>{
+          tuple[component.name] = params[input.name][index]
+        })
+        contractMethod = method
+        return tuple
+      } else {
+        return params[input.name]
+      }
+    })
+  }
+  return contract.interface.encodeFunctionData(contractMethod, paramsToEncode)
+}
+
+const transactionParams = async ({ paymentRoute })=> {
   if(paymentRoute.directTransfer && !paymentRoute.fee) {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
-    } else {
+    } else { // standard token transfer
       return [paymentRoute.toAddress, paymentRoute.toAmount]
     }
   } else {
+    const deadline = Math.ceil(new Date()/1000)+86400 // 1 day
+    const exchangeRoute = paymentRoute.exchangeRoutes[0]
+    const exchangeType = getExchangeType({ exchangeRoute, blockchain: paymentRoute.blockchain })
+    const exchangeTransaction = await exchangeRoute.getTransaction({
+      account: routers[paymentRoute.blockchain].address,
+      inputTokenPushed: exchangeType === 2
+    })
+    const exchangeCallData = getExchangeCallData({ exchangeTransaction })
     return {
-      path: transactionPath({ paymentRoute, exchangeRoute }),
-      amounts: getTransactionAmounts({ paymentRoute, exchangeRoute }),
-      addresses: transactionAddresses({ paymentRoute }),
-      plugins: transactionPlugins({ paymentRoute, exchangeRoute, event }),
-      data: []
+      payment: {
+        amountIn: paymentRoute.fromAmount,
+        paymentAmount: paymentRoute.toAmount,
+        feeAmount: paymentRoute.feeAmount || 0,
+        tokenInAddress: paymentRoute.fromToken.address,
+        exchangeAddress: exchangeRoute.exchange[paymentRoute.blockchain].router.address,
+        tokenOutAddress: paymentRoute.toToken.address,
+        paymentReceiverAddress: paymentRoute.toAddress,
+        feeReceiverAddress: paymentRoute.fee ? paymentRoute.fee.receiver : Blockchains[paymentRoute.blockchain].zero,
+        exchangeType: exchangeType,
+        receiverType: 0,
+        exchangeCallData: exchangeCallData,
+        receiverCallData: Blockchains[paymentRoute.blockchain].zero,
+        deadline,
+      }
     }
   }
 }
 
-let transactionPath = ({ paymentRoute, exchangeRoute })=> {
-  if(exchangeRoute) {
-    return exchangeRoute.path
-  } else {
-    return [paymentRoute.toToken.address]
-  }
-}
-
-let getTransactionAmounts = ({ paymentRoute, exchangeRoute })=> {
-  let amounts
-  if(exchangeRoute) {
-    if(exchangeRoute && exchangeRoute.exchange.wrapper) {
-      amounts = [ paymentRoute.fromAmount, paymentRoute.toAmount ]
-    } else {
-      amounts = [
-        paymentRoute.fromAmount,
-        paymentRoute.toAmount,
-        Math.round(Date.now() / 1000) + 30 * 60, // 30 minutes
-      ]
-    }
-  } else {
-    amounts = [ paymentRoute.fromAmount, paymentRoute.toAmount ]
-  }
-  if(paymentRoute.fee){
-    amounts[4] = paymentRoute.feeAmount
-  }
-  for(var i = 0; i < amounts.length; i++) {
-    if(amounts[i] == undefined){ amounts[i] = '0' }
-  }
-  return amounts
-}
-
-let transactionAddresses = ({ paymentRoute })=> {
-  if(paymentRoute.fee) {
-    return [paymentRoute.fromAddress, paymentRoute.fee.receiver, paymentRoute.toAddress]
-  } else {
-    return [paymentRoute.fromAddress, paymentRoute.toAddress]
-  }
-}
-
-let transactionPlugins = ({ paymentRoute, exchangeRoute, event })=> {
-  let paymentPlugins = []
-
-  if(exchangeRoute) {
-    paymentRoute.exchangePlugin = plugins[paymentRoute.blockchain][exchangeRoute.exchange.name]
-    if(paymentRoute.exchangePlugin.wrap && paymentRoute.fromToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
-      paymentPlugins.push(paymentRoute.exchangePlugin.wrap.address)
-    } else if(paymentRoute.exchangePlugin.wrap && paymentRoute.fromToken.address == Blockchains[paymentRoute.blockchain].wrapped.address) {
-      paymentPlugins.push(paymentRoute.exchangePlugin.unwrap.address)
-    } else {
-      paymentPlugins.push(paymentRoute.exchangePlugin.address)
-    }
-  }
-
-  if(event == 'ifSwapped' && !paymentRoute.directTransfer) {
-    paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address)
-  } else if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
-    paymentPlugins.push(plugins[paymentRoute.blockchain].paymentWithEvent.address)
-  } else {
-    paymentPlugins.push(plugins[paymentRoute.blockchain].payment.address)
-  }
-
-  if(paymentRoute.fee) {
-    if(event == 'ifRoutedAndNative' && !paymentRoute.directTransfer && paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
-      paymentPlugins.push(plugins[paymentRoute.blockchain].paymentFeeWithEvent.address)
-    } else {
-      paymentPlugins.push(plugins[paymentRoute.blockchain].paymentFee.address)
-    }
-  }
-
-  return paymentPlugins
-}
-
-let transactionValue = ({ paymentRoute })=> {
+const transactionValue = ({ paymentRoute })=> {
   if(paymentRoute.fromToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
     if(!paymentRoute.directTransfer) {
       return paymentRoute.fromAmount.toString()
@@ -176,6 +158,5 @@ let transactionValue = ({ paymentRoute })=> {
 }
 
 export {
-  getTransaction,
-  getTransactionAmounts
+  getTransaction
 }

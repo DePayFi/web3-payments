@@ -53,7 +53,12 @@ This library supports the following blockchains:
 - [Ethereum](https://ethereum.org)
 - [BNB Smart Chain](https://www.binance.org/smartChain)
 - [Polygon](https://polygon.technology)
-- [Solana](https://fantom.foundation)
+- [Solana](https://solana.com)
+- [Fantom](https://fantom.foundation)
+- [Arbitrum](https://arbitrum.io)
+- [Avalanche](https://www.avax.network)
+- [Gnosis](https://gnosis.io)
+- [Optimism](https://www.optimism.io)
 
 ## Platform specific packaging
 
@@ -143,17 +148,16 @@ let paymentRoutes = await route({
 })
 ```
 
-If you want to work with intermediate routing results over waiting for all routes to be calculated, you can use the `update` option:
+#### drip routes
+
+If you want to work with intermediate routing results over waiting for all routes to be calculated, you can use the the `drip` option which will drip every single route individually:
 
 ```javascript
 import { route } from '@depay/web3-payments'
 
 let paymentRoutes = await route({
-  update: {
-    every: 500,
-    callback: (currentRoutes){
-      // yields the current routes every 500ms
-    }
+  drip: (route)=> {
+    // yields every single route
   }
 })
 ```
@@ -222,27 +226,6 @@ let paymentRoutes = await route({
 })
 
 ```
-
-#### event
-
-Allows to emit events as part of the payment transaction.
-
-[DePayRouterV1PaymentEvent02](https://github.com/DePayFi/depay-evm-router#depayrouterv1paymentevent02)
-
-Possible values:
-
-`ifRoutedAndNative`: Only emits an event if payment requires going through the payment router and toToken is the NATIVE token (to have an event for internal transfers).
-`ifSwapped`: Only emits an event if payment requires swap, otherwise no dedicated payment event is emited. Use classic transfer event in case of a direct payment (does not go through the DePay router).
-
-```javascript
-let paymentRoutes = await route({
-  accept: [...]
-  event: 'ifRoutedAndNative',
-  from: {...}
-})
-```
-
-Events are not emitted if payment receiver is a smart contract. Make sure your smart contract emits events in that case!
 
 #### fee
 
@@ -347,7 +330,6 @@ Payment routes are provided in the following structure:
   approvalRequired: Boolean (e.g. true)
   approvalTransaction: Transaction (to approve the fromToken being used from the payment router to perform the payment)
   directTransfer: Boolean (e.g. true)
-  event: String (e.g. 'ifSwapped')
   getTransaction: async => Transaction (see @depay/web3-wallets for details)
 }
 ```

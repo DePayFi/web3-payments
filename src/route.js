@@ -2,24 +2,23 @@
 
 import { dripAssets } from '@depay/web3-assets-evm'
 import { route as exchangeRoute } from '@depay/web3-exchanges-evm'
-import { Token } from '@depay/web3-tokens-evm'
+import Token from '@depay/web3-tokens-evm'
 
 /*#elif _SOLANA
 
 import { dripAssets } from '@depay/web3-assets-solana'
 import { route as exchangeRoute } from '@depay/web3-exchanges-solana'
-import { Token } from '@depay/web3-tokens-solana'
+import Token from '@depay/web3-tokens-solana'
 
 //#else */
 
 import { dripAssets } from '@depay/web3-assets'
 import { route as exchangeRoute } from '@depay/web3-exchanges'
-import { Token } from '@depay/web3-tokens'
+import Token from '@depay/web3-tokens'
 
 //#endif
 
 import Blockchains from '@depay/web3-blockchains'
-import plugins from './plugins'
 import routers from './routers'
 import throttle from 'lodash/throttle'
 import { ethers } from 'ethers'
@@ -44,7 +43,6 @@ class PaymentRoute {
     approvalRequired,
     approvalTransaction,
     directTransfer,
-    event,
   }) {
     this.blockchain = blockchain
     this.fromAddress = fromAddress
@@ -62,12 +60,11 @@ class PaymentRoute {
     this.approvalRequired = approvalRequired
     this.approvalTransaction = approvalTransaction
     this.directTransfer = directTransfer
-    this.event = event
-    this.getTransaction = async ()=> await getTransaction({ paymentRoute: this, event })
+    this.getTransaction = async ()=> await getTransaction({ paymentRoute: this })
   }
 }
 
-function convertToRoutes({ assets, accept, from, event }) {
+function convertToRoutes({ assets, accept, from }) {
   return Promise.all(assets.map(async (asset)=>{
     let relevantConfigurations = accept.filter((configuration)=>(configuration.blockchain == asset.blockchain))
     let fromToken = new Token(asset)
@@ -90,7 +87,6 @@ function convertToRoutes({ assets, accept, from, event }) {
           fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
           fee: configuration.fee,
-          event
         })
       } else if(configuration.fromToken && configuration.fromAmount && fromToken.address.toLowerCase() == configuration.fromToken.toLowerCase()) {
         let blockchain = configuration.blockchain
@@ -110,19 +106,17 @@ function convertToRoutes({ assets, accept, from, event }) {
           fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
           fee: configuration.fee,
-          event
         })
       }
     }))
   })).then((routes)=> routes.flat().filter(el => el))
 }
 
-function assetsToRoutes({ assets, blacklist, accept, from, event }) {
+function assetsToRoutes({ assets, blacklist, accept, from }) {
   return Promise.resolve(filterBlacklistedAssets({ assets, blacklist }))
-    .then((assets) => convertToRoutes({ assets, accept, from, event }))
+    .then((assets) => convertToRoutes({ assets, accept, from }))
     .then((routes) => addDirectTransferStatus({ routes }))
     .then(addExchangeRoutes)
-    .then(filterExchangeRoutesWithoutPlugin)
     .then(filterNotRoutable)
     .then(filterInsufficientBalance)
     .then((routes)=>addRouteAmounts({ routes }))
@@ -132,7 +126,7 @@ function assetsToRoutes({ assets, blacklist, accept, from, event }) {
     .then((routes)=>routes.map((route)=>new PaymentRoute(route)))
 }
 
-function route({ accept, from, whitelist, blacklist, event, update }) {
+function route({ accept, from, whitelist, blacklist, drip }) {
   if(accept.some((accept)=>{ return accept && accept.fee && typeof(accept.fee.amount) == 'string' && accept.fee.amount.match(/\.\d\d+\%/) })) {
     throw('Only up to 1 decimal is supported for fee amounts!')
   }
@@ -152,28 +146,21 @@ function route({ accept, from, whitelist, blacklist, event, update }) {
       })
     }
 
-    let throttledUpdate
-    if(update) {
-      throttledUpdate = throttle(async ({ assets, blacklist, accept, from, event })=>{
-        update.callback(await assetsToRoutes({ assets, blacklist, accept, from, event }))
-      }, update.every)
-    }
-    
-    let drippedAssets = []
     const allAssets = await dripAssets({
       accounts: from,
       priority: priority,
       only: whitelist,
       exclude: blacklist,
-      drip: (asset)=>{
-        if(update) {
-          drippedAssets.push(asset)
-          throttledUpdate({ assets: drippedAssets, blacklist, accept, from, event })
-        }
+      drip: !drip ? undefined : (asset)=>{
+        assetsToRoutes({ assets: [asset], blacklist, accept, from }).then((routes)=>{
+          if(routes?.length){
+            drip(routes[0])
+          }
+        })
       }
     })
 
-    let allPaymentRoutes = await assetsToRoutes({ assets: allAssets, blacklist, accept, from, event })
+    let allPaymentRoutes = await assetsToRoutes({ assets: allAssets, blacklist, accept, from })
     resolveAll(allPaymentRoutes)
   })
 }
@@ -226,14 +213,6 @@ let addExchangeRoutes = async (routes) => {
   })
 }
 
-let filterExchangeRoutesWithoutPlugin = (routes) => {
-  return routes.filter((route)=>{
-    if(route.exchangeRoutes.length === 0) { return true }
-    if(route.blockchain === 'solana') { return true }
-    return plugins[route.blockchain][route.exchangeRoutes[0].exchange.name] != undefined
-  })
-}
-
 let filterNotRoutable = (routes) => {
   return routes.filter((route) => {
     return (
@@ -261,7 +240,7 @@ let addApproval = (routes) => {
       if(route.blockchain === 'solana') {
         return Promise.resolve(Blockchains.solana.maxInt)
       } else {
-        return route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address)
+        return route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address).catch(()=>{})
       }
     }
   )).then(
@@ -269,6 +248,7 @@ let addApproval = (routes) => {
       routes.map((route, index) => {
         if(
           (
+            allowances[index] === undefined ||
             route.directTransfer ||
             route.fromToken.address.toLowerCase() == Blockchains[route.blockchain].currency.address.toLowerCase() ||
             route.blockchain === 'solana'
