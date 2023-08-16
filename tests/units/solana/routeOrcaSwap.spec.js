@@ -56,7 +56,7 @@ describe('routeOrcaSwap', ()=> {
     await mockEscrowOutTokenAccount({ provider, tokenAddress: toToken })
   })
 
-  it.only('routes a payment through an orcaSwap', async ()=>{
+  it('routes a payment through an orcaSwap', async ()=>{
 
     let routes = await route({
       accept: [{
