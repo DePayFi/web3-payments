@@ -6,7 +6,7 @@ import { mockAssets } from 'tests/mocks/api'
 import { mockBasics, mockDecimals, mockBalance, mockAllowance } from 'tests/mocks/tokens'
 import { mockPair, mockAmounts } from 'tests/mocks/UniswapV2'
 import { resetCache, getProvider } from '@depay/web3-client'
-import { route } from 'src'
+import { route, routers } from 'src'
 import Token from '@depay/web3-tokens'
 
 describe('route', ()=> {

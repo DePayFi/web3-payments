@@ -45930,6 +45930,14 @@ let addExchangeRoutes = async (routes) => {
     routes.map((route) => {
       if(route.directTransfer) { return [] }
       if(route.toToken && route.toAmount) {
+        console.log({
+          blockchain: route.blockchain,
+          tokenIn: route.fromToken.address,
+          tokenOut: route.toToken.address,
+          amountOutMin: route.toAmount,
+          fromAddress: route.fromAddress,
+          toAddress: route.toAddress
+        });
         return route$1({
           blockchain: route.blockchain,
           tokenIn: route.fromToken.address,

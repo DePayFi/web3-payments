@@ -45935,6 +45935,14 @@
       routes.map((route) => {
         if(route.directTransfer) { return [] }
         if(route.toToken && route.toAmount) {
+          console.log({
+            blockchain: route.blockchain,
+            tokenIn: route.fromToken.address,
+            tokenOut: route.toToken.address,
+            amountOutMin: route.toAmount,
+            fromAddress: route.fromAddress,
+            toAddress: route.toAddress
+          });
           return web3ExchangesEvm.route({
             blockchain: route.blockchain,
             tokenIn: route.fromToken.address,

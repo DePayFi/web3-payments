@@ -958,11 +958,6 @@
   dependencies:
     "@coinbase/wallet-sdk" "^3.6.4"
 
-"@depay/solana-web3.js@^1.24.0":
-  version "1.24.0"
-  resolved "https://registry.yarnpkg.com/@depay/solana-web3.js/-/solana-web3.js-1.24.0.tgz#f51f32042c6ffd573c12b5b0800f8303ae176996"
-  integrity sha512-lPVXkRjeZqVvNtsiV9CVa189bE1/YACQv4U4NMTP6zB9Bvutx93k69gC8pks0P0wCqsO6chLbXCB+Hq/NdASZA==
-
 "@depay/solana-web3.js@^1.25.1":
   version "1.25.1"
   resolved "https://registry.yarnpkg.com/@depay/solana-web3.js/-/solana-web3.js-1.25.1.tgz#2f4725007ff4cfc14af2606eb3d333e68097e13f"
@@ -1001,7 +996,7 @@
   resolved "https://registry.yarnpkg.com/@depay/web3-assets/-/web3-assets-7.0.0.tgz#f60b687aab34a71da73a0d6941d2a807bd9e0986"
   integrity sha512-GXfqoQF/bUC+wHpCwUd/Jap9z2ozjJPy/Ux8hk3puipvoKOqKZpiOLf03X+jI9kMoo09XRNFuZldebesmb610w==
 
-"@depay/web3-blockchains@^8.1.1", "@depay/web3-blockchains@^8.4.2":
+"@depay/web3-blockchains@^8.4.2":
   version "8.4.2"
   resolved "https://registry.yarnpkg.com/@depay/web3-blockchains/-/web3-blockchains-8.4.2.tgz#3f5f072f337acc334e5f0f097627dd85af85848c"
   integrity sha512-kvzTy0R7zBqL6w2CSRGm3SO1K9QuYpuOCa0BTMt4O7ATqxFg+uXor3uWjS8oWvlQwOdqLl8WT7aaKT8OD63KXw==
@@ -1036,13 +1031,13 @@
   resolved "https://registry.yarnpkg.com/@depay/web3-exchanges/-/web3-exchanges-13.2.3.tgz#a1653c6353f687f1c6532cb81c5b821f582cb9e1"
   integrity sha512-9RC8G1F2UimzWm8KRzhxz/xghwg6yGpkRq8Z8YdAh2sg/YJGchMRJ95jvhaguEmxYU5HUHPgpZDAOFk8i2Xq9w==
 
-"@depay/web3-mock@^14.16.0":
-  version "14.16.0"
-  resolved "https://registry.yarnpkg.com/@depay/web3-mock/-/web3-mock-14.16.0.tgz#be1d682e46bb83b3c4059d08e4949b03bf0032fa"
-  integrity sha512-Ew6bq+rxmwa2fvtRcK4yOucBBDLggew9XzRff06x3e4C6zrKJ+msWbSsPns2OXxgkOmCeoxgcEHXCiWH6dLZNw==
+"@depay/web3-mock@^14.16.2":
+  version "14.16.2"
+  resolved "https://registry.yarnpkg.com/@depay/web3-mock/-/web3-mock-14.16.2.tgz#a97dcd022f0fa3c3b23e6e1f29f90c20580bb8ae"
+  integrity sha512-Zf1oqve/mLXaslZNSp0qLE9CBnfzGgJ3m86lVBrCMKJxFi0lV8NKGVhRDIzWCfxv3e5Zx3/dNOgyoaxAvj3RIw==
   dependencies:
-    "@depay/solana-web3.js" "^1.24.0"
-    "@depay/web3-blockchains" "^8.1.1"
+    "@depay/solana-web3.js" "^1.25.1"
+    "@depay/web3-blockchains" "^8.4.2"
     ethers "^5.7.1"
 
 "@depay/web3-tokens-evm@^10.1.0":
