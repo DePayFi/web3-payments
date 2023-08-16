@@ -1446,7 +1446,7 @@ const routeOrcaSwap = async({ paymentRoute, paymentsAccountData, wSolSenderAccou
   const paymentReceiverTokenAccountAddress = await getPaymentReceiverTokenAccountAddress({ paymentRoute });
   const feeReceiverTokenAccountAddress = paymentRoute.fee ? await getFeeReceiverTokenAccountAddress({ paymentRoute }) : paymentReceiverTokenAccountAddress;
   const escrowOutPublicKey = await getEscrowAccountPublicKey({ paymentRoute });
-  const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ from: paymentRoute.fromAddress });
+  const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
   const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === solanaRouters.solana.ammProgram);
 
   const SWAP_LAYOUT = struct([
@@ -1516,7 +1516,7 @@ const routeOrcaSwapSolOut = async({ paymentRoute, paymentsAccountData, wSolEscro
 
   const senderTokenAccountAddress = await getPaymentSenderTokenAccountAddress({ paymentRoute });
   const escrowOutWsolPublicKey = wSolEscrowAccountKeypair.publicKey;
-  const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ from: paymentRoute.fromAddress });
+  const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
   const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === solanaRouters.solana.ammProgram);
 
   const SWAP_LAYOUT = struct([
@@ -1592,7 +1592,7 @@ const routeOrcaTwoHopSwap = async({ paymentRoute, paymentsAccountData, wSolSende
   const feeReceiverTokenAccountPublicKey = paymentRoute.fee ? new PublicKey(await getFeeReceiverTokenAccountAddress({ paymentRoute })) : paymentReceiverTokenAccountPublicKey;
   const escrowOutPublicKey = await getEscrowAccountPublicKey({ paymentRoute });
   const middleTokenAccountPublicKey = new PublicKey(await getMiddleTokenAccountAddress({ paymentRoute }));
-  const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ from: paymentRoute.fromAddress });
+  const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
   const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === solanaRouters.solana.ammProgram);
   const senderTokenAccountPublicKey = wSolSenderAccountKeypair ? wSolSenderAccountKeypair.publicKey : new PublicKey(await getPaymentSenderTokenAccountAddress({ paymentRoute }));
 
@@ -1682,7 +1682,7 @@ const routeOrcaTwoHopSwap = async({ paymentRoute, paymentsAccountData, wSolSende
 const routeOrcaTwoHopSwapSolOut = async({ paymentRoute, paymentsAccountData, wSolEscrowAccountKeypair }) =>{
 
   const middleTokenAccountPublicKey = new PublicKey(await getMiddleTokenAccountAddress({ paymentRoute }));
-  const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ from: paymentRoute.fromAddress });
+  const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
   const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === solanaRouters.solana.ammProgram);
   const senderTokenAccountPublicKey = new PublicKey(await getPaymentSenderTokenAccountAddress({ paymentRoute }));
 
