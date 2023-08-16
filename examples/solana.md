@@ -77,11 +77,11 @@ let paymentRoutes = await Web3Payments.route({
     }
   }],
   from: {
-    solana: '5AcFMJZkXo14r3Hj99iYd1HScPiM4hAcLZf552DfZkxa',
+    solana: '2UgCJaHU5y8NC4uWQcZYeV9a5RyYLF7iKYCybCsdFFD1',
   }
 })
 
-let transaction = await paymentRoutes[1].getTransaction()
+let transaction = await paymentRoutes[0].getTransaction()
 
 let wallet = (await Web3Wallets.getWallets())[0]
 

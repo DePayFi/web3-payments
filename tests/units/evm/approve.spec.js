@@ -1,20 +1,20 @@
 import Blockchains from '@depay/web3-blockchains'
 import fetchMock from 'fetch-mock'
-import plugins from 'src/plugins'
 import routers from 'src/routers'
 import { ethers } from 'ethers'
+import { getWallets } from '@depay/web3-wallets'
 import { mock, resetMocks, anything } from '@depay/web3-mock'
 import { mockAssets } from 'tests/mocks/api'
 import { mockBasics, mockDecimals, mockBalance, mockAllowance } from 'tests/mocks/tokens'
-import { mockPair, mockAmounts } from 'tests/mocks/QuickSwap'
+import { mockPair, mockAmounts } from 'tests/mocks/UniswapV2'
 import { resetCache, getProvider } from '@depay/web3-client'
 import { route } from 'src'
-import { Token } from '@depay/web3-tokens'
+import Token from '@depay/web3-tokens'
 
-describe('event', ()=> {
+describe('route', ()=> {
 
   let provider
-  const blockchain = 'polygon'
+  const blockchain = 'ethereum'
   const accounts = ['0xd8da6bf26964af9d7eed9e03e53415d37aa96045']
   beforeEach(resetMocks)
   beforeEach(()=>mock({ blockchain, accounts: { return: accounts } }))
@@ -37,7 +37,6 @@ describe('event', ()=> {
   let tokenAmountOutBN
   let fromAddress
   let toAddress
-  let transaction
 
   beforeEach(()=>{
     etherBalanceBN = ethers.BigNumber.from('18000000000000000000')
@@ -73,7 +72,7 @@ describe('event', ()=> {
         "type": "20"
       }
     ]})
-
+    
     provider = await getProvider(blockchain)
     Blockchains.findByName(blockchain).tokens.forEach((token)=>{
       if(token.type == '20') {
@@ -85,24 +84,36 @@ describe('event', ()=> {
 
     mockDecimals({ provider, blockchain, api: Token[blockchain].ERC20, token: DAI, decimals: 18 })
 
-    mockPair(provider, '0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d', [WETH, DEPAY])
-    mockPair(provider, '0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d', [DEPAY, WETH])
-    mockPair(provider, '0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11', [DAI, WETH])
-    mockPair(provider, Blockchains[blockchain].zero, [DAI, DEPAY])
+    mockPair({ blockchain, provider, params: [WETH, DEPAY], pair: '0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d' })
+    mockPair({ blockchain, provider, params: [DEPAY, WETH], pair: '0xEF8cD6Cb5c841A4f02986e8A8ab3cC545d1B8B6d' })
+    mockPair({ blockchain, provider, params: [DAI, WETH], pair: '0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11' })
+    mockPair({ blockchain, provider, params: [DAI, DEPAY], pair: Blockchains[blockchain].zero })
 
-    mockAmounts({ provider, method: 'getAmountsIn', params: [tokenAmountOutBN, [WETH, DEPAY]], amounts: [WETHAmountInBN, tokenAmountOutBN] })
-    mockAmounts({ provider, method: 'getAmountsIn', params: [tokenAmountOutBN, [DAI, WETH, DEPAY]], amounts: [DAIAmountInBN, WETHAmountInBN, tokenAmountOutBN] })
+    mockAmounts({ blockchain, provider, method: 'getAmountsIn', params: [tokenAmountOutBN, [WETH, DEPAY]], amounts: [WETHAmountInBN, tokenAmountOutBN] })
+    mockAmounts({ blockchain, provider, method: 'getAmountsIn', params: [tokenAmountOutBN, [DAI, WETH, DEPAY]], amounts: [DAIAmountInBN, WETHAmountInBN, tokenAmountOutBN] })
 
     mockBalance({ provider, blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, balance: DAIBalanceBN })
     mockBalance({ provider, blockchain, api: Token[blockchain].ERC20, token: DEPAY, account: fromAddress, balance: DEPAYBalanceBN })
 
-    mockAllowance({ provider, blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
+    mockAllowance({ provider, blockchain, api: Token[blockchain].ERC20, token: DAI, account: fromAddress, spender: routers[blockchain].address, allowance: ethers.BigNumber.from('0') })
     mockAllowance({ provider, blockchain, api: Token[blockchain].ERC20, token: DEPAY, account: fromAddress, spender: routers[blockchain].address, allowance: MAXINTBN })
 
     mock({ provider, blockchain, balance: { for: fromAddress, return: etherBalanceBN } })
+
   })
 
-  it('`ifSwapped` emits an event if payment route contains a swap and needs to be send through the router smart contract', async ()=>{
+  it('provides an approve function together with the payment routing', async ()=>{
+
+    mock({
+      blockchain,
+      transaction: {
+        from: fromAddress,
+        to: DAI,
+        api: Token[blockchain].DEFAULT,
+        method: 'approve',
+        params: [routers[blockchain].address, '115792089237316195423570985008687907853269984665640564039457584007913129639935']
+      }
+    })
 
     let routes = await route({
       accept: [{
@@ -111,68 +122,31 @@ describe('event', ()=> {
         token: toToken,
         amount: tokenAmountOut
       }],
-      event: 'ifSwapped',
       from: { [blockchain]: fromAddress }
     })
 
-    // not swapped, no event
-    transaction = await routes[0].getTransaction()
-    expect(transaction.method).toEqual('transfer')
+    expect(routes.map((route)=>{ return route.fromToken.address })).toEqual([DEPAY, ETH, DAI])
+    expect(routes.map((route)=>{ return typeof route.approvalTransaction })).toEqual(['undefined', 'undefined', 'object'])
 
-    // swapped, event
-    transaction = await routes[1].getTransaction()
-    expect(transaction.method).toEqual('route')
-    expect(transaction.params.plugins).toContain(plugins[blockchain].paymentWithEvent.address)
-    expect(transaction.params.plugins).not.toContain(plugins[blockchain].payment.address)
-
-    // swapped, event
-    transaction = await routes[2].getTransaction()
-    expect(transaction.method).toEqual('route')
-    expect(transaction.params.plugins).toContain(plugins[blockchain].paymentWithEvent.address)
-    expect(transaction.params.plugins).not.toContain(plugins[blockchain].payment.address)
-
+    let wallet = (await getWallets())[0]
+    await wallet.sendTransaction(routes[2].approvalTransaction)
   })
 
-  it('`ifRoutedAndNative` emits an event for payment and fee if routed through the router and toToken is native', async ()=>{
-    let routes
-    
-    routes = await route({
+  it('does not require approval for direct transfers', async ()=>{
+
+    let routes = await route({
       accept: [{
         toAddress,
         blockchain,
-        token: Blockchains[blockchain].currency.address,
-        amount: 0.0001,
-        fee: {
-          receiver: '0x4e260bB2b25EC6F3A59B478fCDe5eD5B8D783B02',
-          amount: '1%'
-        }
+        token: toToken,
+        amount: tokenAmountOut
       }],
-      event: 'ifRoutedAndNative',
-      from: { [blockchain]: fromAddress },
+      from: { [blockchain]: fromAddress }
     })
 
-    transaction = await routes[0].getTransaction()
-    expect(transaction.params.plugins[0]).toEqual(plugins[blockchain].paymentWithEvent.address)
-    expect(transaction.params.plugins[1]).toEqual(plugins[blockchain].paymentFeeWithEvent.address)
-
-    routes = await route({
-      accept: [{
-        toAddress,
-        blockchain,
-        token: Blockchains[blockchain].wrapped.address,
-        amount: 0.0001,
-        fee: {
-          receiver: '0x4e260bB2b25EC6F3A59B478fCDe5eD5B8D783B02',
-          amount: '1%'
-        }
-      }],
-      event: 'ifRoutedAndNative',
-      from: { [blockchain]: fromAddress },
-    })
-
-    transaction = await routes[0].getTransaction()
-    expect(transaction.params.plugins[0]).not.toEqual(plugins[blockchain].paymentWithEvent.address)
-    expect(transaction.params.plugins[1]).toEqual(plugins[blockchain].payment.address)
-    expect(transaction.params.plugins[2]).toEqual(plugins[blockchain].paymentFee.address)
+    expect(routes[0].fromToken.address).toEqual(DEPAY)
+    expect(routes[0].directTransfer).toEqual(true)
+    expect(routes[0].approvalRequired).toEqual(false)
+    expect(routes[0].approvalTransaction).toEqual(undefined)
   })
 })

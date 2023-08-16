@@ -1,13 +1,20 @@
 import { ethers } from 'ethers'
-import { find } from '@depay/web3-exchanges'
+import Exchanges from '@depay/web3-exchanges'
 import { mock } from '@depay/web3-mock'
 
-let exchange = find('ethereum', 'uniswap_v2')
-
-let mockPair = (provider, pair, params)=>{
+let mockPair = ({ blockchain, provider, pair, params })=>{
+  let exchange
+  switch (blockchain) {
+    case 'ethereum':
+      exchange = Exchanges.uniswap_v2.ethereum
+    break;
+    case 'bsc':
+      exchange = Exchanges.pancakeswap.bsc
+    break;
+  }
   mock({
     provider: provider,
-    blockchain: 'ethereum',
+    blockchain,
     request: {
       to: pair,
       api: exchange.pair.api,
@@ -17,7 +24,7 @@ let mockPair = (provider, pair, params)=>{
   })
   mock({
     provider: provider,
-    blockchain: 'ethereum',
+    blockchain,
     request: {
       to: pair,
       api: exchange.pair.api,
@@ -27,7 +34,7 @@ let mockPair = (provider, pair, params)=>{
   })
   mock({
     provider: provider,
-    blockchain: 'ethereum',
+    blockchain,
     request: {
       to: pair,
       api: exchange.pair.api,
@@ -37,7 +44,7 @@ let mockPair = (provider, pair, params)=>{
   })
   mock({
     provider,
-    blockchain: 'ethereum',
+    blockchain,
     request: {
       to: exchange.factory.address,
       api: exchange.factory.api,
@@ -48,10 +55,19 @@ let mockPair = (provider, pair, params)=>{
   })
 }
 
-let mockAmounts = ({ provider, method, params, amounts })=>{
+let mockAmounts = ({ blockchain, provider, method, params, amounts })=>{
+  let exchange
+  switch (blockchain) {
+    case 'ethereum':
+      exchange = Exchanges.uniswap_v2.ethereum
+    break;
+    case 'bsc':
+      exchange = Exchanges.pancakeswap.bsc
+    break;
+  }
   return mock({
     provider,
-    blockchain: 'ethereum',
+    blockchain,
     request: {
       to: exchange.router.address,
       api: exchange.router.api,

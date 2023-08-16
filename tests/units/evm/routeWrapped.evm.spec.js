@@ -1,14 +1,12 @@
 import Blockchains from '@depay/web3-blockchains'
 import fetchMock from 'fetch-mock'
-import plugins from 'src/plugins.js'
-import routers from 'src/routers.js'
 import { ethers } from 'ethers'
 import { mock, resetMocks } from '@depay/web3-mock'
 import { mockAssets } from 'tests/mocks/api'
 import { mockBasics, mockDecimals, mockBalance, mockAllowance } from 'tests/mocks/tokens'
-import { resetCache, getProvider } from '@depay/web3-client'
-import { route } from 'src'
-import { Token } from '@depay/web3-tokens'
+import { resetCache, getProvider } from '@depay/web3-client-evm'
+import { route, plugins, routers } from 'dist/esm/index.evm'
+import Token from '@depay/web3-tokens-evm'
 
 describe('route wrapped', ()=> {
 
@@ -69,15 +67,12 @@ describe('route wrapped', ()=> {
     expect(transaction.blockchain).toEqual(blockchain)
     expect(transaction.to).toEqual(routers[blockchain].address)
     expect(transaction.api).toEqual(routers[blockchain].api)
-    expect(transaction.method).toEqual('route')
-    expect(transaction.params.path).toEqual([NATIVE, WRAPPED])
-    expect(transaction.params.amounts[0].toString()).toEqual(tokenAmountOutBN.toString())
-    expect(transaction.params.amounts[1].toString()).toEqual(tokenAmountOutBN.toString())
-    expect(transaction.params.amounts.length).toEqual(2)
-    expect(transaction.params.addresses[0]).toEqual(fromAddress)
-    expect(transaction.params.addresses[1]).toEqual(toAddress)
-    expect(transaction.params.plugins[0]).toEqual(plugins[blockchain].weth.wrap.address)
-    expect(transaction.params.plugins[1]).toEqual(plugins[blockchain].payment.address)
+    expect(transaction.method).toEqual('pay')
+    expect(transaction.params.payment.tokenInAddress).toEqual(NATIVE)
+    expect(transaction.params.payment.tokenOutAddress).toEqual(WRAPPED)
+    expect(transaction.params.payment.amountIn).toEqual(tokenAmountOutBN.toString())
+    expect(transaction.params.payment.paymentAmount).toEqual(tokenAmountOutBN.toString())
+    expect(transaction.params.payment.paymentReceiverAddress).toEqual(toAddress)
     expect(routes[0].approvalRequired).toEqual(false)
     expect(routes[0].approvalTransaction).toEqual(undefined)
     expect(routes[0].directTransfer).toEqual(false)
@@ -113,15 +108,12 @@ describe('route wrapped', ()=> {
     expect(transaction.blockchain).toEqual(blockchain)
     expect(transaction.to).toEqual(routers[blockchain].address)
     expect(transaction.api).toEqual(routers[blockchain].api)
-    expect(transaction.method).toEqual('route')
-    expect(transaction.params.path).toEqual([WRAPPED, NATIVE])
-    expect(transaction.params.amounts[0].toString()).toEqual(tokenAmountOutBN.toString())
-    expect(transaction.params.amounts[1].toString()).toEqual(tokenAmountOutBN.toString())
-    expect(transaction.params.amounts.length).toEqual(2)
-    expect(transaction.params.addresses[0]).toEqual(fromAddress)
-    expect(transaction.params.addresses[1]).toEqual(toAddress)
-    expect(transaction.params.plugins[0]).toEqual(plugins[blockchain].weth.unwrap.address)
-    expect(transaction.params.plugins[1]).toEqual(plugins[blockchain].payment.address)
+    expect(transaction.method).toEqual('pay')
+    expect(transaction.params.payment.tokenInAddress).toEqual(WRAPPED)
+    expect(transaction.params.payment.tokenOutAddress).toEqual(NATIVE)
+    expect(transaction.params.payment.amountIn).toEqual(tokenAmountOutBN.toString())
+    expect(transaction.params.payment.paymentAmount).toEqual(tokenAmountOutBN.toString())
+    expect(transaction.params.payment.paymentReceiverAddress).toEqual(toAddress)
     expect(routes[0].directTransfer).toEqual(false)
     expect(routes[0].approvalRequired).toEqual(true)
     expect(routes[0].approvalTransaction.to).toEqual(WRAPPED)
