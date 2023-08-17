@@ -300,9 +300,9 @@ plugins.ethereum.payment // 0x99F3F4685a7178F26EB4F4Ca8B75a1724F1577B9
 
 ### Payment Routing Priorities
 
-1. If user has request token in his wallet, direct token transfer to receiver will be prioritized
+1. If user has a requested token in his wallet, a direct token transfer to the receiver will be prioritized
 
-2. Any token that can be liquidated on decentralized exchange and has been already been approved for the DePay router will be second priority
+2. Any token that can be liquidated on decentralized exchange and has already been approved for the DePay router will be second priority
 
 3. All other liquefiable tokens that still require token approval will be prioritized last
 
