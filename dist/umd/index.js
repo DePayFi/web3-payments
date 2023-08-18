@@ -2458,7 +2458,6 @@
   let sortPaymentRoutes = (routes) => {
     let aWins = -1;
     let bWins = 1;
-    let equal = 0;
     return routes.sort((a, b) => {
       if (getBlockchainCost(a.fromToken.blockchain) < getBlockchainCost(b.fromToken.blockchain)) {
         return aWins
@@ -2495,7 +2494,11 @@
         return bWins
       }
 
-      return equal
+      if (a.fromToken.address < b.fromToken.address) {
+        return aWins
+      } else {
+        return bWins
+      }
     })
   };
 

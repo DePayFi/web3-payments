@@ -454,7 +454,11 @@ let sortPaymentRoutes = (routes) => {
       return bWins
     }
 
-    return equal
+    if (a.fromToken.address < b.fromToken.address) {
+      return aWins
+    } else {
+      return bWins
+    }
   })
 }
 
