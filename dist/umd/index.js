@@ -2,12 +2,13 @@
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@depay/web3-blockchains'), require('@depay/solana-web3.js'), require('ethers'), require('@depay/web3-tokens'), require('@depay/web3-assets'), require('@depay/web3-exchanges')) :
   typeof define === 'function' && define.amd ? define(['exports', '@depay/web3-blockchains', '@depay/solana-web3.js', 'ethers', '@depay/web3-tokens', '@depay/web3-assets', '@depay/web3-exchanges'], factory) :
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.Web3Payments = {}, global.Web3Blockchains, global.SolanaWeb3js, global.ethers, global.Web3Tokens, global.Web3Assets, global.Web3Exchanges));
-})(this, (function (exports, Blockchains, solanaWeb3_js, ethers, Token, web3Assets, web3Exchanges) { 'use strict';
+})(this, (function (exports, Blockchains, solanaWeb3_js, ethers, Token, web3Assets, Exchanges) { 'use strict';
 
   function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
   var Blockchains__default = /*#__PURE__*/_interopDefaultLegacy(Blockchains);
   var Token__default = /*#__PURE__*/_interopDefaultLegacy(Token);
+  var Exchanges__default = /*#__PURE__*/_interopDefaultLegacy(Exchanges);
 
   var solanaRouters = {
     solana: {
@@ -2243,7 +2244,7 @@
       routes.map((route) => {
         if(route.directTransfer) { return [] }
         if(route.toToken && route.toAmount) {
-          return web3Exchanges.route({
+          return Exchanges__default["default"].route({
             blockchain: route.blockchain,
             tokenIn: route.fromToken.address,
             tokenOut: route.toToken.address,
@@ -2252,7 +2253,7 @@
             toAddress: route.toAddress
           })
         } else if(route.fromToken && route.fromAmount) {
-          return web3Exchanges.route({
+          return Exchanges__default["default"].route({
             blockchain: route.blockchain,
             tokenIn: route.fromToken.address,
             tokenOut: route.toToken.address,

@@ -3,7 +3,7 @@ import { BN, struct, u64, i64, u128, bool, Connection, ACCOUNT_LAYOUT, PublicKey
 import { ethers } from 'ethers';
 import Token from '@depay/web3-tokens';
 import { dripAssets } from '@depay/web3-assets';
-import { route as route$1 } from '@depay/web3-exchanges';
+import Exchanges from '@depay/web3-exchanges';
 
 var solanaRouters = {
   solana: {
@@ -2239,7 +2239,7 @@ let addExchangeRoutes = async (routes) => {
     routes.map((route) => {
       if(route.directTransfer) { return [] }
       if(route.toToken && route.toAmount) {
-        return route$1({
+        return Exchanges.route({
           blockchain: route.blockchain,
           tokenIn: route.fromToken.address,
           tokenOut: route.toToken.address,
@@ -2248,7 +2248,7 @@ let addExchangeRoutes = async (routes) => {
           toAddress: route.toAddress
         })
       } else if(route.fromToken && route.fromAmount) {
-        return route$1({
+        return Exchanges.route({
           blockchain: route.blockchain,
           tokenIn: route.fromToken.address,
           tokenOut: route.toToken.address,

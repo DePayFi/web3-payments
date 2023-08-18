@@ -1,7 +1,7 @@
 import Blockchains from '@depay/web3-blockchains';
 import { ethers } from 'ethers';
 import { dripAssets } from '@depay/web3-assets-evm';
-import { route as route$1 } from '@depay/web3-exchanges-evm';
+import Exchanges from '@depay/web3-exchanges-evm';
 import Token$1 from '@depay/web3-tokens-evm';
 
 var _global$1 = (typeof global !== "undefined" ? global :
@@ -45930,7 +45930,7 @@ let addExchangeRoutes = async (routes) => {
     routes.map((route) => {
       if(route.directTransfer) { return [] }
       if(route.toToken && route.toAmount) {
-        return route$1({
+        return Exchanges.route({
           blockchain: route.blockchain,
           tokenIn: route.fromToken.address,
           tokenOut: route.toToken.address,
@@ -45939,7 +45939,7 @@ let addExchangeRoutes = async (routes) => {
           toAddress: route.toAddress
         })
       } else if(route.fromToken && route.fromAmount) {
-        return route$1({
+        return Exchanges.route({
           blockchain: route.blockchain,
           tokenIn: route.fromToken.address,
           tokenOut: route.toToken.address,

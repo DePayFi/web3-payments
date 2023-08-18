@@ -1,19 +1,19 @@
 /*#if _EVM
 
 import { dripAssets } from '@depay/web3-assets-evm'
-import { route as exchangeRoute } from '@depay/web3-exchanges-evm'
+import Exchanges from '@depay/web3-exchanges-evm'
 import Token from '@depay/web3-tokens-evm'
 
 /*#elif _SOLANA
 
 import { dripAssets } from '@depay/web3-assets-solana'
-import { route as exchangeRoute } from '@depay/web3-exchanges-solana'
+import Exchanges from '@depay/web3-exchanges-solana'
 import Token from '@depay/web3-tokens-solana'
 
 //#else */
 
 import { dripAssets } from '@depay/web3-assets'
-import { route as exchangeRoute } from '@depay/web3-exchanges'
+import Exchanges from '@depay/web3-exchanges'
 import Token from '@depay/web3-tokens'
 
 //#endif
@@ -193,7 +193,7 @@ let addExchangeRoutes = async (routes) => {
     routes.map((route) => {
       if(route.directTransfer) { return [] }
       if(route.toToken && route.toAmount) {
-        return exchangeRoute({
+        return Exchanges.route({
           blockchain: route.blockchain,
           tokenIn: route.fromToken.address,
           tokenOut: route.toToken.address,
@@ -202,7 +202,7 @@ let addExchangeRoutes = async (routes) => {
           toAddress: route.toAddress
         })
       } else if(route.fromToken && route.fromAmount) {
-        return exchangeRoute({
+        return Exchanges.route({
           blockchain: route.blockchain,
           tokenIn: route.fromToken.address,
           tokenOut: route.toToken.address,

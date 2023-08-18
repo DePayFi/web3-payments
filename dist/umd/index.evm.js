@@ -2,11 +2,12 @@
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@depay/web3-blockchains'), require('ethers'), require('@depay/web3-assets-evm'), require('@depay/web3-exchanges-evm'), require('@depay/web3-tokens-evm')) :
   typeof define === 'function' && define.amd ? define(['exports', '@depay/web3-blockchains', 'ethers', '@depay/web3-assets-evm', '@depay/web3-exchanges-evm', '@depay/web3-tokens-evm'], factory) :
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.Web3Payments = {}, global.Web3Blockchains, global.ethers, global.Web3Assets, global.Web3Exchanges, global.Web3Tokens));
-})(this, (function (exports, Blockchains, ethers, web3AssetsEvm, web3ExchangesEvm, Token$1) { 'use strict';
+})(this, (function (exports, Blockchains, ethers, web3AssetsEvm, Exchanges, Token$1) { 'use strict';
 
   function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
   var Blockchains__default = /*#__PURE__*/_interopDefaultLegacy(Blockchains);
+  var Exchanges__default = /*#__PURE__*/_interopDefaultLegacy(Exchanges);
   var Token__default = /*#__PURE__*/_interopDefaultLegacy(Token$1);
 
   var _global$1 = (typeof global !== "undefined" ? global :
@@ -45935,7 +45936,7 @@
       routes.map((route) => {
         if(route.directTransfer) { return [] }
         if(route.toToken && route.toAmount) {
-          return web3ExchangesEvm.route({
+          return Exchanges__default["default"].route({
             blockchain: route.blockchain,
             tokenIn: route.fromToken.address,
             tokenOut: route.toToken.address,
@@ -45944,7 +45945,7 @@
             toAddress: route.toAddress
           })
         } else if(route.fromToken && route.fromAmount) {
-          return web3ExchangesEvm.route({
+          return Exchanges__default["default"].route({
             blockchain: route.blockchain,
             tokenIn: route.fromToken.address,
             tokenOut: route.toToken.address,
