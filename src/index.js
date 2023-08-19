@@ -1,5 +1,4 @@
 import { getTransaction as getSolanaTransaction } from './platforms/solana/transaction'
-import { getBlockchainCost } from './costs'
 import route from './route'
 import routers from './routers'
 
@@ -13,5 +12,4 @@ export {
   route,
   routers,
   getTransaction,
-  getBlockchainCost,
 }

@@ -154,6 +154,27 @@ function route({ accept, from, whitelist, blacklist, drip }) {
       priority.push({ blockchain, address: Blockchains[blockchain].currency.address })
     })
 
+    priority.sort((a,b)=>{
+
+      // cheaper blockchains are more cost efficient
+      if (getBlockchainCost(a.blockchain) < getBlockchainCost(b.blockchain)) {
+        return -1 // a wins
+      }
+      if (getBlockchainCost(b.blockchain) < getBlockchainCost(a.blockchain)) {
+        return 1 // b wins
+      }
+
+      // NATIVE input token is more cost efficient
+      if (a.address.toLowerCase() === Blockchains[a.blockchain].currency.address.toLowerCase()) {
+        return -1 // a wins
+      }
+      if (b.address.toLowerCase() === Blockchains[b.blockchain].currency.address.toLowerCase()) {
+        return 1 // b wins
+      }
+
+      return 0
+    })
+
     const allAssets = await dripAssets({
       accounts: from,
       priority,
@@ -384,6 +405,8 @@ let sortPaymentRoutes = (routes) => {
   let bWins = 1
   let equal = 0
   return routes.sort((a, b) => {
+
+    // cheaper blockchains are more cost-efficien
     if (getBlockchainCost(a.fromToken.blockchain) < getBlockchainCost(b.fromToken.blockchain)) {
       return aWins
     }
@@ -391,6 +414,7 @@ let sortPaymentRoutes = (routes) => {
       return bWins
     }
 
+    // direct transfer is always more cost-efficient
     if (a.fromToken.address.toLowerCase() == a.toToken.address.toLowerCase()) {
       return aWins
     }
@@ -398,6 +422,7 @@ let sortPaymentRoutes = (routes) => {
       return bWins
     }
 
+    // requiring approval is less cost efficient
     if (a.approvalRequired && !b.approvalRequired) {
       return bWins
     }
@@ -405,6 +430,7 @@ let sortPaymentRoutes = (routes) => {
       return aWins
     }
 
+    // NATIVE -> WRAPPED is more cost efficient that swapping to another token
     if (JSON.stringify([a.fromToken.address.toLowerCase(), a.toToken.address.toLowerCase()].sort()) == JSON.stringify([Blockchains[a.blockchain].currency.address.toLowerCase(), Blockchains[a.blockchain].wrapped.address.toLowerCase()].sort())) {
       return aWins
     }
@@ -412,6 +438,7 @@ let sortPaymentRoutes = (routes) => {
       return bWins
     }
 
+    // NATIVE input token is more cost efficient
     if (a.fromToken.address.toLowerCase() == Blockchains[a.blockchain].currency.address.toLowerCase()) {
       return aWins
     }

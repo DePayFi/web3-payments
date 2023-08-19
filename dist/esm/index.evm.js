@@ -45522,33 +45522,6 @@ const getTransaction$3 = async({ paymentRoute })=> {
   return transaction
 };
 
-// lower blockchain cost is better
-const getBlockchainCost = (blockchain) => {
-  // in $USD
-  switch(blockchain) {
-    case 'solana':
-      return 0.000125
-    case 'gnosis':
-      return 0.009
-    case 'polygon':
-      return 0.01
-    case 'fantom':
-      return 0.05
-    case 'avalanche':
-      return 0.10
-    case 'bsc':
-      return 0.20
-    case 'arbitrum':
-      return 0.30
-    case 'optimism':
-      return 0.40
-    case 'ethereum':
-      return 10.0
-    default:
-      return 100
-  }
-};
-
 const API = [{"inputs":[{"internalType":"address","name":"_PERMIT2","type":"address"},{"internalType":"address","name":"_FORWARDER","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"exchange","type":"address"}],"name":"Disabled","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"exchange","type":"address"}],"name":"Enabled","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"inputs":[],"name":"FORWARDER","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PERMIT2","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"exchange","type":"address"},{"internalType":"bool","name":"enabled","type":"bool"}],"name":"enable","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"exchanges","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"components":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"bool","name":"permit2","type":"bool"},{"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount","type":"uint256"},{"internalType":"address","name":"tokenInAddress","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"address","name":"tokenOutAddress","type":"address"},{"internalType":"address","name":"paymentReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress","type":"address"},{"internalType":"uint8","name":"exchangeType","type":"uint8"},{"internalType":"uint8","name":"receiverType","type":"uint8"},{"internalType":"bytes","name":"exchangeCallData","type":"bytes"},{"internalType":"bytes","name":"receiverCallData","type":"bytes"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"internalType":"struct IDePayRouterV2.Payment","name":"payment","type":"tuple"}],"name":"pay","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"components":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"bool","name":"permit2","type":"bool"},{"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount","type":"uint256"},{"internalType":"address","name":"tokenInAddress","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"address","name":"tokenOutAddress","type":"address"},{"internalType":"address","name":"paymentReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress","type":"address"},{"internalType":"uint8","name":"exchangeType","type":"uint8"},{"internalType":"uint8","name":"receiverType","type":"uint8"},{"internalType":"bytes","name":"exchangeCallData","type":"bytes"},{"internalType":"bytes","name":"receiverCallData","type":"bytes"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"internalType":"struct IDePayRouterV2.Payment","name":"payment","type":"tuple"},{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"uint48","name":"expiration","type":"uint48"},{"internalType":"uint48","name":"nonce","type":"uint48"}],"internalType":"struct IPermit2.PermitDetails","name":"details","type":"tuple"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"sigDeadline","type":"uint256"}],"internalType":"struct IPermit2.PermitSingle","name":"permitSingle","type":"tuple"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"pay","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdraw","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}];
 
 var routers$1 = {
@@ -45626,6 +45599,33 @@ _Symbol ? _Symbol.toStringTag : undefined;
 
 /** Built-in value references. */
 _Symbol ? _Symbol.toStringTag : undefined;
+
+// lower blockchain cost is better
+const getBlockchainCost = (blockchain) => {
+  // in $USD
+  switch(blockchain) {
+    case 'solana':
+      return 0.000125
+    case 'gnosis':
+      return 0.009
+    case 'polygon':
+      return 0.01
+    case 'fantom':
+      return 0.05
+    case 'avalanche':
+      return 0.10
+    case 'bsc':
+      return 0.20
+    case 'arbitrum':
+      return 0.30
+    case 'optimism':
+      return 0.40
+    case 'ethereum':
+      return 10.0
+    default:
+      return 100
+  }
+};
 
 const getTransaction$2 = async({ paymentRoute })=> {
 
@@ -45917,6 +45917,27 @@ function route({ accept, from, whitelist, blacklist, drip }) {
       priority.push({ blockchain, address: Blockchains[blockchain].currency.address });
     });
 
+    priority.sort((a,b)=>{
+
+      // cheaper blockchains are more cost efficient
+      if (getBlockchainCost(a.blockchain) < getBlockchainCost(b.blockchain)) {
+        return -1 // a wins
+      }
+      if (getBlockchainCost(b.blockchain) < getBlockchainCost(a.blockchain)) {
+        return 1 // b wins
+      }
+
+      // NATIVE input token is more cost efficient
+      if (a.address.toLowerCase() === Blockchains[a.blockchain].currency.address.toLowerCase()) {
+        return -1 // a wins
+      }
+      if (b.address.toLowerCase() === Blockchains[b.blockchain].currency.address.toLowerCase()) {
+        return 1 // b wins
+      }
+
+      return 0
+    });
+
     const allAssets = await dripAssets({
       accounts: from,
       priority,
@@ -46146,6 +46167,8 @@ let sortPaymentRoutes = (routes) => {
   let aWins = -1;
   let bWins = 1;
   return routes.sort((a, b) => {
+
+    // cheaper blockchains are more cost-efficien
     if (getBlockchainCost(a.fromToken.blockchain) < getBlockchainCost(b.fromToken.blockchain)) {
       return aWins
     }
@@ -46153,6 +46176,7 @@ let sortPaymentRoutes = (routes) => {
       return bWins
     }
 
+    // direct transfer is always more cost-efficient
     if (a.fromToken.address.toLowerCase() == a.toToken.address.toLowerCase()) {
       return aWins
     }
@@ -46160,6 +46184,7 @@ let sortPaymentRoutes = (routes) => {
       return bWins
     }
 
+    // requiring approval is less cost efficient
     if (a.approvalRequired && !b.approvalRequired) {
       return bWins
     }
@@ -46167,6 +46192,7 @@ let sortPaymentRoutes = (routes) => {
       return aWins
     }
 
+    // NATIVE -> WRAPPED is more cost efficient that swapping to another token
     if (JSON.stringify([a.fromToken.address.toLowerCase(), a.toToken.address.toLowerCase()].sort()) == JSON.stringify([Blockchains[a.blockchain].currency.address.toLowerCase(), Blockchains[a.blockchain].wrapped.address.toLowerCase()].sort())) {
       return aWins
     }
@@ -46174,6 +46200,7 @@ let sortPaymentRoutes = (routes) => {
       return bWins
     }
 
+    // NATIVE input token is more cost efficient
     if (a.fromToken.address.toLowerCase() == Blockchains[a.blockchain].currency.address.toLowerCase()) {
       return aWins
     }
@@ -46195,4 +46222,4 @@ const getTransaction = (paymentRoute)=>{
   }
 };
 
-export { getBlockchainCost, getTransaction, route, routers };
+export { getTransaction, route, routers };
