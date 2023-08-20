@@ -11,6 +11,7 @@ import {
   getTokenAccountAddress,
   mockPaymentsAccount,
   mockTokenBalance ,
+  mockTokenMeta,
   mockTokenAccount
 } from '../../mocks/solana'
 
@@ -35,6 +36,8 @@ describe('routeToken', ()=> {
     mockAssets({ blockchain, account: fromAddress, assets: []})
     await mockBasics({ provider, fromAddress, toAddress, feeReceiverAddress, fromTokenAddress: toToken })
     mockTokenBalance({ provider, tokenAddress: toToken, tokenDecimals: 6, fromAddress, balance: '10000000' })
+    mockTokenMeta({ provider, tokenAddress: toToken, name: 'USD Coin', symbol: 'USDC' })
+    mock({ provider, blockchain, balance: { for: fromAddress, return: 0 } })
   })
 
   it('routes a token payment', async ()=>{

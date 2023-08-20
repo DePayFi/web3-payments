@@ -162,6 +162,42 @@ const mockTokenBalance = async({ provider, tokenAddress, tokenDecimals, fromAddr
   })
 }
 
+const mockTokenMeta = async({ provider, tokenAddress, name, symbol }) => {
+
+  const metaDataPublicKey = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s')
+  let seed = [
+    Buffer.from('metadata'),
+    metaDataPublicKey.toBuffer(),
+    new PublicKey(tokenAddress).toBuffer()
+  ]
+
+  const tokenMetaAddress = (await PublicKey.findProgramAddress(seed, metaDataPublicKey))[0]
+
+  return mock({
+    blockchain: 'solana',
+    provider,
+    request: {
+      to: tokenMetaAddress,
+      api: Token[blockchain].METADATA_LAYOUT,
+      return: {
+        key: { metadataV1: {} },
+        isMutable: true,
+        editionNonce: 252,
+        primarySaleHappened: false,
+        updateAuthority: '2wmVCSfPxGPjrnMMn7rchp4uaeoTqN39mXFC2zhPdri9',
+        mint: tokenAddress,
+        data: {
+          creators: null,
+          name,
+          sellerFeeBasisPoints: 0,
+          symbol,
+          uri: ""
+        }
+      }
+    }
+  })
+}
+
 const mockMajorTokens = async({ provider })=>{
 
   await Promise.all(Blockchains.solana.tokens.map((token)=>{
@@ -242,6 +278,7 @@ export {
   getPaymentsAccountPublicKey,
   mockPaymentsAccount,
   mockTokenBalance,
+  mockTokenMeta,
   getTokenAccountAddress,
   mockTokenAccount,
   mockEscrowOutTokenAccount,

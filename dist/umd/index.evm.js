@@ -45919,8 +45919,11 @@
         });
       }
 
+      // add native currency as priority if does not exist already
       [...new Set(blockchains)].forEach((blockchain)=>{
-        priority.push({ blockchain, address: Blockchains__default["default"][blockchain].currency.address });
+        if(!priority.find((priority)=>priority.blockchain === blockchain && priority.address === Blockchains__default["default"][blockchain].currency.address)) {
+          priority.push({ blockchain, address: Blockchains__default["default"][blockchain].currency.address });
+        }
       });
 
       priority.sort((a,b)=>{
@@ -45944,6 +45947,59 @@
         return 0
       });
 
+      const sortPriorities = (priorities, a,b)=>{
+        if(!priorities || priorities.length === 0) { return 0 }
+        let priorityIndexOfA = priorities.indexOf([a.blockchain, a.address.toLowerCase()].join(''));
+        let priorityIndexOfB = priorities.indexOf([b.blockchain, b.address.toLowerCase()].join(''));
+        
+        if(priorityIndexOfA !== -1 && priorityIndexOfB === -1) {
+          return -1 // a wins
+        }
+        if(priorityIndexOfB !== -1 && priorityIndexOfA === -1) {
+          return 1 // b wins
+        }
+
+        if(priorityIndexOfA < priorityIndexOfB) {
+          return -1 // a wins
+        }
+        if(priorityIndexOfB < priorityIndexOfA) {
+          return 1 // b wins
+        }
+        return 0
+      };
+
+      let drippedIndex = 0;
+      const dripQueue = [];
+      const dripped = [];
+      const priorities = priority.map((priority)=>[priority.blockchain, priority.address.toLowerCase()].join(''));
+      const thresholdToFirstDripIfNo1PriorityWasNotFirst = 400;
+      const now = ()=>Math.ceil(new Date());
+      const time = now();
+      const dripRoute = (route, recursive = true)=>{
+        const asset = { blockchain: route.blockchain, address: route.fromToken.address };
+        const assetAsKey = [asset.blockchain, asset.address.toLowerCase()].join('');
+        const timeThresholdReached = now()-time > thresholdToFirstDripIfNo1PriorityWasNotFirst;
+        if(dripped.indexOf(assetAsKey) > -1) { return }
+        if(priorities.indexOf(assetAsKey) === drippedIndex) {
+          dripped.push(assetAsKey);
+          drip(asset);
+          drippedIndex += 1;
+          if(!recursive){ return }
+          dripQueue.forEach((asset)=>dripRoute(route, false));
+        } else if(drippedIndex >= priorities.length || timeThresholdReached) {
+          if(priorities.indexOf(assetAsKey) === -1) {
+            dripped.push(assetAsKey);
+            drip(asset);
+          } else if (drippedIndex >= priorities.length || timeThresholdReached) {
+            dripped.push(assetAsKey);
+            drip(asset);
+          }
+        } else if(!dripQueue.find((queued)=>queued.blockchain === asset.blockchain && queued.address.toLowerCase() === asset.address.toLowerCase())) {
+          dripQueue.push(asset);
+          dripQueue.sort((a,b)=>sortPriorities(priorities, a, b));
+        }
+      };
+
       const allAssets = await web3AssetsEvm.dripAssets({
         accounts: from,
         priority,
@@ -45951,8 +46007,8 @@
         exclude: blacklist,
         drip: !drip ? undefined : (asset)=>{
           assetsToRoutes({ assets: [asset], blacklist, accept, from }).then((routes)=>{
-            if(_optionalChain([routes, 'optionalAccess', _5 => _5.length])){
-              drip(routes[0]);
+            if(_optionalChain([routes, 'optionalAccess', _5 => _5.length])) {
+              dripRoute(routes[0]);
             }
           });
         }

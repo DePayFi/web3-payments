@@ -981,20 +981,20 @@
     "@walletconnect/core" "^2.9.2"
     "@walletconnect/sign-client" "^2.9.2"
 
-"@depay/web3-assets-evm@^7.1.0":
-  version "7.1.0"
-  resolved "https://registry.yarnpkg.com/@depay/web3-assets-evm/-/web3-assets-evm-7.1.0.tgz#32b6c20b5eeeb59a30e8ac7653f86a5ca4fad11b"
-  integrity sha512-xnAjbGXZImB+z5EEcuO32qA/sJMPORkIqQrPsaFj9Hc/+4KuVcXsG5LUp62YEB0vm0SWy+h8Mv/aSMFh4dpOBw==
+"@depay/web3-assets-evm@^7.1.2":
+  version "7.1.2"
+  resolved "https://registry.yarnpkg.com/@depay/web3-assets-evm/-/web3-assets-evm-7.1.2.tgz#16b6f8b4815f7483c2f4839306a94a63a4f5b327"
+  integrity sha512-buQZRkDgDt6ZX8VTYm5xUOswUdDfUyweBHgRBxsBNhDSlkysAsjNNtW9DNFboUXVeVHBMPno+rXcMfP/8+tfkA==
 
-"@depay/web3-assets-solana@^7.1.0":
-  version "7.1.0"
-  resolved "https://registry.yarnpkg.com/@depay/web3-assets-solana/-/web3-assets-solana-7.1.0.tgz#ee323cd4acfa1cf10a131ee4ce888f09f1984189"
-  integrity sha512-KYE2/bbLnUrFbJ33iCsUdF2omz+/NGrciTYPBDE3RDK5tIKmSMjmfMVrprGBfZ5A4nypc3EmQnkYfj94O4GJ3g==
+"@depay/web3-assets-solana@^7.1.2":
+  version "7.1.2"
+  resolved "https://registry.yarnpkg.com/@depay/web3-assets-solana/-/web3-assets-solana-7.1.2.tgz#1608f120124371ae8d0ef1180a89537c9c807ad2"
+  integrity sha512-7KMVoHTbxGWr5YCAcUlJ5snqx3KytVACI41K4DT1Awy7yM7JqG1hQq3ACDiY2eubcBN+X1VMytwfUQPhHvlIeQ==
 
-"@depay/web3-assets@^7.1.0":
-  version "7.1.0"
-  resolved "https://registry.yarnpkg.com/@depay/web3-assets/-/web3-assets-7.1.0.tgz#996b822a822dc7c83f9e10b9f3fdeaad99c136ea"
-  integrity sha512-hnmTHWNsMiha/OAwubJIwq26JUgtmevwgBhV/qVpAXmZlCU4HeYBF+koRiimLLgeo3awOJS1pFafb2dYCqcBag==
+"@depay/web3-assets@^7.1.2":
+  version "7.1.2"
+  resolved "https://registry.yarnpkg.com/@depay/web3-assets/-/web3-assets-7.1.2.tgz#28ea26df73c6f1a7d918da3cd83dfadb5bbd0248"
+  integrity sha512-NVUNo8D82G7l1Uucf7i9zyvS8Ds24mA0mmR5KC2JRy8O1pk3Lb5qUhEiFJ+LyKLwxPWYaEKPbEdjM5kLQqa58Q==
 
 "@depay/web3-blockchains@^8.4.2":
   version "8.4.2"
