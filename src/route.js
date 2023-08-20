@@ -216,17 +216,17 @@ function route({ accept, from, whitelist, blacklist, drip }) {
       if(dripped.indexOf(assetAsKey) > -1) { return }
       if(priorities.indexOf(assetAsKey) === drippedIndex) {
         dripped.push(assetAsKey)
-        drip(asset)
+        drip(route)
         drippedIndex += 1
         if(!recursive){ return }
         dripQueue.forEach((asset)=>dripRoute(route, false))
       } else if(drippedIndex >= priorities.length || timeThresholdReached) {
         if(priorities.indexOf(assetAsKey) === -1) {
           dripped.push(assetAsKey)
-          drip(asset)
+          drip(route)
         } else if (drippedIndex >= priorities.length || timeThresholdReached) {
           dripped.push(assetAsKey)
-          drip(asset)
+          drip(route)
         }
       } else if(!dripQueue.find((queued)=>queued.blockchain === asset.blockchain && queued.address.toLowerCase() === asset.address.toLowerCase())) {
         dripQueue.push(asset)
