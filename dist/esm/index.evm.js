@@ -45973,28 +45973,30 @@ function route({ accept, from, whitelist, blacklist, drip }) {
       dripQueue.forEach((asset)=>dripRoute(route, false));
     }, thresholdToFirstDripIfNo1PriorityWasNotFirst);
     const dripRoute = (route, recursive = true)=>{
-      const asset = { blockchain: route.blockchain, address: route.fromToken.address };
-      const assetAsKey = [asset.blockchain, asset.address.toLowerCase()].join('');
-      const timeThresholdReached = now()-time > thresholdToFirstDripIfNo1PriorityWasNotFirst;
-      if(dripped.indexOf(assetAsKey) > -1) { return }
-      if(priorities.indexOf(assetAsKey) === drippedIndex) {
-        dripped.push(assetAsKey);
-        drip(route);
-        drippedIndex += 1;
-        if(!recursive){ return }
-        dripQueue.forEach((asset)=>dripRoute(route, false));
-      } else if(drippedIndex >= priorities.length || timeThresholdReached) {
-        if(priorities.indexOf(assetAsKey) === -1) {
+      try {
+        const asset = { blockchain: route.blockchain, address: route.fromToken.address };
+        const assetAsKey = [asset.blockchain, asset.address.toLowerCase()].join('');
+        const timeThresholdReached = now()-time > thresholdToFirstDripIfNo1PriorityWasNotFirst;
+        if(dripped.indexOf(assetAsKey) > -1) { return }
+        if(priorities.indexOf(assetAsKey) === drippedIndex) {
           dripped.push(assetAsKey);
           drip(route);
-        } else if (drippedIndex >= priorities.length || timeThresholdReached) {
-          dripped.push(assetAsKey);
-          drip(route);
+          drippedIndex += 1;
+          if(!recursive){ return }
+          dripQueue.forEach((asset)=>dripRoute(route, false));
+        } else if(drippedIndex >= priorities.length || timeThresholdReached) {
+          if(priorities.indexOf(assetAsKey) === -1) {
+            dripped.push(assetAsKey);
+            drip(route);
+          } else if (drippedIndex >= priorities.length || timeThresholdReached) {
+            dripped.push(assetAsKey);
+            drip(route);
+          }
+        } else if(!dripQueue.find((queued)=>queued.blockchain === asset.blockchain && queued.address.toLowerCase() === asset.address.toLowerCase())) {
+          dripQueue.push(asset);
+          dripQueue.sort((a,b)=>sortPriorities(priorities, a, b));
         }
-      } else if(!dripQueue.find((queued)=>queued.blockchain === asset.blockchain && queued.address.toLowerCase() === asset.address.toLowerCase())) {
-        dripQueue.push(asset);
-        dripQueue.sort((a,b)=>sortPriorities(priorities, a, b));
-      }
+      } catch (e) {}
     };
 
     const allAssets = await dripAssets({
