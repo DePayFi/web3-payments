@@ -3431,9 +3431,12 @@
       const dripQueue = [];
       const dripped = [];
       const priorities = priority.map((priority)=>[priority.blockchain, priority.address.toLowerCase()].join(''));
-      const thresholdToFirstDripIfNo1PriorityWasNotFirst = 400;
+      const thresholdToFirstDripIfNo1PriorityWasNotFirst = 1000;
       const now = ()=>Math.ceil(new Date());
       const time = now();
+      setTimeout(()=>{
+        dripQueue.forEach((asset)=>dripRoute(route, false));
+      }, thresholdToFirstDripIfNo1PriorityWasNotFirst);
       const dripRoute = (route, recursive = true)=>{
         const asset = { blockchain: route.blockchain, address: route.fromToken.address };
         const assetAsKey = [asset.blockchain, asset.address.toLowerCase()].join('');
