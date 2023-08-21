@@ -61,6 +61,7 @@ let paymentRoutes = await Web3Payments.route({
     avalanche: '0x317D875cA3B9f8d14f960486C0d1D1913be74e90',
     gnosis: '0x317D875cA3B9f8d14f960486C0d1D1913be74e90',
     ethereum: '0x317D875cA3B9f8d14f960486C0d1D1913be74e90',
+    solana: '3Hrw6AsNyJAp71Nkgo4tzJwvGM47DzqMdAtf8ojptkXk',
   },
   drip: (route)=>{
     console.log('DRIP', route)
