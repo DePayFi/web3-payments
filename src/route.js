@@ -250,7 +250,8 @@ function route({ accept, from, whitelist, blacklist, drip }) {
       }
     })
 
-    let allPaymentRoutes = await assetsToRoutes({ assets: allAssets, blacklist, accept, from })
+    let allPaymentRoutes = (await assetsToRoutes({ assets: allAssets, blacklist, accept, from }) || [])
+    allPaymentRoutes.assets = allAssets
     resolveAll(allPaymentRoutes)
   })
 }
