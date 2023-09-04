@@ -59,6 +59,7 @@ This library supports the following blockchains:
 - [Avalanche](https://www.avax.network)
 - [Gnosis](https://gnosis.io)
 - [Optimism](https://www.optimism.io)
+- [Base](https://base.org)
 
 ## Platform specific packaging
 

@@ -15,7 +15,7 @@ let routes = await Web3Payments.route({
   }
 })
 
-let route = routes[0]
+let route = routes[1]
 let transaction = await route.getTransaction()
 
 const wallet = (await Web3Wallets.getWallets())[0]
