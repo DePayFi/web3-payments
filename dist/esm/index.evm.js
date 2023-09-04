@@ -45629,6 +45629,8 @@ const getBlockchainCost = (blockchain) => {
       return 0.10
     case 'bsc':
       return 0.20
+    case 'base':
+      return 0.25
     case 'arbitrum':
       return 0.30
     case 'optimism':

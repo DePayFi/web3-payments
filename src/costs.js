@@ -20,6 +20,9 @@ const getBlockchainCost = (blockchain) => {
     case 'bsc':
       return 0.20
       break;
+    case 'base':
+      return 0.25
+      break;
     case 'arbitrum':
       return 0.30
       break;
