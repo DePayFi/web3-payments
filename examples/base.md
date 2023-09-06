@@ -7,7 +7,7 @@ let routes = await Web3Payments.route({
       blockchain: 'base',
       token: '0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA',
       amount: 1,
-      toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
+      toAddress: '0x4e260bB2b25EC6F3A59B478fCDe5eD5B8D783B02'
     }
   ],
   from: {
