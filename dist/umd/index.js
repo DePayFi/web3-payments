@@ -2062,13 +2062,26 @@
         inputTokenPushed: exchangeType === 2
       });
       const exchangeCallData = !exchangeTransaction ? Blockchains__default["default"][paymentRoute.blockchain].zero : getExchangeCallData({ exchangeTransaction });
+      let exchangeAddress = Blockchains__default["default"][paymentRoute.blockchain].zero;
+      if (exchangeRoute) {
+        if(
+          paymentRoute.blockchain === 'bsc' &&
+          exchangeRoute.exchange.name === 'pancakeswap_v3' &&
+          paymentRoute.toToken.address === Blockchains__default["default"][paymentRoute.blockchain].currency.address
+        ) {
+          // bsc pancakeswap_v3 requries smart router exchange address for converting and paying out BNB/NATIVE
+          exchangeAddress = exchangeRoute.exchange[paymentRoute.blockchain].smartRouter.address;
+        } else {
+          exchangeAddress = exchangeRoute.exchange[paymentRoute.blockchain].router.address;
+        }
+      }
       return {
         payment: {
           amountIn: paymentRoute.fromAmount,
           paymentAmount: paymentRoute.toAmount,
           feeAmount: paymentRoute.feeAmount || 0,
           tokenInAddress: paymentRoute.fromToken.address,
-          exchangeAddress: !exchangeRoute ? Blockchains__default["default"][paymentRoute.blockchain].zero : exchangeRoute.exchange[paymentRoute.blockchain].router.address,
+          exchangeAddress,
           tokenOutAddress: paymentRoute.toToken.address,
           paymentReceiverAddress: paymentRoute.toAddress,
           feeReceiverAddress: paymentRoute.fee ? paymentRoute.fee.receiver : Blockchains__default["default"][paymentRoute.blockchain].zero,
