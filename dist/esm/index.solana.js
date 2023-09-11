@@ -3139,47 +3139,47 @@ const API = [{"inputs":[{"internalType":"address","name":"_PERMIT2","type":"addr
 var solanaRouters = {
 
   ethereum: {
-    address: '0xcbfc518FB621828fa6f0F4647D42931476ea473b',
+    address: '0x6466F27B169C908Ba8174d80aEfa7173CbC3D0c7',
     api: API
   },
 
   bsc: {
-    address: '0xAc68Ee6Bc43Bf075C0522a15E665547CFd28628D',
+    address: '0x7ea09401db4692a8AEF4111b75bD32AE758f552A',
     api: API
   },
 
   polygon: {
-    address: '0x1eD1e2dEEEa8B5C802663780284eDa63f62A3825',
+    address: '0x50CFAB577623B1359602E11514a9482B061A941e',
     api: API
   },
 
   fantom: {
-    address: '0x8B127D169D232D5F3ebE1C3D06CE343FD7C1AA11',
+    address: '0xFee05C41195985909DDfc9127Db1f94559c46db3',
     api: API
   },
 
   avalanche: {
-    address: '0x8B127D169D232D5F3ebE1C3D06CE343FD7C1AA11',
+    address: '0xFee05C41195985909DDfc9127Db1f94559c46db3',
     api: API
   },
 
   gnosis: {
-    address: '0x8B127D169D232D5F3ebE1C3D06CE343FD7C1AA11',
+    address: '0xFee05C41195985909DDfc9127Db1f94559c46db3',
     api: API
   },
 
   arbitrum: {
-    address: '0x47dF3990e8827EfF23b01e1CD7de309E8C6364a2',
+    address: '0xA1cfbeeF344A52e18f748fd6a126f9426A40fbc7',
     api: API
   },
 
   optimism: {
-    address: '0x47dF3990e8827EfF23b01e1CD7de309E8C6364a2',
+    address: '0x8698E529E9867eEbcC68b4792daC627cd8870736',
     api: API
   },
 
   base: {
-    address: '0xfAD2F276D464EAdB71435127BA2c2e9dDefb93a4',
+    address: '0x8B127D169D232D5F3ebE1C3D06CE343FD7C1AA11',
     api: API
   },
 
