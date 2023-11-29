@@ -203,7 +203,7 @@ function route({ accept, from, whitelist, blacklist, drip }) {
     const dripQueue = []
     const dripped = []
     const priorities = priority.map((priority)=>[priority.blockchain, priority.address.toLowerCase()].join(''))
-    const thresholdToFirstDripIfNo1PriorityWasNotFirst = 1000
+    const thresholdToFirstDripIfNo1PriorityWasNotFirst = 3000
     const now = ()=>Math.ceil(new Date())
     const time = now()
     setTimeout(()=>{
