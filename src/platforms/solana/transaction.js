@@ -5,6 +5,7 @@ import { request, getProvider } from '@depay/web3-client'
 import Token from '@depay/web3-tokens'
 
 let currentDeadline
+let currentNonce
 
 const getWSolSenderAccountKeypairIfNeeded = async ({ paymentRoute })=> {
 
@@ -479,8 +480,15 @@ const getPaymentMethod = ({ paymentRoute })=>{
 }
 
 const getDeadline = ()=>{
+  if(currentDeadline) { return currentDeadline }
   currentDeadline = Math.ceil(new Date().getTime()/1000)+1800 // 30 Minutes (lower causes wallet simulation issues)
   return currentDeadline
+}
+
+const getNonce = (paymentsAccountData)=>{
+  if(currentNonce) { return currentNonce }
+  currentNonce = paymentsAccountData ? paymentsAccountData.nonce : new BN('0')
+  return currentNonce
 }
 
 const routeSol = async({ paymentRoute, paymentsAccountData }) =>{
@@ -499,7 +507,7 @@ const routeSol = async({ paymentRoute, paymentsAccountData }) =>{
   const data = Buffer.alloc(routers.solana.api.routeSol.layout.span)
   routers.solana.api.routeSol.layout.encode({
     anchorDiscriminator: routers.solana.api.routeSol.anchorDiscriminator,
-    nonce: paymentsAccountData ? paymentsAccountData.nonce : new BN('0'),
+    nonce: getNonce(paymentsAccountData),
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
     feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
     deadline: new BN(getDeadline()),
@@ -530,7 +538,7 @@ const routeToken = async({ paymentRoute, paymentsAccountData }) =>{
   const data = Buffer.alloc(routers.solana.api.routeToken.layout.span)
   routers.solana.api.routeToken.layout.encode({
     anchorDiscriminator: routers.solana.api.routeToken.anchorDiscriminator,
-    nonce: paymentsAccountData ? paymentsAccountData.nonce : new BN('0'),
+    nonce: getNonce(paymentsAccountData),
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
     feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
     deadline: new BN(getDeadline()),
@@ -598,7 +606,7 @@ const routeOrcaSwap = async({ paymentRoute, paymentsAccountData, wSolSenderAccou
   const data = Buffer.alloc(routers.solana.api.routeOrcaSwap.layout.span)
   routers.solana.api.routeOrcaSwap.layout.encode({
     anchorDiscriminator: routers.solana.api.routeOrcaSwap.anchorDiscriminator,
-    nonce: paymentsAccountData ? paymentsAccountData.nonce : new BN('0'),
+    nonce: getNonce(paymentsAccountData),
     amountIn: exchangeRouteSwapInstructionData.amount,
     sqrtPriceLimit: exchangeRouteSwapInstructionData.sqrtPriceLimit,
     amountSpecifiedIsInput: exchangeRouteSwapInstructionData.amountSpecifiedIsInput,
@@ -672,7 +680,7 @@ const routeOrcaSwapSolOut = async({ paymentRoute, paymentsAccountData, wSolEscro
   const data = Buffer.alloc(routers.solana.api.routeOrcaSwapSolOut.layout.span)
   routers.solana.api.routeOrcaSwapSolOut.layout.encode({
     anchorDiscriminator: routers.solana.api.routeOrcaSwapSolOut.anchorDiscriminator,
-    nonce: paymentsAccountData ? paymentsAccountData.nonce : new BN('0'),
+    nonce: getNonce(paymentsAccountData),
     amountIn: exchangeRouteSwapInstructionData.amount,
     sqrtPriceLimit: exchangeRouteSwapInstructionData.sqrtPriceLimit,
     amountSpecifiedIsInput: exchangeRouteSwapInstructionData.amountSpecifiedIsInput,
@@ -763,7 +771,7 @@ const routeOrcaTwoHopSwap = async({ paymentRoute, paymentsAccountData, wSolSende
   const data = Buffer.alloc(routers.solana.api.routeOrcaTwoHopSwap.layout.span)
   routers.solana.api.routeOrcaTwoHopSwap.layout.encode({
     anchorDiscriminator: routers.solana.api.routeOrcaTwoHopSwap.anchorDiscriminator,
-    nonce: paymentsAccountData ? paymentsAccountData.nonce : new BN('0'),
+    nonce: getNonce(paymentsAccountData),
     amountIn: exchangeRouteSwapInstructionData.amount,
     amountSpecifiedIsInput: exchangeRouteSwapInstructionData.amountSpecifiedIsInput,
     aToBOne: exchangeRouteSwapInstructionData.aToBOne,
@@ -857,7 +865,7 @@ const routeOrcaTwoHopSwapSolOut = async({ paymentRoute, paymentsAccountData, wSo
   const data = Buffer.alloc(routers.solana.api.routeOrcaTwoHopSwapSolOut.layout.span)
   routers.solana.api.routeOrcaTwoHopSwapSolOut.layout.encode({
     anchorDiscriminator: routers.solana.api.routeOrcaTwoHopSwapSolOut.anchorDiscriminator,
-    nonce: paymentsAccountData ? paymentsAccountData.nonce : new BN('0'),
+    nonce: getNonce(paymentsAccountData),
     amountIn: exchangeRouteSwapInstructionData.amount,
     amountSpecifiedIsInput: exchangeRouteSwapInstructionData.amountSpecifiedIsInput,
     aToBOne: exchangeRouteSwapInstructionData.aToBOne,
@@ -935,6 +943,7 @@ const getTransaction = async({ paymentRoute })=> {
   // debug(transaction, paymentRoute)
 
   transaction.deadline = currentDeadline
+  transaction.nonce = currentNonce.toString()
 
   return transaction
 }

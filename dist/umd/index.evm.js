@@ -44602,6 +44602,7 @@
   };
 
   let currentDeadline;
+  let currentNonce;
 
   const getWSolSenderAccountKeypairIfNeeded = async ({ paymentRoute })=> {
 
@@ -45076,8 +45077,15 @@
   };
 
   const getDeadline = ()=>{
+    if(currentDeadline) { return currentDeadline }
     currentDeadline = Math.ceil(new Date().getTime()/1000)+1800; // 30 Minutes (lower causes wallet simulation issues)
     return currentDeadline
+  };
+
+  const getNonce = (paymentsAccountData)=>{
+    if(currentNonce) { return currentNonce }
+    currentNonce = paymentsAccountData ? paymentsAccountData.nonce : new BN('0');
+    return currentNonce
   };
 
   const routeSol = async({ paymentRoute, paymentsAccountData }) =>{
@@ -45096,7 +45104,7 @@
     const data = Buffer.alloc(routers$2.solana.api.routeSol.layout.span);
     routers$2.solana.api.routeSol.layout.encode({
       anchorDiscriminator: routers$2.solana.api.routeSol.anchorDiscriminator,
-      nonce: paymentsAccountData ? paymentsAccountData.nonce : new BN('0'),
+      nonce: getNonce(paymentsAccountData),
       paymentAmount: new BN(paymentRoute.toAmount.toString()),
       feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
       deadline: new BN(getDeadline()),
@@ -45127,7 +45135,7 @@
     const data = Buffer.alloc(routers$2.solana.api.routeToken.layout.span);
     routers$2.solana.api.routeToken.layout.encode({
       anchorDiscriminator: routers$2.solana.api.routeToken.anchorDiscriminator,
-      nonce: paymentsAccountData ? paymentsAccountData.nonce : new BN('0'),
+      nonce: getNonce(paymentsAccountData),
       paymentAmount: new BN(paymentRoute.toAmount.toString()),
       feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
       deadline: new BN(getDeadline()),
@@ -45195,7 +45203,7 @@
     const data = Buffer.alloc(routers$2.solana.api.routeOrcaSwap.layout.span);
     routers$2.solana.api.routeOrcaSwap.layout.encode({
       anchorDiscriminator: routers$2.solana.api.routeOrcaSwap.anchorDiscriminator,
-      nonce: paymentsAccountData ? paymentsAccountData.nonce : new BN('0'),
+      nonce: getNonce(paymentsAccountData),
       amountIn: exchangeRouteSwapInstructionData.amount,
       sqrtPriceLimit: exchangeRouteSwapInstructionData.sqrtPriceLimit,
       amountSpecifiedIsInput: exchangeRouteSwapInstructionData.amountSpecifiedIsInput,
@@ -45269,7 +45277,7 @@
     const data = Buffer.alloc(routers$2.solana.api.routeOrcaSwapSolOut.layout.span);
     routers$2.solana.api.routeOrcaSwapSolOut.layout.encode({
       anchorDiscriminator: routers$2.solana.api.routeOrcaSwapSolOut.anchorDiscriminator,
-      nonce: paymentsAccountData ? paymentsAccountData.nonce : new BN('0'),
+      nonce: getNonce(paymentsAccountData),
       amountIn: exchangeRouteSwapInstructionData.amount,
       sqrtPriceLimit: exchangeRouteSwapInstructionData.sqrtPriceLimit,
       amountSpecifiedIsInput: exchangeRouteSwapInstructionData.amountSpecifiedIsInput,
@@ -45360,7 +45368,7 @@
     const data = Buffer.alloc(routers$2.solana.api.routeOrcaTwoHopSwap.layout.span);
     routers$2.solana.api.routeOrcaTwoHopSwap.layout.encode({
       anchorDiscriminator: routers$2.solana.api.routeOrcaTwoHopSwap.anchorDiscriminator,
-      nonce: paymentsAccountData ? paymentsAccountData.nonce : new BN('0'),
+      nonce: getNonce(paymentsAccountData),
       amountIn: exchangeRouteSwapInstructionData.amount,
       amountSpecifiedIsInput: exchangeRouteSwapInstructionData.amountSpecifiedIsInput,
       aToBOne: exchangeRouteSwapInstructionData.aToBOne,
@@ -45454,7 +45462,7 @@
     const data = Buffer.alloc(routers$2.solana.api.routeOrcaTwoHopSwapSolOut.layout.span);
     routers$2.solana.api.routeOrcaTwoHopSwapSolOut.layout.encode({
       anchorDiscriminator: routers$2.solana.api.routeOrcaTwoHopSwapSolOut.anchorDiscriminator,
-      nonce: paymentsAccountData ? paymentsAccountData.nonce : new BN('0'),
+      nonce: getNonce(paymentsAccountData),
       amountIn: exchangeRouteSwapInstructionData.amount,
       amountSpecifiedIsInput: exchangeRouteSwapInstructionData.amountSpecifiedIsInput,
       aToBOne: exchangeRouteSwapInstructionData.aToBOne,
@@ -45532,6 +45540,7 @@
     // debug(transaction, paymentRoute)
 
     transaction.deadline = currentDeadline;
+    transaction.nonce = currentNonce.toString();
 
     return transaction
   };
