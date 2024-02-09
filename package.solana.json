@@ -1,7 +1,7 @@
 {
   "name": "@depay/web3-payments-solana",
   "moduleName": "Web3Payments",
-  "version": "13.6.10",
+  "version": "13.7.0",
   "description": "JavaScript library to scan crypto wallets for liquefiable assets and perform cost-effective, auto-converted payments on-chain.",
   "main": "dist/umd/index.solana.js",
   "module": "dist/esm/index.solana.js",
@@ -26,10 +26,10 @@
   "private": false,
   "dependencies": {},
   "peerDependencies": {
-    "@depay/solana-web3.js": "^1.25.1",
-    "@depay/web3-assets-solana": "^7.2.0",
-    "@depay/web3-blockchains": "^9.2.0",
-    "@depay/web3-exchanges-solana": "^13.5.0",
+    "@depay/solana-web3.js": "^1.26.0",
+    "@depay/web3-assets-solana": "^7.3.0",
+    "@depay/web3-blockchains": "^9.3.2",
+    "@depay/web3-exchanges-solana": "^13.8.0",
     "@depay/web3-tokens-solana": "^10.3.0",
     "ethers": "^5.7.1",
     "decimal.js": "^10.4.3"
