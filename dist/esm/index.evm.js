@@ -50526,7 +50526,7 @@ const transactionParams = async ({ paymentRoute })=> {
       return [paymentRoute.toAddress, paymentRoute.toAmount]
     }
   } else {
-    const deadline = Math.ceil(new Date()/1000)+86400; // 1 day
+    const deadline = Math.ceil(new Date()/1000)+3600; // 1 hour
     const exchangeRoute = paymentRoute.exchangeRoutes[0];
     const exchangeType = getExchangeType({ exchangeRoute, blockchain: paymentRoute.blockchain });
     const exchangeTransaction = !exchangeRoute ? undefined : await exchangeRoute.getTransaction({
