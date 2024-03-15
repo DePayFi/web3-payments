@@ -6,10 +6,16 @@ const getBlockchainCost = (blockchain) => {
       return 0.000125
       break;
     case 'gnosis':
-      return 0.009
+      return 0.0090
+      break;
+    case 'base':
+      return 0.0095
+      break;
+    case 'optimism':
+      return 0.0096
       break;
     case 'polygon':
-      return 0.01
+      return 0.011
       break;
     case 'fantom':
       return 0.05
@@ -17,17 +23,11 @@ const getBlockchainCost = (blockchain) => {
     case 'avalanche':
       return 0.10
       break;
+    case 'arbitrum':
+      return 0.11
+      break;
     case 'bsc':
       return 0.20
-      break;
-    case 'base':
-      return 0.25
-      break;
-    case 'arbitrum':
-      return 0.30
-      break;
-    case 'optimism':
-      return 0.40
       break;
     case 'ethereum':
       return 10.0

@@ -1946,21 +1946,21 @@
       case 'solana':
         return 0.000125
       case 'gnosis':
-        return 0.009
+        return 0.0090
+      case 'base':
+        return 0.0095
+      case 'optimism':
+        return 0.0096
       case 'polygon':
-        return 0.01
+        return 0.011
       case 'fantom':
         return 0.05
       case 'avalanche':
         return 0.10
+      case 'arbitrum':
+        return 0.11
       case 'bsc':
         return 0.20
-      case 'base':
-        return 0.25
-      case 'arbitrum':
-        return 0.30
-      case 'optimism':
-        return 0.40
       case 'ethereum':
         return 10.0
       default:
