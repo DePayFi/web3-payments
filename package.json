@@ -97,6 +97,7 @@
     "webpack": "^5.74.0"
   },
   "resolutions": {
-    "clipboardy": "3.0.0"
+    "clipboardy": "3.0.0",
+    "lru-cache": "9.1.2"
   }
 }
