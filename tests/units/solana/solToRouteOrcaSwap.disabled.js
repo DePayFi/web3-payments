@@ -30,9 +30,9 @@ describe('SOL to routeOrcaSwap', ()=> {
   const toToken = Blockchains.solana.stables.usd[1]
   const tokenAmountOut = 1
   const pool = '58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2'
-  const tokenVaultB = '9RfZwn2Prux6QesG1Noo4HzMEBv3rPndJ2bN2Wwd6a7p'
-  const tokenVaultA = 'BVNo8ftg2LkkssnWT4ZWdtoFaevnfD6ExYeramwM27pe'
-  const aToB = false
+  const tokenVaultB = 'BVNo8ftg2LkkssnWT4ZWdtoFaevnfD6ExYeramwM27pe'
+  const tokenVaultA = '9RfZwn2Prux6QesG1Noo4HzMEBv3rPndJ2bN2Wwd6a7p'
+  const aToB = true
 
   let provider
 
@@ -47,9 +47,9 @@ describe('SOL to routeOrcaSwap', ()=> {
     mockTokenBalance({ provider, tokenAddress: fromToken, tokenDecimals: 6, fromAddress, balance: '10000000' })
     await mockPool({
       provider,
-      tokenA: toToken,
+      tokenA: fromToken,
       tokenVaultA,
-      tokenB: Blockchains.solana.wrapped.address,
+      tokenB: toToken,
       tokenVaultB,
       aToB,
       pool,

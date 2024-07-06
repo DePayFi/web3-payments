@@ -1187,13 +1187,6 @@
   dependencies:
     "@coinbase/wallet-sdk" "3.6.4"
 
-"@depay/solana-web3.js@^1.25.1":
-  version "1.25.1"
-  resolved "https://registry.yarnpkg.com/@depay/solana-web3.js/-/solana-web3.js-1.25.1.tgz#2f4725007ff4cfc14af2606eb3d333e68097e13f"
-  integrity sha512-tKCHHQVoZV85wZ8r3ZuxuQlejBcVolIUf52Bq2Pne3KR1BpxYJF2/9XRTH9qCrLZMQsgsQHikQEH5eglDCKJkA==
-  dependencies:
-    bs58 "^5.0.0"
-
 "@depay/solana-web3.js@^1.26.0":
   version "1.26.0"
   resolved "https://registry.yarnpkg.com/@depay/solana-web3.js/-/solana-web3.js-1.26.0.tgz#6234cd46779924a930d6b6021b66a25c18b38365"
@@ -1265,12 +1258,12 @@
   resolved "https://registry.yarnpkg.com/@depay/web3-exchanges/-/web3-exchanges-13.8.3.tgz#6e62b30b5f7960d9bd70526343144162684ed792"
   integrity sha512-t5XIx/uhV7eu7WuWcoBI0rx7y1qwEZMfOLjYt4gYdYzuybA+FZeBr44zCG8Fn0kDBDe3Uv7LS0d8/PMRbCyCxg==
 
-"@depay/web3-mock@^14.17.0":
-  version "14.17.0"
-  resolved "https://registry.yarnpkg.com/@depay/web3-mock/-/web3-mock-14.17.0.tgz#cf188a9d810c49f7af4aeb60bc06b5ec61bc75b8"
-  integrity sha512-0WCIpHqGUTPmOb5l3iN+4wCY+P3nHnGWd3uyWB+Wrt5DygS6MWI2b50gwtSCgYUCfgmEv9KlRuCnHDC4TDKCeA==
+"@depay/web3-mock@^14.18.0":
+  version "14.18.0"
+  resolved "https://registry.yarnpkg.com/@depay/web3-mock/-/web3-mock-14.18.0.tgz#149dcdc2e39f265beefa9b4ffa8a00512bc25d01"
+  integrity sha512-TGhb/8k4qHR6OlxQcFxAZXX8fuJzPA3wfobKtCRhldyKV0ZotNIUEgN5MXq0aNGJ7FAPVjZPjHk1T7bL4ipj0g==
   dependencies:
-    "@depay/solana-web3.js" "^1.25.1"
+    "@depay/solana-web3.js" "^1.26.0"
     "@depay/web3-blockchains" "^9.1.4"
     ethers "^5.7.1"
 
