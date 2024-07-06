@@ -27,10 +27,13 @@
   "dependencies": {},
   "peerDependencies": {
     "@depay/web3-assets-evm": "^7.3.1",
-    "@depay/web3-blockchains": "^9.3.2",
-    "@depay/web3-exchanges-evm": "^13.8.1",
+    "@depay/web3-blockchains": "^9.4.2",
+    "@depay/web3-exchanges-evm": "^13.8.3",
     "@depay/web3-tokens-evm": "^10.3.0",
     "ethers": "^5.7.1"
+  },
+  "resolutions": {
+    "clipboardy": "3.0.0"
   },
   "engines": {
     "node": ">=16"
