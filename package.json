@@ -1,7 +1,7 @@
 {
   "name": "@depay/web3-payments",
   "moduleName": "Web3Payments",
-  "version": "13.9.0",
+  "version": "13.9.1",
   "description": "JavaScript library to scan crypto wallets for liquefiable assets and perform cost-effective, auto-converted payments on-chain.",
   "main": "dist/umd/index.js",
   "module": "dist/esm/index.js",
@@ -38,39 +38,38 @@
   "peerDependencies": {
     "@depay/solana-web3.js": "^1.26.0",
     "@depay/web3-assets": "^7.3.1",
-    "@depay/web3-blockchains": "^9.3.2",
-    "@depay/web3-exchanges": "^13.8.1",
+    "@depay/web3-blockchains": "^9.4.2",
+    "@depay/web3-exchanges": "^13.8.3",
     "@depay/web3-tokens": "^10.3.0",
-    "ethers": "^5.7.1",
-    "decimal.js": "^10.4.3"
+    "decimal.js": "^10.4.3",
+    "ethers": "^5.7.1"
   },
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   },
   "devDependencies": {
     "@babel/core": "^7.12.9",
     "@babel/preset-env": "^7.12.7",
-    "@depay/coinbase-wallet-sdk": "^3.6.4",
+    "@depay/coinbase-wallet-sdk": "^3.8.4",
     "@depay/solana-web3.js": "^1.26.0",
-    "@depay/walletconnect-v1": "^1.8.0",
-    "@depay/walletconnect-v2": "^2.9.2",
+    "@depay/walletconnect-v2": "^2.12.2",
     "@depay/web3-assets": "^7.3.1",
     "@depay/web3-assets-evm": "^7.3.1",
     "@depay/web3-assets-solana": "^7.3.1",
-    "@depay/web3-blockchains": "^9.3.2",
-    "@depay/web3-client": "^10.18.4",
-    "@depay/web3-client-evm": "^10.18.4",
-    "@depay/web3-client-solana": "^10.18.4",
-    "@depay/web3-exchanges": "^13.8.1",
-    "@depay/web3-exchanges-evm": "^13.8.1",
-    "@depay/web3-exchanges-solana": "^13.8.1",
-    "@depay/web3-mock": "^14.17.0",
+    "@depay/web3-blockchains": "^9.4.2",
+    "@depay/web3-client": "^10.18.7",
+    "@depay/web3-client-evm": "^10.18.7",
+    "@depay/web3-client-solana": "^10.18.7",
+    "@depay/web3-exchanges": "^13.8.3",
+    "@depay/web3-exchanges-evm": "^13.8.3",
+    "@depay/web3-exchanges-solana": "^13.8.3",
+    "@depay/web3-mock": "^14.18.0",
     "@depay/web3-tokens": "^10.3.0",
     "@depay/web3-tokens-evm": "^10.3.0",
     "@depay/web3-tokens-solana": "^10.3.0",
-    "@depay/web3-wallets": "^16.1.0",
-    "@depay/web3-wallets-evm": "^16.1.0",
-    "@depay/web3-wallets-solana": "^16.1.0",
+    "@depay/web3-wallets": "^17.1.0",
+    "@depay/web3-wallets-evm": "^17.1.0",
+    "@depay/web3-wallets-solana": "^17.1.0",
     "@rollup/plugin-commonjs": "^18.0.0",
     "@rollup/plugin-node-resolve": "^11.2.1",
     "@rollup/plugin-replace": "^2.4.2",
@@ -84,6 +83,7 @@
     "eslint-plugin-import": "^2.22.1",
     "ethers": "^5.7.1",
     "fetch-mock": "^9.11.0",
+    "jest": "^29.7.0",
     "jest-environment-jsdom": "^28.0.2",
     "lodash": "^4.17.21",
     "node-fetch": "^2.6.9",
@@ -96,5 +96,8 @@
     "tslib": "^2.3.1",
     "typescript": "^5.0.2",
     "webpack": "^5.74.0"
+  },
+  "resolutions": {
+    "clipboardy": "3.0.0"
   }
 }
