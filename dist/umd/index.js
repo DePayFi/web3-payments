@@ -137,10 +137,10 @@
     return getWindow()._Web3ClientConfiguration
   };
 
-  function _optionalChain$3(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+  function _optionalChain$5(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
   const BATCH_INTERVAL$1 = 10;
   const CHUNK_SIZE$1 = 99;
-  const MAX_RETRY$1 = 3;
+  const MAX_RETRY$1 = 5;
 
   class StaticJsonRpcBatchProvider extends ethers.ethers.providers.JsonRpcProvider {
 
@@ -168,12 +168,12 @@
             // on whether it was a success or error
             chunk.forEach((inflightRequest, index) => {
               const payload = result[index];
-              if (_optionalChain$3([payload, 'optionalAccess', _ => _.error])) {
+              if (_optionalChain$5([payload, 'optionalAccess', _ => _.error])) {
                 const error = new Error(payload.error.message);
                 error.code = payload.error.code;
                 error.data = payload.error.data;
                 inflightRequest.reject(error);
-              } else if(_optionalChain$3([payload, 'optionalAccess', _2 => _2.result])) {
+              } else if(_optionalChain$5([payload, 'optionalAccess', _2 => _2.result])) {
                 inflightRequest.resolve(payload.result);
               } else {
                 inflightRequest.reject();
@@ -248,6 +248,7 @@
 
   }
 
+  function _optionalChain$4(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
   const getAllProviders$1 = ()=> {
     if(getWindow()._Web3ClientProviders == undefined) {
       getWindow()._Web3ClientProviders = {};
@@ -293,17 +294,20 @@
           let timeout = 900;
           let before = new Date().getTime();
           setTimeout(()=>resolve(timeout), timeout);
-          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json'
-            },
-            referrer: "",
-            referrerPolicy: "no-referrer",
-            body: JSON.stringify({ method: 'net_version', id: 1, jsonrpc: '2.0' })
-          });
-          if(!response.ok) { return resolve(999) }
+          let response;
+          try {
+            response = await fetch(endpoint, {
+              method: 'POST',
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+              },
+              referrer: "",
+              referrerPolicy: "no-referrer",
+              body: JSON.stringify({ method: 'net_version', id: 1, jsonrpc: '2.0' })
+            });
+          } catch (e) {}
+          if(!_optionalChain$4([response, 'optionalAccess', _ => _.ok])) { return resolve(999) }
           let after = new Date().getTime();
           resolve(after-before);
         })
@@ -358,10 +362,10 @@
     setProvider: setProvider$2,
   };
 
-  function _optionalChain$2(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+  function _optionalChain$3(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
   const BATCH_INTERVAL = 10;
   const CHUNK_SIZE = 99;
-  const MAX_RETRY = 3;
+  const MAX_RETRY = 10;
 
   class StaticJsonRpcSequentialProvider extends solanaWeb3_js.Connection {
 
@@ -377,9 +381,7 @@
     }
 
     handleError(error, attempt, chunk) {
-      if(attempt < MAX_RETRY && error && [
-        'Failed to fetch', 'limit reached', '504', '503', '502', '500', '429', '426', '422', '413', '409', '408', '406', '405', '404', '403', '402', '401', '400'
-      ].some((errorType)=>error.toString().match(errorType))) {
+      if(attempt < MAX_RETRY) {
         const index = this._endpoints.indexOf(this._endpoint)+1;
         this._endpoint = index >= this._endpoints.length ? this._endpoints[0] : this._endpoints[index];
         this._provider = new solanaWeb3_js.Connection(this._endpoint);
@@ -409,7 +411,15 @@
         ).then((response)=>{
           if(response.ok) {
             response.json().then((parsedJson)=>{
-              resolve(parsedJson);
+              if(parsedJson.find((entry)=>_optionalChain$3([entry, 'optionalAccess', _ => _.error]))) {
+                if(attempt < MAX_RETRY) {
+                  reject('Error in batch found!');
+                } else {
+                  resolve(parsedJson);
+                }
+              } else {
+                resolve(parsedJson);
+              }
             }).catch(reject);
           } else {
             reject(`${response.status} ${response.text}`);
@@ -427,7 +437,7 @@
           .then((result) => {
             chunk.forEach((inflightRequest, index) => {
               const payload = result[index];
-              if (_optionalChain$2([payload, 'optionalAccess', _ => _.error])) {
+              if (_optionalChain$3([payload, 'optionalAccess', _2 => _2.error])) {
                 const error = new Error(payload.error.message);
                 error.code = payload.error.code;
                 error.data = payload.error.data;
@@ -484,6 +494,7 @@
     }
   }
 
+  function _optionalChain$2(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
   const getAllProviders = ()=> {
     if(getWindow()._Web3ClientProviders == undefined) {
       getWindow()._Web3ClientProviders = {};
@@ -529,17 +540,20 @@
           let timeout = 900;
           let before = new Date().getTime();
           setTimeout(()=>resolve(timeout), timeout);
-          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json'
-            },
-            referrer: "",
-            referrerPolicy: "no-referrer",
-            body: JSON.stringify({ method: 'getIdentity', id: 1, jsonrpc: '2.0' })
-          });
-          if(!response.ok) { return resolve(999) }
+          let response;
+          try {
+            response = await fetch(endpoint, {
+              method: 'POST',
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+              },
+              referrer: "",
+              referrerPolicy: "no-referrer",
+              body: JSON.stringify({ method: 'getIdentity', id: 1, jsonrpc: '2.0' })
+            });
+          } catch (e) {}
+          if(!_optionalChain$2([response, 'optionalAccess', _ => _.ok])) { return resolve(999) }
           let after = new Date().getTime();
           resolve(after-before);
         })
@@ -1422,7 +1436,7 @@
     }
   };
 
-  const getDeadline = ()=>{
+  const getDeadline$1 = ()=>{
     return Math.ceil(new Date().getTime()/1000)+1800 // 30 Minutes (lower causes wallet simulation issues)
   };
 
@@ -1854,7 +1868,7 @@
   const getTransaction$3 = async({ paymentRoute })=> {
 
     const paymentsAccountData = await getPaymentsAccountData({ from: paymentRoute.fromAddress });
-    const deadline = getDeadline();
+    const deadline = getDeadline$1();
     const nonce = getNonce(paymentsAccountData);
 
     const wSolSenderAccountKeypair = await getWSolSenderAccountKeypairIfNeeded({ paymentRoute });
@@ -2030,14 +2044,14 @@
     'solana': {}
   };
 
-  const getTransaction$2 = async({ paymentRoute })=> {
+  const getTransaction$2 = async({ signature, paymentRoute })=> {
 
     const transaction = {
       blockchain: paymentRoute.blockchain,
       to: transactionAddress({ paymentRoute }),
       api: transactionApi({ paymentRoute }),
       method: transactionMethod({ paymentRoute }),
-      params: await transactionParams({ paymentRoute }),
+      params: await transactionParams({ signature, paymentRoute }),
       value: transactionValue({ paymentRoute })
     };
 
@@ -2124,7 +2138,7 @@
     return contract.interface.encodeFunctionData(contractMethod, paramsToEncode)
   };
 
-  const transactionParams = async ({ paymentRoute })=> {
+  const transactionParams = async ({ signature, paymentRoute })=> {
     if(paymentRoute.directTransfer && !paymentRoute.fee) {
       if(paymentRoute.toToken.address == Blockchains__default["default"][paymentRoute.blockchain].currency.address) {
         return undefined
@@ -2153,22 +2167,34 @@
           exchangeAddress = EXCHANGE_PROXIES[exchangeTransaction.blockchain][exchangeRoute.exchange[paymentRoute.blockchain].router.address] || exchangeRoute.exchange[paymentRoute.blockchain].router.address;
         }
       }
-      return {
-        payment: {
-          amountIn: paymentRoute.fromAmount,
-          paymentAmount: paymentRoute.toAmount,
-          feeAmount: paymentRoute.feeAmount || 0,
-          tokenInAddress: paymentRoute.fromToken.address,
-          exchangeAddress,
-          tokenOutAddress: paymentRoute.toToken.address,
-          paymentReceiverAddress: paymentRoute.toAddress,
-          feeReceiverAddress: paymentRoute.fee ? paymentRoute.fee.receiver : Blockchains__default["default"][paymentRoute.blockchain].zero,
-          exchangeType: exchangeType,
-          receiverType: 0,
-          exchangeCallData: exchangeCallData,
-          receiverCallData: Blockchains__default["default"][paymentRoute.blockchain].zero,
-          deadline,
+
+      const payment = {
+        amountIn: paymentRoute.fromAmount,
+        paymentAmount: paymentRoute.toAmount,
+        feeAmount: paymentRoute.feeAmount || 0,
+        tokenInAddress: paymentRoute.fromToken.address,
+        exchangeAddress,
+        tokenOutAddress: paymentRoute.toToken.address,
+        paymentReceiverAddress: paymentRoute.toAddress,
+        feeReceiverAddress: paymentRoute.fee ? paymentRoute.fee.receiver : Blockchains__default["default"][paymentRoute.blockchain].zero,
+        exchangeType: exchangeType,
+        receiverType: 0,
+        exchangeCallData: exchangeCallData,
+        receiverCallData: Blockchains__default["default"][paymentRoute.blockchain].zero,
+        deadline,
+      };
+
+      if(paymentRoute.permit2) {
+
+        return {
+          payment: {...payment, permit2: true },
+          permitSingle: paymentRoute.permitSingle,
+          signature
         }
+
+      } else {
+
+        return { payment }
       }
     }
   };
@@ -2189,11 +2215,96 @@
   supported.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base'];
   supported.solana = ['solana'];
 
-  const getTransaction$1 = ({ paymentRoute, fee })=>{
+  const getTransaction$1 = ({ signature, paymentRoute, fee })=>{
     if(supported.evm.includes(paymentRoute.blockchain)) {
-      return getTransaction$2({ paymentRoute, fee })
+      return getTransaction$2({ signature, paymentRoute, fee })
     } else if(supported.solana.includes(paymentRoute.blockchain)) {
       return getTransaction$3({ paymentRoute, fee })
+    } else {
+      throw('Blockchain not supported!')
+    }
+  };
+
+  const PERMIT2_API = [{"inputs":[{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"AllowanceExpired","type":"error"},{"inputs":[],"name":"ExcessiveInvalidation","type":"error"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"InsufficientAllowance","type":"error"},{"inputs":[{"internalType":"uint256","name":"maxAmount","type":"uint256"}],"name":"InvalidAmount","type":"error"},{"inputs":[],"name":"InvalidContractSignature","type":"error"},{"inputs":[],"name":"InvalidNonce","type":"error"},{"inputs":[],"name":"InvalidSignature","type":"error"},{"inputs":[],"name":"InvalidSignatureLength","type":"error"},{"inputs":[],"name":"InvalidSigner","type":"error"},{"inputs":[],"name":"LengthMismatch","type":"error"},{"inputs":[{"internalType":"uint256","name":"signatureDeadline","type":"uint256"}],"name":"SignatureExpired","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"token","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint160","name":"amount","type":"uint160"},{"indexed":false,"internalType":"uint48","name":"expiration","type":"uint48"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":false,"internalType":"address","name":"token","type":"address"},{"indexed":false,"internalType":"address","name":"spender","type":"address"}],"name":"Lockdown","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"token","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint48","name":"newNonce","type":"uint48"},{"indexed":false,"internalType":"uint48","name":"oldNonce","type":"uint48"}],"name":"NonceInvalidation","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"token","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint160","name":"amount","type":"uint160"},{"indexed":false,"internalType":"uint48","name":"expiration","type":"uint48"},{"indexed":false,"internalType":"uint48","name":"nonce","type":"uint48"}],"name":"Permit","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":false,"internalType":"uint256","name":"word","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"mask","type":"uint256"}],"name":"UnorderedNonceInvalidation","type":"event"},{"inputs":[],"name":"DOMAIN_SEPARATOR","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"uint48","name":"expiration","type":"uint48"},{"internalType":"uint48","name":"nonce","type":"uint48"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"uint48","name":"expiration","type":"uint48"}],"name":"approve","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint48","name":"newNonce","type":"uint48"}],"name":"invalidateNonces","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"wordPos","type":"uint256"},{"internalType":"uint256","name":"mask","type":"uint256"}],"name":"invalidateUnorderedNonces","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"address","name":"spender","type":"address"}],"internalType":"struct IAllowanceTransfer.TokenSpenderPair[]","name":"approvals","type":"tuple[]"}],"name":"lockdown","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"nonceBitmap","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"uint48","name":"expiration","type":"uint48"},{"internalType":"uint48","name":"nonce","type":"uint48"}],"internalType":"struct IAllowanceTransfer.PermitDetails[]","name":"details","type":"tuple[]"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"sigDeadline","type":"uint256"}],"internalType":"struct IAllowanceTransfer.PermitBatch","name":"permitBatch","type":"tuple"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"permit","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"uint48","name":"expiration","type":"uint48"},{"internalType":"uint48","name":"nonce","type":"uint48"}],"internalType":"struct IAllowanceTransfer.PermitDetails","name":"details","type":"tuple"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"sigDeadline","type":"uint256"}],"internalType":"struct IAllowanceTransfer.PermitSingle","name":"permitSingle","type":"tuple"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"permit","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"internalType":"struct ISignatureTransfer.TokenPermissions","name":"permitted","type":"tuple"},{"internalType":"uint256","name":"nonce","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"internalType":"struct ISignatureTransfer.PermitTransferFrom","name":"permit","type":"tuple"},{"components":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"requestedAmount","type":"uint256"}],"internalType":"struct ISignatureTransfer.SignatureTransferDetails","name":"transferDetails","type":"tuple"},{"internalType":"address","name":"owner","type":"address"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"permitTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"internalType":"struct ISignatureTransfer.TokenPermissions[]","name":"permitted","type":"tuple[]"},{"internalType":"uint256","name":"nonce","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"internalType":"struct ISignatureTransfer.PermitBatchTransferFrom","name":"permit","type":"tuple"},{"components":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"requestedAmount","type":"uint256"}],"internalType":"struct ISignatureTransfer.SignatureTransferDetails[]","name":"transferDetails","type":"tuple[]"},{"internalType":"address","name":"owner","type":"address"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"permitTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"internalType":"struct ISignatureTransfer.TokenPermissions","name":"permitted","type":"tuple"},{"internalType":"uint256","name":"nonce","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"internalType":"struct ISignatureTransfer.PermitTransferFrom","name":"permit","type":"tuple"},{"components":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"requestedAmount","type":"uint256"}],"internalType":"struct ISignatureTransfer.SignatureTransferDetails","name":"transferDetails","type":"tuple"},{"internalType":"address","name":"owner","type":"address"},{"internalType":"bytes32","name":"witness","type":"bytes32"},{"internalType":"string","name":"witnessTypeString","type":"string"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"permitWitnessTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"internalType":"struct ISignatureTransfer.TokenPermissions[]","name":"permitted","type":"tuple[]"},{"internalType":"uint256","name":"nonce","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"internalType":"struct ISignatureTransfer.PermitBatchTransferFrom","name":"permit","type":"tuple"},{"components":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"requestedAmount","type":"uint256"}],"internalType":"struct ISignatureTransfer.SignatureTransferDetails[]","name":"transferDetails","type":"tuple[]"},{"internalType":"address","name":"owner","type":"address"},{"internalType":"bytes32","name":"witness","type":"bytes32"},{"internalType":"string","name":"witnessTypeString","type":"string"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"permitWitnessTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"components":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"address","name":"token","type":"address"}],"internalType":"struct IAllowanceTransfer.AllowanceTransferDetails[]","name":"transferDetails","type":"tuple[]"}],"name":"transferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"address","name":"token","type":"address"}],"name":"transferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"}];
+
+  const getAllowance = async({ blockchain, owner, token, spender })=> {
+    return request({
+      blockchain: blockchain,
+      address: Blockchains__default["default"][blockchain].permit2,
+      method: 'allowance',
+      params: [owner, token, spender],
+      api: PERMIT2_API
+    })
+  };
+
+  const getDeadline = ()=>{
+    return Math.ceil(new Date()/1000)+3600 // 1 hour
+  };
+
+  const getPermit2Signature$1 = async({ paymentRoute })=> {
+
+    const deadline = getDeadline();
+
+    const allowance = await getAllowance({
+      blockchain: paymentRoute.blockchain,
+      owner: paymentRoute.fromAddress,
+      token: paymentRoute.fromToken.address,
+      spender: routers$1[paymentRoute.blockchain].address,
+    });
+
+    const nonce = allowance.nonce;
+
+    paymentRoute.permitSingle = {
+      details: {
+        token: paymentRoute.fromToken.address,
+        amount: paymentRoute.fromAmount,
+        expiration: deadline,
+        nonce
+      },
+      spender: routers$1[paymentRoute.blockchain].address,
+      sigDeadline: deadline
+    };
+
+    return {
+
+      types: {
+        EIP712Domain: [
+          { name: "name", type: "string" },
+          { name: "chainId", type: "uint256" },
+          { name: "verifyingContract", type: "address" },
+        ],
+        PermitSingle: [
+          { name: "details", type: "PermitDetails" },
+          { name: "spender", type: "address" },
+          { name: "sigDeadline", type: "uint256" }
+        ],
+        PermitDetails: [
+          { name: "token", type: "address" },
+          { name: "amount", type: "uint160" },
+          { name: "expiration", type: "uint48" },
+          { name: "nonce", type: "uint48" }
+        ]
+      },
+
+      primaryType: "PermitSingle",
+
+      domain: {
+        name: 'Permit2',
+        chainId: Blockchains__default["default"][paymentRoute.blockchain].networkId,
+        verifyingContract: Blockchains__default["default"][paymentRoute.blockchain].permit2
+      },
+
+      message: paymentRoute.permitSingle
+
+    }
+
+  };
+
+  const getPermit2Signature = ({ paymentRoute })=>{
+    if(supported.evm.includes(paymentRoute.blockchain)) {
+      return getPermit2Signature$1({ paymentRoute })
+    } else if(supported.solana.includes(paymentRoute.blockchain)) {
+      return
     } else {
       throw('Blockchain not supported!')
     }
@@ -2219,6 +2330,7 @@
       approvalRequired,
       approvalTransaction,
       directTransfer,
+      permit2
     }) {
       this.blockchain = blockchain;
       this.fromAddress = fromAddress;
@@ -2236,11 +2348,13 @@
       this.approvalRequired = approvalRequired;
       this.approvalTransaction = approvalTransaction;
       this.directTransfer = directTransfer;
-      this.getTransaction = async ()=> await getTransaction$1({ paymentRoute: this });
+      this.getTransaction = async (options)=> await getTransaction$1({...(options||{}), paymentRoute: this });
+      this.permit2 = !!permit2;
+      this.getPermit2Signature = async ()=> await getPermit2Signature({ paymentRoute: this });
     }
   }
 
-  function convertToRoutes({ assets, accept, from }) {
+  function convertToRoutes({ assets, accept, from, permit2 }) {
     return Promise.all(assets.map(async (asset)=>{
       let relevantConfigurations = accept.filter((configuration)=>(configuration.blockchain == asset.blockchain));
       let fromToken = new Token__default["default"](asset);
@@ -2263,6 +2377,7 @@
             fromAddress: from[configuration.blockchain],
             toAddress: configuration.toAddress,
             fee: configuration.fee,
+            permit2
           })
         } else if(configuration.fromToken && configuration.fromAmount && fromToken.address.toLowerCase() == configuration.fromToken.toLowerCase()) {
           let blockchain = configuration.blockchain;
@@ -2288,9 +2403,9 @@
     })).then((routes)=> routes.flat().filter(el => el))
   }
 
-  function assetsToRoutes({ assets, blacklist, accept, from }) {
+  function assetsToRoutes({ assets, blacklist, accept, from, permit2 }) {
     return Promise.resolve(filterBlacklistedAssets({ assets, blacklist }))
-      .then((assets) => convertToRoutes({ assets, accept, from }))
+      .then((assets) => convertToRoutes({ assets, accept, from, permit2 }))
       .then((routes) => addDirectTransferStatus({ routes }))
       .then(addExchangeRoutes)
       .then(filterNotRoutable)
@@ -2302,7 +2417,7 @@
       .then((routes)=>routes.map((route)=>new PaymentRoute(route)))
   }
 
-  function route({ accept, from, whitelist, blacklist, drip }) {
+  function route({ accept, from, whitelist, blacklist, drip, permit2 }) {
     if(accept.some((accept)=>{ return accept && accept.fee && typeof(accept.fee.amount) == 'string' && accept.fee.amount.match(/\.\d\d+\%/) })) {
       throw('Only up to 1 decimal is supported for fee amounts!')
     }
@@ -2417,7 +2532,7 @@
         only: whitelist,
         exclude: blacklist,
         drip: !drip ? undefined : (asset)=>{
-          assetsToRoutes({ assets: [asset], blacklist, accept, from }).then((routes)=>{
+          assetsToRoutes({ assets: [asset], blacklist, accept, from, permit2 }).then((routes)=>{
             if(_optionalChain([routes, 'optionalAccess', _5 => _5.length])) {
               dripRoute(routes[0]);
             }
@@ -2425,7 +2540,7 @@
         }
       });
 
-      let allPaymentRoutes = (await assetsToRoutes({ assets: allAssets, blacklist, accept, from }) || []);
+      let allPaymentRoutes = (await assetsToRoutes({ assets: allAssets, blacklist, accept, from, permit2 }) || []);
       allPaymentRoutes.assets = allAssets;
       resolveAll(allPaymentRoutes);
     })
@@ -2502,11 +2617,15 @@
 
   let addApproval = (routes) => {
     return Promise.all(routes.map(
-      (route) => {
+      async(route) => {
         if(route.blockchain === 'solana') {
           return Promise.resolve(Blockchains__default["default"].solana.maxInt)
         } else {
-          return route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address).catch(()=>{})
+          if(route.permit2) {
+            return route.fromToken.allowance(route.fromAddress, Blockchains__default["default"][route.blockchain].permit2).catch(()=>{})
+          } else {
+            return route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address).catch(()=>{})
+          }
         }
       }
     )).then(
@@ -2524,13 +2643,23 @@
           } else {
             routes[index].approvalRequired = ethers.ethers.BigNumber.from(route.fromAmount).gte(ethers.ethers.BigNumber.from(allowances[index]));
             if(routes[index].approvalRequired) {
-              routes[index].approvalTransaction = {
-                blockchain: route.blockchain,
-                to: route.fromToken.address,
-                api: Token__default["default"][route.blockchain].DEFAULT,
-                method: 'approve',
-                params: [routers[route.blockchain].address, Blockchains__default["default"][route.blockchain].maxInt]
-              };
+              if(route.permit2) { // permit2 token approval
+                routes[index].approvalTransaction = {
+                  blockchain: route.blockchain,
+                  to: route.fromToken.address,
+                  api: Token__default["default"][route.blockchain].DEFAULT,
+                  method: 'approve',
+                  params: [Blockchains__default["default"][route.blockchain].permit2, Blockchains__default["default"][route.blockchain].maxInt]
+                };
+              } else { // default token approval
+                routes[index].approvalTransaction = {
+                  blockchain: route.blockchain,
+                  to: route.fromToken.address,
+                  api: Token__default["default"][route.blockchain].DEFAULT,
+                  method: 'approve',
+                  params: [routers[route.blockchain].address, Blockchains__default["default"][route.blockchain].maxInt]
+                };
+              }
             }
           }
         });

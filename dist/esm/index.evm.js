@@ -26910,7 +26910,7 @@ SystemProgram.programId = new PublicKey('11111111111111111111111111111111'); // 
 // TODO: replace 300 with a proper constant for the size of the other
 // Transaction fields
 
-var CHUNK_SIZE$2 = PACKET_DATA_SIZE - 300;
+var CHUNK_SIZE$3 = PACKET_DATA_SIZE - 300;
 /**
  * Program loader interface
  */
@@ -27197,7 +27197,7 @@ var Loader = /*#__PURE__*/function () {
   return Loader;
 }();
 
-Loader.chunkSize = CHUNK_SIZE$2;
+Loader.chunkSize = CHUNK_SIZE$3;
 var BPF_LOADER_PROGRAM_ID = new PublicKey('BPFLoader2111111111111111111111111111111111');
 /**
  * Factory class for transactions to interact with a program loader
@@ -47242,31 +47242,31 @@ var routers$2 = {
   },
 };
 
-let _window;
+let _window$1;
 
-let getWindow = () => {
-  if(_window) { return _window }
+let getWindow$1 = () => {
+  if(_window$1) { return _window$1 }
   if (typeof global == 'object') {
-    _window = global;
+    _window$1 = global;
   } else {
-    _window = window;
+    _window$1 = window;
   }
-  return _window
+  return _window$1
 };
 
-const getConfiguration = () =>{
-  if(getWindow()._Web3ClientConfiguration === undefined) {
-    getWindow()._Web3ClientConfiguration = {};
+const getConfiguration$1 = () =>{
+  if(getWindow$1()._Web3ClientConfiguration === undefined) {
+    getWindow$1()._Web3ClientConfiguration = {};
   }
-  return getWindow()._Web3ClientConfiguration
+  return getWindow$1()._Web3ClientConfiguration
 };
 
-function _optionalChain$3$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+function _optionalChain$5$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 const BATCH_INTERVAL$1 = 10;
 const CHUNK_SIZE$1 = 99;
-const MAX_RETRY$1 = 3;
+const MAX_RETRY$1 = 5;
 
-class StaticJsonRpcBatchProvider extends ethers.providers.JsonRpcProvider {
+class StaticJsonRpcBatchProvider$1 extends ethers.providers.JsonRpcProvider {
 
   constructor(url, network, endpoints, failover) {
     super(url);
@@ -47292,12 +47292,12 @@ class StaticJsonRpcBatchProvider extends ethers.providers.JsonRpcProvider {
           // on whether it was a success or error
           chunk.forEach((inflightRequest, index) => {
             const payload = result[index];
-            if (_optionalChain$3$1([payload, 'optionalAccess', _ => _.error])) {
+            if (_optionalChain$5$1([payload, 'optionalAccess', _ => _.error])) {
               const error = new Error(payload.error.message);
               error.code = payload.error.code;
               error.data = payload.error.data;
               inflightRequest.reject(error);
-            } else if(_optionalChain$3$1([payload, 'optionalAccess', _2 => _2.result])) {
+            } else if(_optionalChain$5$1([payload, 'optionalAccess', _2 => _2.result])) {
               inflightRequest.resolve(payload.result);
             } else {
               inflightRequest.reject();
@@ -47364,7 +47364,7 @@ class StaticJsonRpcBatchProvider extends ethers.providers.JsonRpcProvider {
           chunk.map((inflight) => inflight.request);
           return this.requestChunk(chunk, this._endpoint, 1)
         });
-      }, getConfiguration().batchInterval || BATCH_INTERVAL$1);
+      }, getConfiguration$1().batchInterval || BATCH_INTERVAL$1);
     }
 
     return promise
@@ -47372,11 +47372,12 @@ class StaticJsonRpcBatchProvider extends ethers.providers.JsonRpcProvider {
 
 }
 
+function _optionalChain$4$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 const getAllProviders$1 = ()=> {
-  if(getWindow()._Web3ClientProviders == undefined) {
-    getWindow()._Web3ClientProviders = {};
+  if(getWindow$1()._Web3ClientProviders == undefined) {
+    getWindow$1()._Web3ClientProviders = {};
   }
-  return getWindow()._Web3ClientProviders
+  return getWindow$1()._Web3ClientProviders
 };
 
 const setProvider$2 = (blockchain, provider)=> {
@@ -47391,7 +47392,7 @@ const setProvider$2 = (blockchain, provider)=> {
 const setProviderEndpoints$2 = async (blockchain, endpoints, detectFastest = true)=> {
   
   getAllProviders$1()[blockchain] = endpoints.map((endpoint, index)=>
-    new StaticJsonRpcBatchProvider(endpoint, blockchain, endpoints, ()=>{
+    new StaticJsonRpcBatchProvider$1(endpoint, blockchain, endpoints, ()=>{
       if(getAllProviders$1()[blockchain].length === 1) {
         setProviderEndpoints$2(blockchain, endpoints, detectFastest);
       } else {
@@ -47401,7 +47402,7 @@ const setProviderEndpoints$2 = async (blockchain, endpoints, detectFastest = tru
   );
   
   let provider;
-  let window = getWindow();
+  let window = getWindow$1();
 
   if(
     window.fetch == undefined ||
@@ -47417,17 +47418,20 @@ const setProviderEndpoints$2 = async (blockchain, endpoints, detectFastest = tru
         let timeout = 900;
         let before = new Date().getTime();
         setTimeout(()=>resolve(timeout), timeout);
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },
-          referrer: "",
-          referrerPolicy: "no-referrer",
-          body: JSON.stringify({ method: 'net_version', id: 1, jsonrpc: '2.0' })
-        });
-        if(!response.ok) { return resolve(999) }
+        let response;
+        try {
+          response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            referrer: "",
+            referrerPolicy: "no-referrer",
+            body: JSON.stringify({ method: 'net_version', id: 1, jsonrpc: '2.0' })
+          });
+        } catch (e) {}
+        if(!_optionalChain$4$1([response, 'optionalAccess', _ => _.ok])) { return resolve(999) }
         let after = new Date().getTime();
         resolve(after-before);
       })
@@ -47446,13 +47450,13 @@ const getProvider$2 = async (blockchain)=> {
   let providers = getAllProviders$1();
   if(providers && providers[blockchain]){ return providers[blockchain][0] }
   
-  let window = getWindow();
+  let window = getWindow$1();
   if(window._Web3ClientGetProviderPromise && window._Web3ClientGetProviderPromise[blockchain]) { return await window._Web3ClientGetProviderPromise[blockchain] }
 
   if(!window._Web3ClientGetProviderPromise){ window._Web3ClientGetProviderPromise = {}; }
   window._Web3ClientGetProviderPromise[blockchain] = new Promise(async(resolve)=> {
     await setProviderEndpoints$2(blockchain, Blockchains[blockchain].endpoints);
-    resolve(getWindow()._Web3ClientProviders[blockchain][0]);
+    resolve(getWindow$1()._Web3ClientProviders[blockchain][0]);
   });
 
   return await window._Web3ClientGetProviderPromise[blockchain]
@@ -47463,29 +47467,29 @@ const getProviders$2 = async(blockchain)=>{
   let providers = getAllProviders$1();
   if(providers && providers[blockchain]){ return providers[blockchain] }
   
-  let window = getWindow();
+  let window = getWindow$1();
   if(window._Web3ClientGetProvidersPromise && window._Web3ClientGetProvidersPromise[blockchain]) { return await window._Web3ClientGetProvidersPromise[blockchain] }
 
   if(!window._Web3ClientGetProvidersPromise){ window._Web3ClientGetProvidersPromise = {}; }
   window._Web3ClientGetProvidersPromise[blockchain] = new Promise(async(resolve)=> {
     await setProviderEndpoints$2(blockchain, Blockchains[blockchain].endpoints);
-    resolve(getWindow()._Web3ClientProviders[blockchain]);
+    resolve(getWindow$1()._Web3ClientProviders[blockchain]);
   });
 
   return await window._Web3ClientGetProvidersPromise[blockchain]
 };
 
-var EVM = {
+var EVM$1 = {
   getProvider: getProvider$2,
   getProviders: getProviders$2,
   setProviderEndpoints: setProviderEndpoints$2,
   setProvider: setProvider$2,
 };
 
-function _optionalChain$2$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
-const BATCH_INTERVAL = 10;
-const CHUNK_SIZE = 99;
-const MAX_RETRY = 3;
+function _optionalChain$3$2(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+const BATCH_INTERVAL$2 = 10;
+const CHUNK_SIZE$2 = 99;
+const MAX_RETRY$2 = 10;
 
 class StaticJsonRpcSequentialProvider extends Connection {
 
@@ -47501,9 +47505,7 @@ class StaticJsonRpcSequentialProvider extends Connection {
   }
 
   handleError(error, attempt, chunk) {
-    if(attempt < MAX_RETRY && error && [
-      'Failed to fetch', 'limit reached', '504', '503', '502', '500', '429', '426', '422', '413', '409', '408', '406', '405', '404', '403', '402', '401', '400'
-    ].some((errorType)=>error.toString().match(errorType))) {
+    if(attempt < MAX_RETRY$2) {
       const index = this._endpoints.indexOf(this._endpoint)+1;
       this._endpoint = index >= this._endpoints.length ? this._endpoints[0] : this._endpoints[index];
       this._provider = new Connection(this._endpoint);
@@ -47533,7 +47535,15 @@ class StaticJsonRpcSequentialProvider extends Connection {
       ).then((response)=>{
         if(response.ok) {
           response.json().then((parsedJson)=>{
-            resolve(parsedJson);
+            if(parsedJson.find((entry)=>_optionalChain$3$2([entry, 'optionalAccess', _ => _.error]))) {
+              if(attempt < MAX_RETRY$2) {
+                reject('Error in batch found!');
+              } else {
+                resolve(parsedJson);
+              }
+            } else {
+              resolve(parsedJson);
+            }
           }).catch(reject);
         } else {
           reject(`${response.status} ${response.text}`);
@@ -47551,7 +47561,7 @@ class StaticJsonRpcSequentialProvider extends Connection {
         .then((result) => {
           chunk.forEach((inflightRequest, index) => {
             const payload = result[index];
-            if (_optionalChain$2$1([payload, 'optionalAccess', _ => _.error])) {
+            if (_optionalChain$3$2([payload, 'optionalAccess', _2 => _2.error])) {
               const error = new Error(payload.error.message);
               error.code = payload.error.code;
               error.data = payload.error.data;
@@ -47593,51 +47603,52 @@ class StaticJsonRpcSequentialProvider extends Connection {
         this._pendingBatchAggregator = null;
         // Prepare Chunks of CHUNK_SIZE
         const chunks = [];
-        for (let i = 0; i < Math.ceil(batch.length / CHUNK_SIZE); i++) {
-          chunks[i] = batch.slice(i*CHUNK_SIZE, (i+1)*CHUNK_SIZE);
+        for (let i = 0; i < Math.ceil(batch.length / CHUNK_SIZE$2); i++) {
+          chunks[i] = batch.slice(i*CHUNK_SIZE$2, (i+1)*CHUNK_SIZE$2);
         }
         chunks.forEach((chunk)=>{
           // Get the request as an array of requests
           chunk.map((inflight) => inflight.request);
           return this.requestChunk(chunk, 1)
         });
-      }, getConfiguration().batchInterval || BATCH_INTERVAL);
+      }, getConfiguration$1().batchInterval || BATCH_INTERVAL$2);
     }
 
     return promise
   }
 }
 
-const getAllProviders = ()=> {
-  if(getWindow()._Web3ClientProviders == undefined) {
-    getWindow()._Web3ClientProviders = {};
+function _optionalChain$2$2(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+const getAllProviders$2 = ()=> {
+  if(getWindow$1()._Web3ClientProviders == undefined) {
+    getWindow$1()._Web3ClientProviders = {};
   }
-  return getWindow()._Web3ClientProviders
+  return getWindow$1()._Web3ClientProviders
 };
 
-const setProvider$1 = (blockchain, provider)=> {
-  if(getAllProviders()[blockchain] === undefined) { getAllProviders()[blockchain] = []; }
-  const index = getAllProviders()[blockchain].indexOf(provider);
+const setProvider$1$1 = (blockchain, provider)=> {
+  if(getAllProviders$2()[blockchain] === undefined) { getAllProviders$2()[blockchain] = []; }
+  const index = getAllProviders$2()[blockchain].indexOf(provider);
   if(index > -1) {
-    getAllProviders()[blockchain].splice(index, 1);
+    getAllProviders$2()[blockchain].splice(index, 1);
   }
-  getAllProviders()[blockchain].unshift(provider);
+  getAllProviders$2()[blockchain].unshift(provider);
 };
 
-const setProviderEndpoints$1 = async (blockchain, endpoints, detectFastest = true)=> {
+const setProviderEndpoints$1$1 = async (blockchain, endpoints, detectFastest = true)=> {
   
-  getAllProviders()[blockchain] = endpoints.map((endpoint, index)=>
+  getAllProviders$2()[blockchain] = endpoints.map((endpoint, index)=>
     new StaticJsonRpcSequentialProvider(endpoint, blockchain, endpoints, ()=>{
-      if(getAllProviders()[blockchain].length === 1) {
-        setProviderEndpoints$1(blockchain, endpoints, detectFastest);
+      if(getAllProviders$2()[blockchain].length === 1) {
+        setProviderEndpoints$1$1(blockchain, endpoints, detectFastest);
       } else {
-        getAllProviders()[blockchain].splice(index, 1);
+        getAllProviders$2()[blockchain].splice(index, 1);
       }
     })
   );
 
   let provider;
-  let window = getWindow();
+  let window = getWindow$1();
 
   if(
     window.fetch == undefined ||
@@ -47645,7 +47656,7 @@ const setProviderEndpoints$1 = async (blockchain, endpoints, detectFastest = tru
     (typeof window.cy != 'undefined') ||
     detectFastest === false
   ) {
-    provider = getAllProviders()[blockchain][0];
+    provider = getAllProviders$2()[blockchain][0];
   } else {
     
     let responseTimes = await Promise.all(endpoints.map((endpoint)=>{
@@ -47653,17 +47664,20 @@ const setProviderEndpoints$1 = async (blockchain, endpoints, detectFastest = tru
         let timeout = 900;
         let before = new Date().getTime();
         setTimeout(()=>resolve(timeout), timeout);
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },
-          referrer: "",
-          referrerPolicy: "no-referrer",
-          body: JSON.stringify({ method: 'getIdentity', id: 1, jsonrpc: '2.0' })
-        });
-        if(!response.ok) { return resolve(999) }
+        let response;
+        try {
+          response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            referrer: "",
+            referrerPolicy: "no-referrer",
+            body: JSON.stringify({ method: 'getIdentity', id: 1, jsonrpc: '2.0' })
+          });
+        } catch (e) {}
+        if(!_optionalChain$2$2([response, 'optionalAccess', _ => _.ok])) { return resolve(999) }
         let after = new Date().getTime();
         resolve(after-before);
       })
@@ -47671,113 +47685,113 @@ const setProviderEndpoints$1 = async (blockchain, endpoints, detectFastest = tru
 
     const fastestResponse = Math.min(...responseTimes);
     const fastestIndex = responseTimes.indexOf(fastestResponse);
-    provider = getAllProviders()[blockchain][fastestIndex];
+    provider = getAllProviders$2()[blockchain][fastestIndex];
   }
   
-  setProvider$1(blockchain, provider);
+  setProvider$1$1(blockchain, provider);
 };
 
-const getProvider$1 = async (blockchain)=> {
+const getProvider$1$1 = async (blockchain)=> {
 
-  let providers = getAllProviders();
+  let providers = getAllProviders$2();
   if(providers && providers[blockchain]){ return providers[blockchain][0] }
   
-  let window = getWindow();
+  let window = getWindow$1();
   if(window._Web3ClientGetProviderPromise && window._Web3ClientGetProviderPromise[blockchain]) { return await window._Web3ClientGetProviderPromise[blockchain] }
 
   if(!window._Web3ClientGetProviderPromise){ window._Web3ClientGetProviderPromise = {}; }
   window._Web3ClientGetProviderPromise[blockchain] = new Promise(async(resolve)=> {
-    await setProviderEndpoints$1(blockchain, Blockchains[blockchain].endpoints);
-    resolve(getWindow()._Web3ClientProviders[blockchain][0]);
+    await setProviderEndpoints$1$1(blockchain, Blockchains[blockchain].endpoints);
+    resolve(getWindow$1()._Web3ClientProviders[blockchain][0]);
   });
 
   return await window._Web3ClientGetProviderPromise[blockchain]
 };
 
-const getProviders$1 = async(blockchain)=>{
+const getProviders$1$1 = async(blockchain)=>{
 
-  let providers = getAllProviders();
+  let providers = getAllProviders$2();
   if(providers && providers[blockchain]){ return providers[blockchain] }
   
-  let window = getWindow();
+  let window = getWindow$1();
   if(window._Web3ClientGetProvidersPromise && window._Web3ClientGetProvidersPromise[blockchain]) { return await window._Web3ClientGetProvidersPromise[blockchain] }
 
   if(!window._Web3ClientGetProvidersPromise){ window._Web3ClientGetProvidersPromise = {}; }
   window._Web3ClientGetProvidersPromise[blockchain] = new Promise(async(resolve)=> {
-    await setProviderEndpoints$1(blockchain, Blockchains[blockchain].endpoints);
-    resolve(getWindow()._Web3ClientProviders[blockchain]);
+    await setProviderEndpoints$1$1(blockchain, Blockchains[blockchain].endpoints);
+    resolve(getWindow$1()._Web3ClientProviders[blockchain]);
   });
 
   return await window._Web3ClientGetProvidersPromise[blockchain]
 };
 
 var Solana = {
-  getProvider: getProvider$1,
-  getProviders: getProviders$1,
-  setProviderEndpoints: setProviderEndpoints$1,
-  setProvider: setProvider$1,
+  getProvider: getProvider$1$1,
+  getProviders: getProviders$1$1,
+  setProviderEndpoints: setProviderEndpoints$1$1,
+  setProvider: setProvider$1$1,
 };
 
-let supported$2 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base'];
-supported$2.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base'];
-supported$2.solana = ['solana'];
+let supported$3 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base'];
+supported$3.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base'];
+supported$3.solana = ['solana'];
 
-function _optionalChain$1$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
-let getCacheStore = () => {
-  if (getWindow()._Web3ClientCacheStore == undefined) {
-    getWindow()._Web3ClientCacheStore = {};
+function _optionalChain$1$2(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+let getCacheStore$1 = () => {
+  if (getWindow$1()._Web3ClientCacheStore == undefined) {
+    getWindow$1()._Web3ClientCacheStore = {};
   }
-  return getWindow()._Web3ClientCacheStore
+  return getWindow$1()._Web3ClientCacheStore
 };
 
-let getPromiseStore = () => {
-  if (getWindow()._Web3ClientPromiseStore == undefined) {
-    getWindow()._Web3ClientPromiseStore = {};
+let getPromiseStore$1 = () => {
+  if (getWindow$1()._Web3ClientPromiseStore == undefined) {
+    getWindow$1()._Web3ClientPromiseStore = {};
   }
-  return getWindow()._Web3ClientPromiseStore
+  return getWindow$1()._Web3ClientPromiseStore
 };
 
-let set = function ({ key, value, expires }) {
-  getCacheStore()[key] = {
+let set$1 = function ({ key, value, expires }) {
+  getCacheStore$1()[key] = {
     expiresAt: Date.now() + expires,
     value,
   };
 };
 
-let get = function ({ key, expires }) {
-  let cachedEntry = getCacheStore()[key];
-  if (_optionalChain$1$1([cachedEntry, 'optionalAccess', _ => _.expiresAt]) > Date.now()) {
+let get$1 = function ({ key, expires }) {
+  let cachedEntry = getCacheStore$1()[key];
+  if (_optionalChain$1$2([cachedEntry, 'optionalAccess', _ => _.expiresAt]) > Date.now()) {
     return cachedEntry.value
   }
 };
 
-let getPromise = function({ key }) {
-  return getPromiseStore()[key]
+let getPromise$1 = function({ key }) {
+  return getPromiseStore$1()[key]
 };
 
-let setPromise = function({ key, promise }) {
-  getPromiseStore()[key] = promise;
+let setPromise$1 = function({ key, promise }) {
+  getPromiseStore$1()[key] = promise;
   return promise
 };
 
-let deletePromise = function({ key }) {
-  getPromiseStore()[key] = undefined; 
+let deletePromise$1 = function({ key }) {
+  getPromiseStore$1()[key] = undefined; 
 };
 
-let cache = function ({ call, key, expires = 0 }) {
+let cache$1 = function ({ call, key, expires = 0 }) {
   return new Promise((resolve, reject)=>{
     let value;
     key = JSON.stringify(key);
     
     // get existing promise (of a previous pending request asking for the exact same thing)
-    let existingPromise = getPromise({ key });
+    let existingPromise = getPromise$1({ key });
     if(existingPromise) { 
       return existingPromise
         .then(resolve)
         .catch(reject)
     }
 
-    setPromise({ key, promise: new Promise((resolveQueue, rejectQueue)=>{
+    setPromise$1({ key, promise: new Promise((resolveQueue, rejectQueue)=>{
       if (expires === 0) {
         return call()
           .then((value)=>{
@@ -47791,7 +47805,7 @@ let cache = function ({ call, key, expires = 0 }) {
       }
       
       // get cached value
-      value = get({ key, expires });
+      value = get$1({ key, expires });
       if (value) {
         resolve(value);
         resolveQueue(value);
@@ -47802,7 +47816,7 @@ let cache = function ({ call, key, expires = 0 }) {
       call()
         .then((value)=>{
           if (value) {
-            set({ key, value, expires });
+            set$1({ key, value, expires });
           }
           resolve(value);
           resolveQueue(value);
@@ -47813,22 +47827,22 @@ let cache = function ({ call, key, expires = 0 }) {
         });
       })
     }).then(()=>{
-      deletePromise({ key });
+      deletePromise$1({ key });
     }).catch(()=>{
-      deletePromise({ key });
+      deletePromise$1({ key });
     });
   })
 };
 
 const getProvider = async (blockchain)=>{
 
-  if(supported$2.evm.includes(blockchain)) {
+  if(supported$3.evm.includes(blockchain)) {
 
 
-    return await EVM.getProvider(blockchain)
+    return await EVM$1.getProvider(blockchain)
 
 
-  } else if(supported$2.solana.includes(blockchain)) {
+  } else if(supported$3.solana.includes(blockchain)) {
 
 
     return await Solana.getProvider(blockchain)
@@ -47839,7 +47853,7 @@ const getProvider = async (blockchain)=>{
   }
 };
 
-let paramsToContractArgs = ({ contract, method, params }) => {
+let paramsToContractArgs$1 = ({ contract, method, params }) => {
   let fragment = contract.interface.fragments.find((fragment) => {
     return fragment.name == method
   });
@@ -47853,9 +47867,9 @@ let paramsToContractArgs = ({ contract, method, params }) => {
   })
 };
 
-const contractCall = ({ address, api, method, params, provider, block }) => {
+const contractCall$1 = ({ address, api, method, params, provider, block }) => {
   const contract = new ethers.Contract(address, api, provider);
-  const args = paramsToContractArgs({ contract, method, params });
+  const args = paramsToContractArgs$1({ contract, method, params });
   const fragment = contract.interface.fragments.find((fragment)=>fragment.name === method);
   if(contract[method] === undefined) {
     method = `${method}(${fragment.inputs.map((input)=>input.type).join(',')})`;
@@ -47871,30 +47885,30 @@ const balance$1 = ({ address, provider }) => {
   return provider.getBalance(address)
 };
 
-const transactionCount = ({ address, provider }) => {
+const transactionCount$1 = ({ address, provider }) => {
   return provider.getTransactionCount(address)
 };
 
 const singleRequest$1 = ({ blockchain, address, api, method, params, block, provider }) =>{
   if (api) {
-    return contractCall({ address, api, method, params, provider, block })
+    return contractCall$1({ address, api, method, params, provider, block })
   } else if (method === 'latestBlockNumber') {
     return provider.getBlockNumber()
   } else if (method === 'balance') {
     return balance$1({ address, provider })
   } else if (method === 'transactionCount') {
-    return transactionCount({ address, provider })
+    return transactionCount$1({ address, provider })
   }
 };
 
-var requestEVM = async ({ blockchain, address, api, method, params, block, timeout, strategy }) => {
+var requestEVM$1 = async ({ blockchain, address, api, method, params, block, timeout, strategy }) => {
 
-  strategy = strategy ? strategy : (getConfiguration().strategy || 'failover');
-  timeout = timeout ? timeout : (getConfiguration().timeout || undefined);
+  strategy = strategy ? strategy : (getConfiguration$1().strategy || 'failover');
+  timeout = timeout ? timeout : (getConfiguration$1().timeout || undefined);
 
   if(strategy === 'fastest') {
 
-    const providers = await EVM.getProviders(blockchain);
+    const providers = await EVM$1.getProviders(blockchain);
     
     let allRequestsFailed = [];
 
@@ -47916,7 +47930,7 @@ var requestEVM = async ({ blockchain, address, api, method, params, block, timeo
 
   } else { // failover
 
-    const provider = await EVM.getProvider(blockchain);
+    const provider = await EVM$1.getProvider(blockchain);
     const request = singleRequest$1({ blockchain, address, api, method, params, block, provider });
     
     if(timeout) {
@@ -47934,11 +47948,11 @@ const accountInfo = async ({ address, api, method, params, provider, block }) =>
   return api.decode(info.data)
 };
 
-const balance = ({ address, provider }) => {
+const balance$2 = ({ address, provider }) => {
   return provider.getBalance(new PublicKey(address))
 };
 
-const singleRequest = async({ blockchain, address, api, method, params, block, provider, providers })=> {
+const singleRequest$2 = async({ blockchain, address, api, method, params, block, provider, providers })=> {
 
   try {
 
@@ -47963,7 +47977,7 @@ const singleRequest = async({ blockchain, address, api, method, params, block, p
     } else if (method === 'latestBlockNumber') {
       return await provider.getSlot(params ? params : undefined)
     } else if (method === 'balance') {
-      return await balance({ address, provider })
+      return await balance$2({ address, provider })
     }
 
   } catch (error){
@@ -47971,7 +47985,7 @@ const singleRequest = async({ blockchain, address, api, method, params, block, p
       'Failed to fetch', 'limit reached', '504', '503', '502', '500', '429', '426', '422', '413', '409', '408', '406', '405', '404', '403', '402', '401', '400'
     ].some((errorType)=>error.toString().match(errorType))) {
       let nextProvider = providers[providers.indexOf(provider)+1] || providers[0];
-      return singleRequest({ blockchain, address, api, method, params, block, provider: nextProvider, providers })
+      return singleRequest$2({ blockchain, address, api, method, params, block, provider: nextProvider, providers })
     } else {
       throw error
     }
@@ -47980,8 +47994,8 @@ const singleRequest = async({ blockchain, address, api, method, params, block, p
 
 var requestSolana = async ({ blockchain, address, api, method, params, block, timeout, strategy }) => {
 
-  strategy = strategy ? strategy : (getConfiguration().strategy || 'failover');
-  timeout = timeout ? timeout : (getConfiguration().timeout || undefined);
+  strategy = strategy ? strategy : (getConfiguration$1().strategy || 'failover');
+  timeout = timeout ? timeout : (getConfiguration$1().timeout || undefined);
 
   const providers = await Solana.getProviders(blockchain);
 
@@ -47992,7 +48006,7 @@ var requestSolana = async ({ blockchain, address, api, method, params, block, ti
     const allRequestsInParallel = providers.map((provider)=>{
       return new Promise((resolve)=>{
         allRequestsFailed.push(
-          singleRequest({ blockchain, address, api, method, params, block, provider }).then(resolve)
+          singleRequest$2({ blockchain, address, api, method, params, block, provider }).then(resolve)
         );
       })
     });
@@ -48008,7 +48022,7 @@ var requestSolana = async ({ blockchain, address, api, method, params, block, ti
   } else { // failover
 
     const provider = await Solana.getProvider(blockchain);
-    const request = singleRequest({ blockchain, address, api, method, params, block, provider, providers });
+    const request = singleRequest$2({ blockchain, address, api, method, params, block, provider, providers });
 
     if(timeout) {
       timeout = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout));
@@ -48019,7 +48033,7 @@ var requestSolana = async ({ blockchain, address, api, method, params, block, ti
   }
 };
 
-var parseUrl = (url) => {
+var parseUrl$1 = (url) => {
   if (typeof url == 'object') {
     return url
   }
@@ -48046,22 +48060,22 @@ var parseUrl = (url) => {
   }
 };
 
-const request = async function (url, options) {
+const request$1 = async function (url, options) {
   
-  const { blockchain, address, method } = parseUrl(url);
-  const { api, params, cache: cache$1, block, timeout, strategy, cacheKey } = (typeof(url) == 'object' ? url : options) || {};
+  const { blockchain, address, method } = parseUrl$1(url);
+  const { api, params, cache: cache$1$1, block, timeout, strategy, cacheKey } = (typeof(url) == 'object' ? url : options) || {};
 
-  return await cache({
-    expires: cache$1 || 0,
+  return await cache$1({
+    expires: cache$1$1 || 0,
     key: cacheKey || [blockchain, address, method, params, block],
     call: async()=>{
-      if(supported$2.evm.includes(blockchain)) {
+      if(supported$3.evm.includes(blockchain)) {
 
 
-        return await requestEVM({ blockchain, address, api, method, params, block, strategy, timeout })
+        return await requestEVM$1({ blockchain, address, api, method, params, block, strategy, timeout })
 
 
-      } else if(supported$2.solana.includes(blockchain)) {
+      } else if(supported$3.solana.includes(blockchain)) {
 
 
         return await requestSolana({ blockchain, address, api, method, params, block, strategy, timeout })
@@ -48075,7 +48089,7 @@ const request = async function (url, options) {
 };
 
 var allowanceOnEVM = ({ blockchain, address, api, owner, spender })=>{
-  return request(
+  return request$1(
     {
       blockchain,
       address,
@@ -48089,7 +48103,7 @@ var allowanceOnEVM = ({ blockchain, address, api, owner, spender })=>{
 
 var balanceOnEVM = async ({ blockchain, address, account, api, id })=>{
   if (address == Blockchains[blockchain].currency.address) {
-    return await request(
+    return await request$1(
       {
         blockchain: blockchain,
         address: account,
@@ -48098,7 +48112,7 @@ var balanceOnEVM = async ({ blockchain, address, account, api, id })=>{
       },
     )
   } else {
-    return await request(
+    return await request$1(
       {
         blockchain: blockchain,
         address: address,
@@ -48112,7 +48126,7 @@ var balanceOnEVM = async ({ blockchain, address, account, api, id })=>{
 };
 
 var decimalsOnEVM = ({ blockchain, address, api })=>{
-  return request({
+  return request$1({
     blockchain,
     address,
     api,
@@ -48862,7 +48876,7 @@ var nameOnEVM = ({ blockchain, address, api, id })=>{
 
   if(id) {
     return new Promise((resolve)=>{
-      request({ blockchain, address, api: uriAPI, method: 'uri', params: [id] }).then((uri)=>{
+      request$1({ blockchain, address, api: uriAPI, method: 'uri', params: [id] }).then((uri)=>{
         uri = uri.match('0x{id}') ? uri.replace('0x{id}', id) : uri;
         uriToName(uri).then(resolve);
       }).catch((error)=>{
@@ -48871,7 +48885,7 @@ var nameOnEVM = ({ blockchain, address, api, id })=>{
       });
     })
   } else {
-    return request(
+    return request$1(
       {
         blockchain: blockchain,
         address: address,
@@ -48884,7 +48898,7 @@ var nameOnEVM = ({ blockchain, address, api, id })=>{
 };
 
 var symbolOnEVM = ({ blockchain, address, api })=>{
-  return request(
+  return request$1(
     {
       blockchain,
       address,
@@ -49080,13 +49094,13 @@ var balanceOnSolana = async ({ blockchain, address, account, api })=>{
 
   if(address == Blockchains[blockchain].currency.address) {
 
-     return ethers.BigNumber.from(await request(`solana://${account}/balance`))
+     return ethers.BigNumber.from(await request$1(`solana://${account}/balance`))
 
   } else {
 
     const tokenAccountAddress = await findProgramAddress({ token: address, owner: account });
 
-    const balance = await request(`solana://${tokenAccountAddress}/getTokenAccountBalance`);
+    const balance = await request$1(`solana://${tokenAccountAddress}/getTokenAccountBalance`);
 
     if (balance) {
       return ethers.BigNumber.from(balance.value.amount)
@@ -49097,7 +49111,7 @@ var balanceOnSolana = async ({ blockchain, address, account, api })=>{
 };
 
 var decimalsOnSolana = async ({ blockchain, address })=>{
-  let data = await request({ blockchain, address, api: MINT_LAYOUT });
+  let data = await request$1({ blockchain, address, api: MINT_LAYOUT });
   return data.decimals
 };
 
@@ -49105,7 +49119,7 @@ var findAccount = async ({ token, owner })=>{
 
   const address = await findProgramAddress({ token, owner });
 
-  const existingAccount = await request({
+  const existingAccount = await request$1({
     blockchain: 'solana',
     address,
     api: TOKEN_LAYOUT,
@@ -49115,7 +49129,7 @@ var findAccount = async ({ token, owner })=>{
   return existingAccount
 };
 
-function _optionalChain$3(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+function _optionalChain$3$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 const METADATA_ACCOUNT = 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s';
 
 const METADATA_REPLACE = new RegExp('\u0000', 'g');
@@ -49136,7 +49150,7 @@ const getMetaData = async ({ blockchain, address })=> {
   let metaDataPublicKey = new PublicKey(METADATA_ACCOUNT);
   let tokenMetaDataPublicKey = await getMetaDataPDA({ metaDataPublicKey, mintPublicKey });
 
-  let metaData = await request({
+  let metaData = await request$1({
     blockchain, 
     address: tokenMetaDataPublicKey.toString(),
     api: METADATA_LAYOUT,
@@ -49144,26 +49158,26 @@ const getMetaData = async ({ blockchain, address })=> {
   });
 
   return {
-    name: _optionalChain$3([metaData, 'optionalAccess', _ => _.data, 'optionalAccess', _2 => _2.name, 'optionalAccess', _3 => _3.replace, 'call', _4 => _4(METADATA_REPLACE, '')]),
-    symbol: _optionalChain$3([metaData, 'optionalAccess', _5 => _5.data, 'optionalAccess', _6 => _6.symbol, 'optionalAccess', _7 => _7.replace, 'call', _8 => _8(METADATA_REPLACE, '')])
+    name: _optionalChain$3$1([metaData, 'optionalAccess', _ => _.data, 'optionalAccess', _2 => _2.name, 'optionalAccess', _3 => _3.replace, 'call', _4 => _4(METADATA_REPLACE, '')]),
+    symbol: _optionalChain$3$1([metaData, 'optionalAccess', _5 => _5.data, 'optionalAccess', _6 => _6.symbol, 'optionalAccess', _7 => _7.replace, 'call', _8 => _8(METADATA_REPLACE, '')])
   }
 };
 
-function _optionalChain$2(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+function _optionalChain$2$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 var nameOnSolana = async ({ blockchain, address })=>{
   let metaData = await getMetaData({ blockchain, address });
-  return _optionalChain$2([metaData, 'optionalAccess', _ => _.name])
+  return _optionalChain$2$1([metaData, 'optionalAccess', _ => _.name])
 };
 
-function _optionalChain$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+function _optionalChain$1$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 var symbolOnSolana = async ({ blockchain, address })=>{
   let metaData = await getMetaData({ blockchain, address });
-  return _optionalChain$1([metaData, 'optionalAccess', _ => _.symbol])
+  return _optionalChain$1$1([metaData, 'optionalAccess', _ => _.symbol])
 };
 
-let supported$1 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base'];
-supported$1.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base'];
-supported$1.solana = ['solana'];
+let supported$2 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base'];
+supported$2.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base'];
+supported$2.solana = ['solana'];
 
 function _optionalChain$5(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 
@@ -49171,9 +49185,9 @@ class Token {
   
   constructor({ blockchain, address }) {
     this.blockchain = blockchain;
-    if(supported$1.evm.includes(this.blockchain)) {
+    if(supported$2.evm.includes(this.blockchain)) {
       this.address = ethers.utils.getAddress(address);
-    } else if(supported$1.solana.includes(this.blockchain)) {
+    } else if(supported$2.solana.includes(this.blockchain)) {
       this.address = address;
     }
   }
@@ -49184,11 +49198,11 @@ class Token {
     }
     let decimals;
     try {
-      if(supported$1.evm.includes(this.blockchain)) {
+      if(supported$2.evm.includes(this.blockchain)) {
 
         decimals = await decimalsOnEVM({ blockchain: this.blockchain, address: this.address, api: Token[this.blockchain].DEFAULT });
 
-      } else if(supported$1.solana.includes(this.blockchain)) {
+      } else if(supported$2.solana.includes(this.blockchain)) {
 
         decimals = await decimalsOnSolana({ blockchain: this.blockchain, address: this.address });
 
@@ -49202,11 +49216,11 @@ class Token {
     if (this.address == Blockchains.findByName(this.blockchain).currency.address) {
       return Blockchains.findByName(this.blockchain).currency.symbol
     }
-    if(supported$1.evm.includes(this.blockchain)) {
+    if(supported$2.evm.includes(this.blockchain)) {
 
       return await symbolOnEVM({ blockchain: this.blockchain, address: this.address, api: Token[this.blockchain].DEFAULT })
 
-    } else if(supported$1.solana.includes(this.blockchain)) {
+    } else if(supported$2.solana.includes(this.blockchain)) {
 
       return await symbolOnSolana({ blockchain: this.blockchain, address: this.address })
 
@@ -49217,11 +49231,11 @@ class Token {
     if (this.address == Blockchains.findByName(this.blockchain).currency.address) {
       return Blockchains.findByName(this.blockchain).currency.name
     }
-    if(supported$1.evm.includes(this.blockchain)) {
+    if(supported$2.evm.includes(this.blockchain)) {
 
       return await nameOnEVM({ blockchain: this.blockchain, address: this.address, api: Token[this.blockchain].DEFAULT, id: _optionalChain$5([args, 'optionalAccess', _ => _.id]) })
 
-    } else if(supported$1.solana.includes(this.blockchain)) {
+    } else if(supported$2.solana.includes(this.blockchain)) {
 
       return await nameOnSolana({ blockchain: this.blockchain, address: this.address })
 
@@ -49229,11 +49243,11 @@ class Token {
   }
 
   async balance(account, id) {
-    if(supported$1.evm.includes(this.blockchain)) {
+    if(supported$2.evm.includes(this.blockchain)) {
 
       return await balanceOnEVM({ blockchain: this.blockchain, account, address: this.address, api: id ? Token[this.blockchain][1155] : Token[this.blockchain].DEFAULT, id })
 
-    } else if(supported$1.solana.includes(this.blockchain)) {
+    } else if(supported$2.solana.includes(this.blockchain)) {
 
       return await balanceOnSolana({ blockchain: this.blockchain, account, address: this.address, api: Token[this.blockchain].DEFAULT })
 
@@ -49244,11 +49258,11 @@ class Token {
     if (this.address == Blockchains.findByName(this.blockchain).currency.address) {
       return ethers.BigNumber.from(Blockchains.findByName(this.blockchain).maxInt)
     }
-    if(supported$1.evm.includes(this.blockchain)) {
+    if(supported$2.evm.includes(this.blockchain)) {
 
       return await allowanceOnEVM({ blockchain: this.blockchain, address: this.address, api: Token[this.blockchain].DEFAULT, owner, spender })
 
-    } else if(supported$1.solana.includes(this.blockchain)) {
+    } else if(supported$2.solana.includes(this.blockchain)) {
       return ethers.BigNumber.from(Blockchains.findByName(this.blockchain).maxInt)
     } 
   }
@@ -49477,7 +49491,7 @@ const getMiddleTokenAccountAddress = async ({ paymentRoute })=>{
 
 const getMiddleTokenAccount = async ({ paymentRoute })=> {
 
-  return await request({
+  return await request$1({
     blockchain: 'solana',
     address: await getMiddleTokenAccountAddress({ paymentRoute }),
     api: Token.solana.TOKEN_LAYOUT,
@@ -49530,7 +49544,7 @@ const getPaymentsAccountAddress = async({ from })=>{
 
 const getPaymentsAccountData = async({ from })=>{
   let address = (await getPaymentsAccountAddress({ from })).toString();
-  return await request({
+  return await request$1({
     blockchain: 'solana',
     address,
     api: struct$1([u64$3('anchorDiscriminator'), u64$3('nonce')]),
@@ -49591,7 +49605,7 @@ const createPaymentReceiverAccount = async({ paymentRoute })=> {
   
   if(paymentRoute.toToken.address === Blockchains.solana.currency.address) {
 
-    const paymentReceiverBalance = await request({ blockchain: 'solana', method: 'balance', address: paymentRoute.toAddress });
+    const paymentReceiverBalance = await request$1({ blockchain: 'solana', method: 'balance', address: paymentRoute.toAddress });
     const provider = await getProvider('solana');
     const rent = new BN(await provider.getMinimumBalanceForRentExemption(0));
     const paymentAmount = new BN(paymentRoute.toAmount);
@@ -49647,7 +49661,7 @@ const createFeeReceiverAccount = async({ paymentRoute })=> {
   
   if(paymentRoute.toToken.address === Blockchains.solana.currency.address) {
 
-    const feeReceiverBalance = await request({ blockchain: 'solana', method: 'balance', address: paymentRoute.fee.receiver });
+    const feeReceiverBalance = await request$1({ blockchain: 'solana', method: 'balance', address: paymentRoute.fee.receiver });
     const provider = await getProvider('solana');
     const rent = new BN(await provider.getMinimumBalanceForRentExemption(0));
     const feeAmount = new BN(paymentRoute.feeAmount);
@@ -49692,7 +49706,7 @@ const getEscrowSolAccountPublicKey = async()=>{
 };
 
 const getEscrowSolAccountData = async({ paymentRoute })=>{
-  return await request({
+  return await request$1({
     blockchain: 'solana',
     address: (await getEscrowSolAccountPublicKey()).toString(),
     api: struct$1([ u64$3('amount'), publicKey$1('owner') ]),
@@ -49715,7 +49729,7 @@ const getEscrowAccountPublicKey = async({ paymentRoute })=>{
 };
 
 const getEscrowAccountData = async({ paymentRoute })=>{
-  return await request({
+  return await request$1({
     blockchain: 'solana',
     address: (await getEscrowAccountPublicKey({ paymentRoute })).toString(),
     api: Token.solana.TOKEN_LAYOUT,
@@ -49844,7 +49858,7 @@ const getPaymentMethod = ({ paymentRoute })=>{
   }
 };
 
-const getDeadline = ()=>{
+const getDeadline$1 = ()=>{
   return Math.ceil(new Date().getTime()/1000)+1800 // 30 Minutes (lower causes wallet simulation issues)
 };
 
@@ -50276,7 +50290,7 @@ const payment = async({ paymentRoute, wSolSenderAccountKeypair, wSolEscrowAccoun
 const getTransaction$3 = async({ paymentRoute })=> {
 
   const paymentsAccountData = await getPaymentsAccountData({ from: paymentRoute.fromAddress });
-  const deadline = getDeadline();
+  const deadline = getDeadline$1();
   const nonce = getNonce(paymentsAccountData);
 
   const wSolSenderAccountKeypair = await getWSolSenderAccountKeypairIfNeeded({ paymentRoute });
@@ -50455,14 +50469,14 @@ const EXCHANGE_PROXIES = {
   'solana': {}
 };
 
-const getTransaction$2 = async({ paymentRoute })=> {
+const getTransaction$2 = async({ signature, paymentRoute })=> {
 
   const transaction = {
     blockchain: paymentRoute.blockchain,
     to: transactionAddress({ paymentRoute }),
     api: transactionApi({ paymentRoute }),
     method: transactionMethod({ paymentRoute }),
-    params: await transactionParams({ paymentRoute }),
+    params: await transactionParams({ signature, paymentRoute }),
     value: transactionValue({ paymentRoute })
   };
 
@@ -50549,7 +50563,7 @@ const getExchangeCallData = ({ exchangeTransaction })=>{
   return contract.interface.encodeFunctionData(contractMethod, paramsToEncode)
 };
 
-const transactionParams = async ({ paymentRoute })=> {
+const transactionParams = async ({ signature, paymentRoute })=> {
   if(paymentRoute.directTransfer && !paymentRoute.fee) {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
@@ -50578,22 +50592,34 @@ const transactionParams = async ({ paymentRoute })=> {
         exchangeAddress = EXCHANGE_PROXIES[exchangeTransaction.blockchain][exchangeRoute.exchange[paymentRoute.blockchain].router.address] || exchangeRoute.exchange[paymentRoute.blockchain].router.address;
       }
     }
-    return {
-      payment: {
-        amountIn: paymentRoute.fromAmount,
-        paymentAmount: paymentRoute.toAmount,
-        feeAmount: paymentRoute.feeAmount || 0,
-        tokenInAddress: paymentRoute.fromToken.address,
-        exchangeAddress,
-        tokenOutAddress: paymentRoute.toToken.address,
-        paymentReceiverAddress: paymentRoute.toAddress,
-        feeReceiverAddress: paymentRoute.fee ? paymentRoute.fee.receiver : Blockchains[paymentRoute.blockchain].zero,
-        exchangeType: exchangeType,
-        receiverType: 0,
-        exchangeCallData: exchangeCallData,
-        receiverCallData: Blockchains[paymentRoute.blockchain].zero,
-        deadline,
+
+    const payment = {
+      amountIn: paymentRoute.fromAmount,
+      paymentAmount: paymentRoute.toAmount,
+      feeAmount: paymentRoute.feeAmount || 0,
+      tokenInAddress: paymentRoute.fromToken.address,
+      exchangeAddress,
+      tokenOutAddress: paymentRoute.toToken.address,
+      paymentReceiverAddress: paymentRoute.toAddress,
+      feeReceiverAddress: paymentRoute.fee ? paymentRoute.fee.receiver : Blockchains[paymentRoute.blockchain].zero,
+      exchangeType: exchangeType,
+      receiverType: 0,
+      exchangeCallData: exchangeCallData,
+      receiverCallData: Blockchains[paymentRoute.blockchain].zero,
+      deadline,
+    };
+
+    if(paymentRoute.permit2) {
+
+      return {
+        payment: {...payment, permit2: true },
+        permitSingle: paymentRoute.permitSingle,
+        signature
       }
+
+    } else {
+
+      return { payment }
     }
   }
 };
@@ -50610,17 +50636,586 @@ const transactionValue = ({ paymentRoute })=> {
   }
 };
 
+let supported$1 = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base'];
+supported$1.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base'];
+supported$1.solana = [];
+
+let solanaGetTransaction = ()=>{};
+
+const getTransaction$1 = ({ signature, paymentRoute, fee })=>{
+  if(supported$1.evm.includes(paymentRoute.blockchain)) {
+    return getTransaction$2({ signature, paymentRoute, fee })
+  } else if(supported$1.solana.includes(paymentRoute.blockchain)) {
+    return solanaGetTransaction()
+  } else {
+    throw('Blockchain not supported!')
+  }
+};
+
+let _window;
+
+let getWindow = () => {
+  if(_window) { return _window }
+  if (typeof global == 'object') {
+    _window = global;
+  } else {
+    _window = window;
+  }
+  return _window
+};
+
+const getConfiguration = () =>{
+  if(getWindow()._Web3ClientConfiguration === undefined) {
+    getWindow()._Web3ClientConfiguration = {};
+  }
+  return getWindow()._Web3ClientConfiguration
+};
+
+function _optionalChain$2(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+const BATCH_INTERVAL = 10;
+const CHUNK_SIZE = 99;
+const MAX_RETRY = 5;
+
+class StaticJsonRpcBatchProvider extends ethers.providers.JsonRpcProvider {
+
+  constructor(url, network, endpoints, failover) {
+    super(url);
+    this._network = network;
+    this._endpoint = url;
+    this._endpoints = endpoints;
+    this._failover = failover;
+    this._pendingBatch = [];
+  }
+
+  detectNetwork() {
+    return Promise.resolve(Blockchains.findByName(this._network).id)
+  }
+
+  requestChunk(chunk, endpoint, attempt) {
+
+    try {
+
+      const request = chunk.map((inflight) => inflight.request);
+      return ethers.utils.fetchJson(endpoint, JSON.stringify(request))
+        .then((result) => {
+          // For each result, feed it to the correct Promise, depending
+          // on whether it was a success or error
+          chunk.forEach((inflightRequest, index) => {
+            const payload = result[index];
+            if (_optionalChain$2([payload, 'optionalAccess', _ => _.error])) {
+              const error = new Error(payload.error.message);
+              error.code = payload.error.code;
+              error.data = payload.error.data;
+              inflightRequest.reject(error);
+            } else if(_optionalChain$2([payload, 'optionalAccess', _2 => _2.result])) {
+              inflightRequest.resolve(payload.result);
+            } else {
+              inflightRequest.reject();
+            }
+          });
+        }).catch((error) => {
+          if(attempt < MAX_RETRY && error && error.code == 'SERVER_ERROR') {
+            const index = this._endpoints.indexOf(this._endpoint)+1;
+            this._failover();
+            this._endpoint = index >= this._endpoints.length ? this._endpoints[0] : this._endpoints[index];
+            this.requestChunk(chunk, this._endpoint, attempt+1);
+          } else {
+            chunk.forEach((inflightRequest) => {
+              inflightRequest.reject(error);
+            });
+          }
+        })
+
+    } catch (e) {
+
+      chunk.forEach((inflightRequest) => {
+        inflightRequest.reject();
+      });
+    }
+  }
+    
+  send(method, params) {
+
+    const request = {
+      method: method,
+      params: params,
+      id: (this._nextId++),
+      jsonrpc: "2.0"
+    };
+
+    if (this._pendingBatch == null) {
+      this._pendingBatch = [];
+    }
+
+    const inflightRequest = { request, resolve: null, reject: null };
+
+    const promise = new Promise((resolve, reject) => {
+      inflightRequest.resolve = resolve;
+      inflightRequest.reject = reject;
+    });
+
+    this._pendingBatch.push(inflightRequest);
+
+    if (!this._pendingBatchAggregator) {
+      // Schedule batch for next event loop + short duration
+      this._pendingBatchAggregator = setTimeout(() => {
+        // Get the current batch and clear it, so new requests
+        // go into the next batch
+        const batch = this._pendingBatch;
+        this._pendingBatch = [];
+        this._pendingBatchAggregator = null;
+        // Prepare Chunks of CHUNK_SIZE
+        const chunks = [];
+        for (let i = 0; i < Math.ceil(batch.length / CHUNK_SIZE); i++) {
+          chunks[i] = batch.slice(i*CHUNK_SIZE, (i+1)*CHUNK_SIZE);
+        }
+        chunks.forEach((chunk)=>{
+          // Get the request as an array of requests
+          chunk.map((inflight) => inflight.request);
+          return this.requestChunk(chunk, this._endpoint, 1)
+        });
+      }, getConfiguration().batchInterval || BATCH_INTERVAL);
+    }
+
+    return promise
+  }
+
+}
+
+function _optionalChain$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+const getAllProviders = ()=> {
+  if(getWindow()._Web3ClientProviders == undefined) {
+    getWindow()._Web3ClientProviders = {};
+  }
+  return getWindow()._Web3ClientProviders
+};
+
+const setProvider$1 = (blockchain, provider)=> {
+  if(getAllProviders()[blockchain] === undefined) { getAllProviders()[blockchain] = []; }
+  const index = getAllProviders()[blockchain].indexOf(provider);
+  if(index > -1) {
+    getAllProviders()[blockchain].splice(index, 1);
+  }
+  getAllProviders()[blockchain].unshift(provider);
+};
+
+const setProviderEndpoints$1 = async (blockchain, endpoints, detectFastest = true)=> {
+  
+  getAllProviders()[blockchain] = endpoints.map((endpoint, index)=>
+    new StaticJsonRpcBatchProvider(endpoint, blockchain, endpoints, ()=>{
+      if(getAllProviders()[blockchain].length === 1) {
+        setProviderEndpoints$1(blockchain, endpoints, detectFastest);
+      } else {
+        getAllProviders()[blockchain].splice(index, 1);
+      }
+    })
+  );
+  
+  let provider;
+  let window = getWindow();
+
+  if(
+    window.fetch == undefined ||
+    (typeof process != 'undefined' && process['env'] && process['env']['NODE_ENV'] == 'test') ||
+    (typeof window.cy != 'undefined') ||
+    detectFastest === false
+  ) {
+    provider = getAllProviders()[blockchain][0];
+  } else {
+    
+    let responseTimes = await Promise.all(endpoints.map((endpoint)=>{
+      return new Promise(async (resolve)=>{
+        let timeout = 900;
+        let before = new Date().getTime();
+        setTimeout(()=>resolve(timeout), timeout);
+        let response;
+        try {
+          response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            referrer: "",
+            referrerPolicy: "no-referrer",
+            body: JSON.stringify({ method: 'net_version', id: 1, jsonrpc: '2.0' })
+          });
+        } catch (e) {}
+        if(!_optionalChain$1([response, 'optionalAccess', _ => _.ok])) { return resolve(999) }
+        let after = new Date().getTime();
+        resolve(after-before);
+      })
+    }));
+
+    const fastestResponse = Math.min(...responseTimes);
+    const fastestIndex = responseTimes.indexOf(fastestResponse);
+    provider = getAllProviders()[blockchain][fastestIndex];
+  }
+  
+  setProvider$1(blockchain, provider);
+};
+
+const getProvider$1 = async (blockchain)=> {
+
+  let providers = getAllProviders();
+  if(providers && providers[blockchain]){ return providers[blockchain][0] }
+  
+  let window = getWindow();
+  if(window._Web3ClientGetProviderPromise && window._Web3ClientGetProviderPromise[blockchain]) { return await window._Web3ClientGetProviderPromise[blockchain] }
+
+  if(!window._Web3ClientGetProviderPromise){ window._Web3ClientGetProviderPromise = {}; }
+  window._Web3ClientGetProviderPromise[blockchain] = new Promise(async(resolve)=> {
+    await setProviderEndpoints$1(blockchain, Blockchains[blockchain].endpoints);
+    resolve(getWindow()._Web3ClientProviders[blockchain][0]);
+  });
+
+  return await window._Web3ClientGetProviderPromise[blockchain]
+};
+
+const getProviders$1 = async(blockchain)=>{
+
+  let providers = getAllProviders();
+  if(providers && providers[blockchain]){ return providers[blockchain] }
+  
+  let window = getWindow();
+  if(window._Web3ClientGetProvidersPromise && window._Web3ClientGetProvidersPromise[blockchain]) { return await window._Web3ClientGetProvidersPromise[blockchain] }
+
+  if(!window._Web3ClientGetProvidersPromise){ window._Web3ClientGetProvidersPromise = {}; }
+  window._Web3ClientGetProvidersPromise[blockchain] = new Promise(async(resolve)=> {
+    await setProviderEndpoints$1(blockchain, Blockchains[blockchain].endpoints);
+    resolve(getWindow()._Web3ClientProviders[blockchain]);
+  });
+
+  return await window._Web3ClientGetProvidersPromise[blockchain]
+};
+
+var EVM = {
+  getProvider: getProvider$1,
+  getProviders: getProviders$1,
+  setProviderEndpoints: setProviderEndpoints$1,
+  setProvider: setProvider$1,
+};
+
 let supported = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base'];
 supported.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base'];
 supported.solana = [];
 
-let solanaGetTransaction = ()=>{};
+function _optionalChain$3(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+let getCacheStore = () => {
+  if (getWindow()._Web3ClientCacheStore == undefined) {
+    getWindow()._Web3ClientCacheStore = {};
+  }
+  return getWindow()._Web3ClientCacheStore
+};
 
-const getTransaction$1 = ({ paymentRoute, fee })=>{
-  if(supported.evm.includes(paymentRoute.blockchain)) {
-    return getTransaction$2({ paymentRoute, fee })
-  } else if(supported.solana.includes(paymentRoute.blockchain)) {
-    return solanaGetTransaction()
+let getPromiseStore = () => {
+  if (getWindow()._Web3ClientPromiseStore == undefined) {
+    getWindow()._Web3ClientPromiseStore = {};
+  }
+  return getWindow()._Web3ClientPromiseStore
+};
+
+let set = function ({ key, value, expires }) {
+  getCacheStore()[key] = {
+    expiresAt: Date.now() + expires,
+    value,
+  };
+};
+
+let get = function ({ key, expires }) {
+  let cachedEntry = getCacheStore()[key];
+  if (_optionalChain$3([cachedEntry, 'optionalAccess', _ => _.expiresAt]) > Date.now()) {
+    return cachedEntry.value
+  }
+};
+
+let getPromise = function({ key }) {
+  return getPromiseStore()[key]
+};
+
+let setPromise = function({ key, promise }) {
+  getPromiseStore()[key] = promise;
+  return promise
+};
+
+let deletePromise = function({ key }) {
+  getPromiseStore()[key] = undefined; 
+};
+
+let cache = function ({ call, key, expires = 0 }) {
+  return new Promise((resolve, reject)=>{
+    let value;
+    key = JSON.stringify(key);
+    
+    // get existing promise (of a previous pending request asking for the exact same thing)
+    let existingPromise = getPromise({ key });
+    if(existingPromise) { 
+      return existingPromise
+        .then(resolve)
+        .catch(reject)
+    }
+
+    setPromise({ key, promise: new Promise((resolveQueue, rejectQueue)=>{
+      if (expires === 0) {
+        return call()
+          .then((value)=>{
+            resolve(value);
+            resolveQueue(value);
+          })
+          .catch((error)=>{
+            reject(error);
+            rejectQueue(error);
+          })
+      }
+      
+      // get cached value
+      value = get({ key, expires });
+      if (value) {
+        resolve(value);
+        resolveQueue(value);
+        return value
+      }
+
+      // set new cache value
+      call()
+        .then((value)=>{
+          if (value) {
+            set({ key, value, expires });
+          }
+          resolve(value);
+          resolveQueue(value);
+        })
+        .catch((error)=>{
+          reject(error);
+          rejectQueue(error);
+        });
+      })
+    }).then(()=>{
+      deletePromise({ key });
+    }).catch(()=>{
+      deletePromise({ key });
+    });
+  })
+};
+
+let paramsToContractArgs = ({ contract, method, params }) => {
+  let fragment = contract.interface.fragments.find((fragment) => {
+    return fragment.name == method
+  });
+
+  return fragment.inputs.map((input, index) => {
+    if (Array.isArray(params)) {
+      return params[index]
+    } else {
+      return params[input.name]
+    }
+  })
+};
+
+const contractCall = ({ address, api, method, params, provider, block }) => {
+  const contract = new ethers.Contract(address, api, provider);
+  const args = paramsToContractArgs({ contract, method, params });
+  const fragment = contract.interface.fragments.find((fragment)=>fragment.name === method);
+  if(contract[method] === undefined) {
+    method = `${method}(${fragment.inputs.map((input)=>input.type).join(',')})`;
+  }
+  if(fragment && fragment.stateMutability === 'nonpayable') {
+    return contract.callStatic[method](...args, { blockTag: block })
+  } else {
+    return contract[method](...args, { blockTag: block })
+  }
+};
+
+const balance = ({ address, provider }) => {
+  return provider.getBalance(address)
+};
+
+const transactionCount = ({ address, provider }) => {
+  return provider.getTransactionCount(address)
+};
+
+const singleRequest = ({ blockchain, address, api, method, params, block, provider }) =>{
+  if (api) {
+    return contractCall({ address, api, method, params, provider, block })
+  } else if (method === 'latestBlockNumber') {
+    return provider.getBlockNumber()
+  } else if (method === 'balance') {
+    return balance({ address, provider })
+  } else if (method === 'transactionCount') {
+    return transactionCount({ address, provider })
+  }
+};
+
+var requestEVM = async ({ blockchain, address, api, method, params, block, timeout, strategy }) => {
+
+  strategy = strategy ? strategy : (getConfiguration().strategy || 'failover');
+  timeout = timeout ? timeout : (getConfiguration().timeout || undefined);
+
+  if(strategy === 'fastest') {
+
+    const providers = await EVM.getProviders(blockchain);
+    
+    let allRequestsFailed = [];
+
+    const allRequestsInParallel = providers.map((provider)=>{
+      return new Promise((resolve)=>{
+        allRequestsFailed.push(
+          singleRequest({ blockchain, address, api, method, params, block, provider }).then(resolve)
+        );
+      })
+    });
+    
+    const timeoutPromise = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout || 10000));
+
+    allRequestsFailed = Promise.all(allRequestsFailed.map((request)=>{
+      return new Promise((resolve)=>{ request.catch(resolve); })
+    })).then(()=>{ return });
+
+    return Promise.race([...allRequestsInParallel, timeoutPromise, allRequestsFailed])
+
+  } else { // failover
+
+    const provider = await EVM.getProvider(blockchain);
+    const request = singleRequest({ blockchain, address, api, method, params, block, provider });
+    
+    if(timeout) {
+      timeout = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout));
+      return Promise.race([request, timeout])
+    } else {
+      return request
+    }
+  }
+};
+
+var parseUrl = (url) => {
+  if (typeof url == 'object') {
+    return url
+  }
+  let deconstructed = url.match(/(?<blockchain>\w+):\/\/(?<part1>[\w\d]+)(\/(?<part2>[\w\d]+)*)?/);
+
+  if(deconstructed.groups.part2 == undefined) {
+    if(deconstructed.groups.part1.match(/\d/)) {
+      return {
+        blockchain: deconstructed.groups.blockchain,
+        address: deconstructed.groups.part1
+      }
+    } else {
+      return {
+        blockchain: deconstructed.groups.blockchain,
+        method: deconstructed.groups.part1
+      }
+    }
+  } else {
+    return {
+      blockchain: deconstructed.groups.blockchain,
+      address: deconstructed.groups.part1,
+      method: deconstructed.groups.part2
+    }
+  }
+};
+
+const request = async function (url, options) {
+  
+  const { blockchain, address, method } = parseUrl(url);
+  const { api, params, cache: cache$1, block, timeout, strategy, cacheKey } = (typeof(url) == 'object' ? url : options) || {};
+
+  return await cache({
+    expires: cache$1 || 0,
+    key: cacheKey || [blockchain, address, method, params, block],
+    call: async()=>{
+      if(supported.evm.includes(blockchain)) {
+
+
+        return await requestEVM({ blockchain, address, api, method, params, block, strategy, timeout })
+
+
+      } else if(supported.solana.includes(blockchain)) ; else {
+        throw 'Unknown blockchain: ' + blockchain
+      }  
+    }
+  })
+};
+
+const PERMIT2_API = [{"inputs":[{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"AllowanceExpired","type":"error"},{"inputs":[],"name":"ExcessiveInvalidation","type":"error"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"InsufficientAllowance","type":"error"},{"inputs":[{"internalType":"uint256","name":"maxAmount","type":"uint256"}],"name":"InvalidAmount","type":"error"},{"inputs":[],"name":"InvalidContractSignature","type":"error"},{"inputs":[],"name":"InvalidNonce","type":"error"},{"inputs":[],"name":"InvalidSignature","type":"error"},{"inputs":[],"name":"InvalidSignatureLength","type":"error"},{"inputs":[],"name":"InvalidSigner","type":"error"},{"inputs":[],"name":"LengthMismatch","type":"error"},{"inputs":[{"internalType":"uint256","name":"signatureDeadline","type":"uint256"}],"name":"SignatureExpired","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"token","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint160","name":"amount","type":"uint160"},{"indexed":false,"internalType":"uint48","name":"expiration","type":"uint48"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":false,"internalType":"address","name":"token","type":"address"},{"indexed":false,"internalType":"address","name":"spender","type":"address"}],"name":"Lockdown","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"token","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint48","name":"newNonce","type":"uint48"},{"indexed":false,"internalType":"uint48","name":"oldNonce","type":"uint48"}],"name":"NonceInvalidation","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"token","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint160","name":"amount","type":"uint160"},{"indexed":false,"internalType":"uint48","name":"expiration","type":"uint48"},{"indexed":false,"internalType":"uint48","name":"nonce","type":"uint48"}],"name":"Permit","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":false,"internalType":"uint256","name":"word","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"mask","type":"uint256"}],"name":"UnorderedNonceInvalidation","type":"event"},{"inputs":[],"name":"DOMAIN_SEPARATOR","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"uint48","name":"expiration","type":"uint48"},{"internalType":"uint48","name":"nonce","type":"uint48"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"uint48","name":"expiration","type":"uint48"}],"name":"approve","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint48","name":"newNonce","type":"uint48"}],"name":"invalidateNonces","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"wordPos","type":"uint256"},{"internalType":"uint256","name":"mask","type":"uint256"}],"name":"invalidateUnorderedNonces","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"address","name":"spender","type":"address"}],"internalType":"struct IAllowanceTransfer.TokenSpenderPair[]","name":"approvals","type":"tuple[]"}],"name":"lockdown","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"nonceBitmap","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"uint48","name":"expiration","type":"uint48"},{"internalType":"uint48","name":"nonce","type":"uint48"}],"internalType":"struct IAllowanceTransfer.PermitDetails[]","name":"details","type":"tuple[]"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"sigDeadline","type":"uint256"}],"internalType":"struct IAllowanceTransfer.PermitBatch","name":"permitBatch","type":"tuple"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"permit","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"uint48","name":"expiration","type":"uint48"},{"internalType":"uint48","name":"nonce","type":"uint48"}],"internalType":"struct IAllowanceTransfer.PermitDetails","name":"details","type":"tuple"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"sigDeadline","type":"uint256"}],"internalType":"struct IAllowanceTransfer.PermitSingle","name":"permitSingle","type":"tuple"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"permit","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"internalType":"struct ISignatureTransfer.TokenPermissions","name":"permitted","type":"tuple"},{"internalType":"uint256","name":"nonce","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"internalType":"struct ISignatureTransfer.PermitTransferFrom","name":"permit","type":"tuple"},{"components":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"requestedAmount","type":"uint256"}],"internalType":"struct ISignatureTransfer.SignatureTransferDetails","name":"transferDetails","type":"tuple"},{"internalType":"address","name":"owner","type":"address"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"permitTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"internalType":"struct ISignatureTransfer.TokenPermissions[]","name":"permitted","type":"tuple[]"},{"internalType":"uint256","name":"nonce","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"internalType":"struct ISignatureTransfer.PermitBatchTransferFrom","name":"permit","type":"tuple"},{"components":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"requestedAmount","type":"uint256"}],"internalType":"struct ISignatureTransfer.SignatureTransferDetails[]","name":"transferDetails","type":"tuple[]"},{"internalType":"address","name":"owner","type":"address"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"permitTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"internalType":"struct ISignatureTransfer.TokenPermissions","name":"permitted","type":"tuple"},{"internalType":"uint256","name":"nonce","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"internalType":"struct ISignatureTransfer.PermitTransferFrom","name":"permit","type":"tuple"},{"components":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"requestedAmount","type":"uint256"}],"internalType":"struct ISignatureTransfer.SignatureTransferDetails","name":"transferDetails","type":"tuple"},{"internalType":"address","name":"owner","type":"address"},{"internalType":"bytes32","name":"witness","type":"bytes32"},{"internalType":"string","name":"witnessTypeString","type":"string"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"permitWitnessTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"internalType":"struct ISignatureTransfer.TokenPermissions[]","name":"permitted","type":"tuple[]"},{"internalType":"uint256","name":"nonce","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"internalType":"struct ISignatureTransfer.PermitBatchTransferFrom","name":"permit","type":"tuple"},{"components":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"requestedAmount","type":"uint256"}],"internalType":"struct ISignatureTransfer.SignatureTransferDetails[]","name":"transferDetails","type":"tuple[]"},{"internalType":"address","name":"owner","type":"address"},{"internalType":"bytes32","name":"witness","type":"bytes32"},{"internalType":"string","name":"witnessTypeString","type":"string"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"permitWitnessTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"components":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"address","name":"token","type":"address"}],"internalType":"struct IAllowanceTransfer.AllowanceTransferDetails[]","name":"transferDetails","type":"tuple[]"}],"name":"transferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"address","name":"token","type":"address"}],"name":"transferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"}];
+
+const getAllowance = async({ blockchain, owner, token, spender })=> {
+  return request({
+    blockchain: blockchain,
+    address: Blockchains[blockchain].permit2,
+    method: 'allowance',
+    params: [owner, token, spender],
+    api: PERMIT2_API
+  })
+};
+
+const getDeadline = ()=>{
+  return Math.ceil(new Date()/1000)+3600 // 1 hour
+};
+
+const getPermit2Signature$1 = async({ paymentRoute })=> {
+
+  const deadline = getDeadline();
+
+  const allowance = await getAllowance({
+    blockchain: paymentRoute.blockchain,
+    owner: paymentRoute.fromAddress,
+    token: paymentRoute.fromToken.address,
+    spender: routers$1[paymentRoute.blockchain].address,
+  });
+
+  const nonce = allowance.nonce;
+
+  paymentRoute.permitSingle = {
+    details: {
+      token: paymentRoute.fromToken.address,
+      amount: paymentRoute.fromAmount,
+      expiration: deadline,
+      nonce
+    },
+    spender: routers$1[paymentRoute.blockchain].address,
+    sigDeadline: deadline
+  };
+
+  return {
+
+    types: {
+      EIP712Domain: [
+        { name: "name", type: "string" },
+        { name: "chainId", type: "uint256" },
+        { name: "verifyingContract", type: "address" },
+      ],
+      PermitSingle: [
+        { name: "details", type: "PermitDetails" },
+        { name: "spender", type: "address" },
+        { name: "sigDeadline", type: "uint256" }
+      ],
+      PermitDetails: [
+        { name: "token", type: "address" },
+        { name: "amount", type: "uint160" },
+        { name: "expiration", type: "uint48" },
+        { name: "nonce", type: "uint48" }
+      ]
+    },
+
+    primaryType: "PermitSingle",
+
+    domain: {
+      name: 'Permit2',
+      chainId: Blockchains[paymentRoute.blockchain].networkId,
+      verifyingContract: Blockchains[paymentRoute.blockchain].permit2
+    },
+
+    message: paymentRoute.permitSingle
+
+  }
+
+};
+
+const getPermit2Signature = ({ paymentRoute })=>{
+  if(supported$1.evm.includes(paymentRoute.blockchain)) {
+    return getPermit2Signature$1({ paymentRoute })
+  } else if(supported$1.solana.includes(paymentRoute.blockchain)) {
+    return
   } else {
     throw('Blockchain not supported!')
   }
@@ -50646,6 +51241,7 @@ class PaymentRoute {
     approvalRequired,
     approvalTransaction,
     directTransfer,
+    permit2
   }) {
     this.blockchain = blockchain;
     this.fromAddress = fromAddress;
@@ -50663,11 +51259,13 @@ class PaymentRoute {
     this.approvalRequired = approvalRequired;
     this.approvalTransaction = approvalTransaction;
     this.directTransfer = directTransfer;
-    this.getTransaction = async ()=> await getTransaction$1({ paymentRoute: this });
+    this.getTransaction = async (options)=> await getTransaction$1({...(options||{}), paymentRoute: this });
+    this.permit2 = !!permit2;
+    this.getPermit2Signature = async ()=> await getPermit2Signature({ paymentRoute: this });
   }
 }
 
-function convertToRoutes({ assets, accept, from }) {
+function convertToRoutes({ assets, accept, from, permit2 }) {
   return Promise.all(assets.map(async (asset)=>{
     let relevantConfigurations = accept.filter((configuration)=>(configuration.blockchain == asset.blockchain));
     let fromToken = new Token$1(asset);
@@ -50690,6 +51288,7 @@ function convertToRoutes({ assets, accept, from }) {
           fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
           fee: configuration.fee,
+          permit2
         })
       } else if(configuration.fromToken && configuration.fromAmount && fromToken.address.toLowerCase() == configuration.fromToken.toLowerCase()) {
         let blockchain = configuration.blockchain;
@@ -50715,9 +51314,9 @@ function convertToRoutes({ assets, accept, from }) {
   })).then((routes)=> routes.flat().filter(el => el))
 }
 
-function assetsToRoutes({ assets, blacklist, accept, from }) {
+function assetsToRoutes({ assets, blacklist, accept, from, permit2 }) {
   return Promise.resolve(filterBlacklistedAssets({ assets, blacklist }))
-    .then((assets) => convertToRoutes({ assets, accept, from }))
+    .then((assets) => convertToRoutes({ assets, accept, from, permit2 }))
     .then((routes) => addDirectTransferStatus({ routes }))
     .then(addExchangeRoutes)
     .then(filterNotRoutable)
@@ -50729,7 +51328,7 @@ function assetsToRoutes({ assets, blacklist, accept, from }) {
     .then((routes)=>routes.map((route)=>new PaymentRoute(route)))
 }
 
-function route({ accept, from, whitelist, blacklist, drip }) {
+function route({ accept, from, whitelist, blacklist, drip, permit2 }) {
   if(accept.some((accept)=>{ return accept && accept.fee && typeof(accept.fee.amount) == 'string' && accept.fee.amount.match(/\.\d\d+\%/) })) {
     throw('Only up to 1 decimal is supported for fee amounts!')
   }
@@ -50844,7 +51443,7 @@ function route({ accept, from, whitelist, blacklist, drip }) {
       only: whitelist,
       exclude: blacklist,
       drip: !drip ? undefined : (asset)=>{
-        assetsToRoutes({ assets: [asset], blacklist, accept, from }).then((routes)=>{
+        assetsToRoutes({ assets: [asset], blacklist, accept, from, permit2 }).then((routes)=>{
           if(_optionalChain([routes, 'optionalAccess', _5 => _5.length])) {
             dripRoute(routes[0]);
           }
@@ -50852,7 +51451,7 @@ function route({ accept, from, whitelist, blacklist, drip }) {
       }
     });
 
-    let allPaymentRoutes = (await assetsToRoutes({ assets: allAssets, blacklist, accept, from }) || []);
+    let allPaymentRoutes = (await assetsToRoutes({ assets: allAssets, blacklist, accept, from, permit2 }) || []);
     allPaymentRoutes.assets = allAssets;
     resolveAll(allPaymentRoutes);
   })
@@ -50929,11 +51528,15 @@ let filterInsufficientBalance = async(routes) => {
 
 let addApproval = (routes) => {
   return Promise.all(routes.map(
-    (route) => {
+    async(route) => {
       if(route.blockchain === 'solana') {
         return Promise.resolve(Blockchains.solana.maxInt)
       } else {
-        return route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address).catch(()=>{})
+        if(route.permit2) {
+          return route.fromToken.allowance(route.fromAddress, Blockchains[route.blockchain].permit2).catch(()=>{})
+        } else {
+          return route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address).catch(()=>{})
+        }
       }
     }
   )).then(
@@ -50951,13 +51554,23 @@ let addApproval = (routes) => {
         } else {
           routes[index].approvalRequired = ethers.BigNumber.from(route.fromAmount).gte(ethers.BigNumber.from(allowances[index]));
           if(routes[index].approvalRequired) {
-            routes[index].approvalTransaction = {
-              blockchain: route.blockchain,
-              to: route.fromToken.address,
-              api: Token$1[route.blockchain].DEFAULT,
-              method: 'approve',
-              params: [routers[route.blockchain].address, Blockchains[route.blockchain].maxInt]
-            };
+            if(route.permit2) { // permit2 token approval
+              routes[index].approvalTransaction = {
+                blockchain: route.blockchain,
+                to: route.fromToken.address,
+                api: Token$1[route.blockchain].DEFAULT,
+                method: 'approve',
+                params: [Blockchains[route.blockchain].permit2, Blockchains[route.blockchain].maxInt]
+              };
+            } else { // default token approval
+              routes[index].approvalTransaction = {
+                blockchain: route.blockchain,
+                to: route.fromToken.address,
+                api: Token$1[route.blockchain].DEFAULT,
+                method: 'approve',
+                params: [routers[route.blockchain].address, Blockchains[route.blockchain].maxInt]
+              };
+            }
           }
         }
       });
@@ -50968,7 +51581,7 @@ let addApproval = (routes) => {
 
 let addDirectTransferStatus = ({ routes }) => {
   return routes.map((route)=>{
-    if(supported.evm.includes(route.blockchain)) {
+    if(supported$1.evm.includes(route.blockchain)) {
       route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && route.fee == undefined;
     } else if (route.blockchain === 'solana') {
       route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase();
@@ -51023,7 +51636,7 @@ let getFeeAmount = ({ paymentRoute })=> {
 let addRouteAmounts = ({ routes })=> {
   return routes.map((route)=>{
 
-    if(supported.evm.includes(route.blockchain)) {
+    if(supported$1.evm.includes(route.blockchain)) {
 
       if(route.directTransfer && !route.fee) {
         route.fromAmount = route.toAmount;
@@ -51035,7 +51648,7 @@ let addRouteAmounts = ({ routes })=> {
           route.feeAmount = feeAmount;
         }
       }
-    } else if (supported.solana.includes(route.blockchain)) {
+    } else if (supported$1.solana.includes(route.blockchain)) {
 
       let { fromAmount, toAmount, feeAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0] });
       route.fromAmount = fromAmount;
