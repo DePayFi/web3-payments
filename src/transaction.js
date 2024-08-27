@@ -18,9 +18,9 @@ import { getTransaction as solanaGetTransaction} from './platforms/solana/transa
 
 import { supported } from './blockchains'
 
-const getTransaction = ({ paymentRoute, fee })=>{
+const getTransaction = ({ signature, paymentRoute, fee })=>{
   if(supported.evm.includes(paymentRoute.blockchain)) {
-    return evmGetTransaction({ paymentRoute, fee })
+    return evmGetTransaction({ signature, paymentRoute, fee })
   } else if(supported.solana.includes(paymentRoute.blockchain)) {
     return solanaGetTransaction({ paymentRoute, fee })
   } else {

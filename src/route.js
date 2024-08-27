@@ -24,6 +24,7 @@ import throttle from 'lodash/throttle'
 import { ethers } from 'ethers'
 import { getBlockchainCost } from './costs'
 import { getTransaction } from './transaction'
+import { getPermit2Signature } from './permit2'
 import { supported } from './blockchains'
 
 class PaymentRoute {
@@ -44,6 +45,7 @@ class PaymentRoute {
     approvalRequired,
     approvalTransaction,
     directTransfer,
+    permit2
   }) {
     this.blockchain = blockchain
     this.fromAddress = fromAddress
@@ -61,11 +63,13 @@ class PaymentRoute {
     this.approvalRequired = approvalRequired
     this.approvalTransaction = approvalTransaction
     this.directTransfer = directTransfer
-    this.getTransaction = async ()=> await getTransaction({ paymentRoute: this })
+    this.getTransaction = async (options)=> await getTransaction({...(options||{}), paymentRoute: this })
+    this.permit2 = !!permit2
+    this.getPermit2Signature = async ()=> await getPermit2Signature({ paymentRoute: this })
   }
 }
 
-function convertToRoutes({ assets, accept, from }) {
+function convertToRoutes({ assets, accept, from, permit2 }) {
   return Promise.all(assets.map(async (asset)=>{
     let relevantConfigurations = accept.filter((configuration)=>(configuration.blockchain == asset.blockchain))
     let fromToken = new Token(asset)
@@ -88,6 +92,7 @@ function convertToRoutes({ assets, accept, from }) {
           fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
           fee: configuration.fee,
+          permit2
         })
       } else if(configuration.fromToken && configuration.fromAmount && fromToken.address.toLowerCase() == configuration.fromToken.toLowerCase()) {
         let blockchain = configuration.blockchain
@@ -113,9 +118,9 @@ function convertToRoutes({ assets, accept, from }) {
   })).then((routes)=> routes.flat().filter(el => el))
 }
 
-function assetsToRoutes({ assets, blacklist, accept, from }) {
+function assetsToRoutes({ assets, blacklist, accept, from, permit2 }) {
   return Promise.resolve(filterBlacklistedAssets({ assets, blacklist }))
-    .then((assets) => convertToRoutes({ assets, accept, from }))
+    .then((assets) => convertToRoutes({ assets, accept, from, permit2 }))
     .then((routes) => addDirectTransferStatus({ routes }))
     .then(addExchangeRoutes)
     .then(filterNotRoutable)
@@ -127,7 +132,7 @@ function assetsToRoutes({ assets, blacklist, accept, from }) {
     .then((routes)=>routes.map((route)=>new PaymentRoute(route)))
 }
 
-function route({ accept, from, whitelist, blacklist, drip }) {
+function route({ accept, from, whitelist, blacklist, drip, permit2 }) {
   if(accept.some((accept)=>{ return accept && accept.fee && typeof(accept.fee.amount) == 'string' && accept.fee.amount.match(/\.\d\d+\%/) })) {
     throw('Only up to 1 decimal is supported for fee amounts!')
   }
@@ -242,7 +247,7 @@ function route({ accept, from, whitelist, blacklist, drip }) {
       only: whitelist,
       exclude: blacklist,
       drip: !drip ? undefined : (asset)=>{
-        assetsToRoutes({ assets: [asset], blacklist, accept, from }).then((routes)=>{
+        assetsToRoutes({ assets: [asset], blacklist, accept, from, permit2 }).then((routes)=>{
           if(routes?.length) {
             dripRoute(routes[0])
           }
@@ -250,7 +255,7 @@ function route({ accept, from, whitelist, blacklist, drip }) {
       }
     })
 
-    let allPaymentRoutes = (await assetsToRoutes({ assets: allAssets, blacklist, accept, from }) || [])
+    let allPaymentRoutes = (await assetsToRoutes({ assets: allAssets, blacklist, accept, from, permit2 }) || [])
     allPaymentRoutes.assets = allAssets
     resolveAll(allPaymentRoutes)
   })
@@ -327,11 +332,15 @@ let filterInsufficientBalance = async(routes) => {
 
 let addApproval = (routes) => {
   return Promise.all(routes.map(
-    (route) => {
+    async(route) => {
       if(route.blockchain === 'solana') {
         return Promise.resolve(Blockchains.solana.maxInt)
       } else {
-        return route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address).catch(()=>{})
+        if(route.permit2) {
+          return route.fromToken.allowance(route.fromAddress, Blockchains[route.blockchain].permit2).catch(()=>{})
+        } else {
+          return route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address).catch(()=>{})
+        }
       }
     }
   )).then(
@@ -349,12 +358,22 @@ let addApproval = (routes) => {
         } else {
           routes[index].approvalRequired = ethers.BigNumber.from(route.fromAmount).gte(ethers.BigNumber.from(allowances[index]))
           if(routes[index].approvalRequired) {
-            routes[index].approvalTransaction = {
-              blockchain: route.blockchain,
-              to: route.fromToken.address,
-              api: Token[route.blockchain].DEFAULT,
-              method: 'approve',
-              params: [routers[route.blockchain].address, Blockchains[route.blockchain].maxInt]
+            if(route.permit2) { // permit2 token approval
+              routes[index].approvalTransaction = {
+                blockchain: route.blockchain,
+                to: route.fromToken.address,
+                api: Token[route.blockchain].DEFAULT,
+                method: 'approve',
+                params: [Blockchains[route.blockchain].permit2, Blockchains[route.blockchain].maxInt]
+              }
+            } else { // default token approval
+              routes[index].approvalTransaction = {
+                blockchain: route.blockchain,
+                to: route.fromToken.address,
+                api: Token[route.blockchain].DEFAULT,
+                method: 'approve',
+                params: [routers[route.blockchain].address, Blockchains[route.blockchain].maxInt]
+              }
             }
           }
         }

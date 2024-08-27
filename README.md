@@ -149,6 +149,24 @@ let paymentRoutes = await route({
 })
 ```
 
+#### routes with permit2
+
+If you pass `permit2: true` to the route, the routing will use the approval status granted to permit2 instead of the router contract.
+
+Additionally, the `approvalRequired` status and `approvalTransaction` will be provided for permit2 rather than the router contract, and `getTransaction` will require a permit2 signature that you can receive using `getPermit2Signature`:
+
+```javascript
+import { route } from '@depay/web3-payments'
+
+const paymentRoutes = await route({
+  permit2: true
+  //...
+})
+
+const signature = await wallet.sign(await paymentRoutes[0].getPermit2Signature())
+const transaction = await paymentRoutes[0].getTransaction({ signature })
+```
+
 #### drip routes
 
 If you want to work with intermediate routing results over waiting for all routes to be calculated, you can use the the `drip` option which will drip every single route individually:

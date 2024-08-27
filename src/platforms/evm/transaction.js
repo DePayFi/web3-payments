@@ -45,14 +45,14 @@ const EXCHANGE_PROXIES = {
   'solana': {}
 }
 
-const getTransaction = async({ paymentRoute })=> {
+const getTransaction = async({ signature, paymentRoute })=> {
 
   const transaction = {
     blockchain: paymentRoute.blockchain,
     to: transactionAddress({ paymentRoute }),
     api: transactionApi({ paymentRoute }),
     method: transactionMethod({ paymentRoute }),
-    params: await transactionParams({ paymentRoute }),
+    params: await transactionParams({ signature, paymentRoute }),
     value: transactionValue({ paymentRoute })
   }
 
@@ -139,7 +139,7 @@ const getExchangeCallData = ({ exchangeTransaction })=>{
   return contract.interface.encodeFunctionData(contractMethod, paramsToEncode)
 }
 
-const transactionParams = async ({ paymentRoute })=> {
+const transactionParams = async ({ signature, paymentRoute })=> {
   if(paymentRoute.directTransfer && !paymentRoute.fee) {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
@@ -168,22 +168,34 @@ const transactionParams = async ({ paymentRoute })=> {
         exchangeAddress = EXCHANGE_PROXIES[exchangeTransaction.blockchain][exchangeRoute.exchange[paymentRoute.blockchain].router.address] || exchangeRoute.exchange[paymentRoute.blockchain].router.address
       }
     }
-    return {
-      payment: {
-        amountIn: paymentRoute.fromAmount,
-        paymentAmount: paymentRoute.toAmount,
-        feeAmount: paymentRoute.feeAmount || 0,
-        tokenInAddress: paymentRoute.fromToken.address,
-        exchangeAddress,
-        tokenOutAddress: paymentRoute.toToken.address,
-        paymentReceiverAddress: paymentRoute.toAddress,
-        feeReceiverAddress: paymentRoute.fee ? paymentRoute.fee.receiver : Blockchains[paymentRoute.blockchain].zero,
-        exchangeType: exchangeType,
-        receiverType: 0,
-        exchangeCallData: exchangeCallData,
-        receiverCallData: Blockchains[paymentRoute.blockchain].zero,
-        deadline,
+
+    const payment = {
+      amountIn: paymentRoute.fromAmount,
+      paymentAmount: paymentRoute.toAmount,
+      feeAmount: paymentRoute.feeAmount || 0,
+      tokenInAddress: paymentRoute.fromToken.address,
+      exchangeAddress,
+      tokenOutAddress: paymentRoute.toToken.address,
+      paymentReceiverAddress: paymentRoute.toAddress,
+      feeReceiverAddress: paymentRoute.fee ? paymentRoute.fee.receiver : Blockchains[paymentRoute.blockchain].zero,
+      exchangeType: exchangeType,
+      receiverType: 0,
+      exchangeCallData: exchangeCallData,
+      receiverCallData: Blockchains[paymentRoute.blockchain].zero,
+      deadline,
+    }
+
+    if(paymentRoute.permit2) {
+
+      return {
+        payment: {...payment, permit2: true },
+        permitSingle: paymentRoute.permitSingle,
+        signature
       }
+
+    } else {
+
+      return { payment }
     }
   }
 }
