@@ -328,6 +328,7 @@ Payment routes are provided in the following structure:
   fee: Object (e.g. undefined or fee object)
   feeAmount: BigNumber (e.g. <BigNumber '2100000000000000000'>)
   exchangeRoutes: Array (list of exchange routes offering to convert )
+  currentAllowance: BigNumber (e.g. <BigNumber '2100000000000000000'>)
   approvalRequired: Boolean (e.g. true)
   approvalTransaction: Transaction (to approve the fromToken being used from the payment router to perform the payment)
   directTransfer: Boolean (e.g. true)
@@ -336,6 +337,8 @@ Payment routes are provided in the following structure:
 ```
 
 `approvalRequired`: indicates if a upfront token approval is required in order to perform the payment, make sure you execute `approve` before executing the payment transaction itself.
+
+`currentAllowance`: provides the current set allowance as BigNumber.
 
 `directTransfer`: indicates if the payment does not require any swapping/exchanging.
 

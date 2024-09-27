@@ -42,6 +42,7 @@ class PaymentRoute {
     feeAmount,
     exchangeRoutes,
     approvalRequired,
+    currentAllowance,
     approvalTransaction,
     directTransfer,
   }) {
@@ -58,6 +59,7 @@ class PaymentRoute {
     this.fee = fee
     this.feeAmount = feeAmount
     this.exchangeRoutes = exchangeRoutes || []
+    this.currentAllowance = currentAllowance
     this.approvalRequired = approvalRequired
     this.approvalTransaction = approvalTransaction
     this.directTransfer = directTransfer
@@ -347,6 +349,7 @@ let addApproval = (routes) => {
         ) {
           routes[index].approvalRequired = false
         } else {
+          routes[index].currentAllowance = ethers.BigNumber.from(allowances[index])
           routes[index].approvalRequired = ethers.BigNumber.from(route.fromAmount).gte(ethers.BigNumber.from(allowances[index]))
           if(routes[index].approvalRequired) {
             routes[index].approvalTransaction = {

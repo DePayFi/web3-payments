@@ -47261,10 +47261,10 @@ const getConfiguration = () =>{
   return getWindow()._Web3ClientConfiguration
 };
 
-function _optionalChain$3$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+function _optionalChain$5$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 const BATCH_INTERVAL$1 = 10;
 const CHUNK_SIZE$1 = 99;
-const MAX_RETRY$1 = 3;
+const MAX_RETRY$1 = 5;
 
 class StaticJsonRpcBatchProvider extends ethers.providers.JsonRpcProvider {
 
@@ -47292,12 +47292,12 @@ class StaticJsonRpcBatchProvider extends ethers.providers.JsonRpcProvider {
           // on whether it was a success or error
           chunk.forEach((inflightRequest, index) => {
             const payload = result[index];
-            if (_optionalChain$3$1([payload, 'optionalAccess', _ => _.error])) {
+            if (_optionalChain$5$1([payload, 'optionalAccess', _ => _.error])) {
               const error = new Error(payload.error.message);
               error.code = payload.error.code;
               error.data = payload.error.data;
               inflightRequest.reject(error);
-            } else if(_optionalChain$3$1([payload, 'optionalAccess', _2 => _2.result])) {
+            } else if(_optionalChain$5$1([payload, 'optionalAccess', _2 => _2.result])) {
               inflightRequest.resolve(payload.result);
             } else {
               inflightRequest.reject();
@@ -47372,6 +47372,7 @@ class StaticJsonRpcBatchProvider extends ethers.providers.JsonRpcProvider {
 
 }
 
+function _optionalChain$4$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 const getAllProviders$1 = ()=> {
   if(getWindow()._Web3ClientProviders == undefined) {
     getWindow()._Web3ClientProviders = {};
@@ -47417,17 +47418,20 @@ const setProviderEndpoints$2 = async (blockchain, endpoints, detectFastest = tru
         let timeout = 900;
         let before = new Date().getTime();
         setTimeout(()=>resolve(timeout), timeout);
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },
-          referrer: "",
-          referrerPolicy: "no-referrer",
-          body: JSON.stringify({ method: 'net_version', id: 1, jsonrpc: '2.0' })
-        });
-        if(!response.ok) { return resolve(999) }
+        let response;
+        try {
+          response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            referrer: "",
+            referrerPolicy: "no-referrer",
+            body: JSON.stringify({ method: 'net_version', id: 1, jsonrpc: '2.0' })
+          });
+        } catch (e) {}
+        if(!_optionalChain$4$1([response, 'optionalAccess', _ => _.ok])) { return resolve(999) }
         let after = new Date().getTime();
         resolve(after-before);
       })
@@ -47482,10 +47486,10 @@ var EVM = {
   setProvider: setProvider$2,
 };
 
-function _optionalChain$2$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
+function _optionalChain$3$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 const BATCH_INTERVAL = 10;
 const CHUNK_SIZE = 99;
-const MAX_RETRY = 3;
+const MAX_RETRY = 10;
 
 class StaticJsonRpcSequentialProvider extends Connection {
 
@@ -47501,9 +47505,7 @@ class StaticJsonRpcSequentialProvider extends Connection {
   }
 
   handleError(error, attempt, chunk) {
-    if(attempt < MAX_RETRY && error && [
-      'Failed to fetch', 'limit reached', '504', '503', '502', '500', '429', '426', '422', '413', '409', '408', '406', '405', '404', '403', '402', '401', '400'
-    ].some((errorType)=>error.toString().match(errorType))) {
+    if(attempt < MAX_RETRY) {
       const index = this._endpoints.indexOf(this._endpoint)+1;
       this._endpoint = index >= this._endpoints.length ? this._endpoints[0] : this._endpoints[index];
       this._provider = new Connection(this._endpoint);
@@ -47533,7 +47535,15 @@ class StaticJsonRpcSequentialProvider extends Connection {
       ).then((response)=>{
         if(response.ok) {
           response.json().then((parsedJson)=>{
-            resolve(parsedJson);
+            if(parsedJson.find((entry)=>_optionalChain$3$1([entry, 'optionalAccess', _ => _.error]))) {
+              if(attempt < MAX_RETRY) {
+                reject('Error in batch found!');
+              } else {
+                resolve(parsedJson);
+              }
+            } else {
+              resolve(parsedJson);
+            }
           }).catch(reject);
         } else {
           reject(`${response.status} ${response.text}`);
@@ -47551,7 +47561,7 @@ class StaticJsonRpcSequentialProvider extends Connection {
         .then((result) => {
           chunk.forEach((inflightRequest, index) => {
             const payload = result[index];
-            if (_optionalChain$2$1([payload, 'optionalAccess', _ => _.error])) {
+            if (_optionalChain$3$1([payload, 'optionalAccess', _2 => _2.error])) {
               const error = new Error(payload.error.message);
               error.code = payload.error.code;
               error.data = payload.error.data;
@@ -47608,6 +47618,7 @@ class StaticJsonRpcSequentialProvider extends Connection {
   }
 }
 
+function _optionalChain$2$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 const getAllProviders = ()=> {
   if(getWindow()._Web3ClientProviders == undefined) {
     getWindow()._Web3ClientProviders = {};
@@ -47653,17 +47664,20 @@ const setProviderEndpoints$1 = async (blockchain, endpoints, detectFastest = tru
         let timeout = 900;
         let before = new Date().getTime();
         setTimeout(()=>resolve(timeout), timeout);
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },
-          referrer: "",
-          referrerPolicy: "no-referrer",
-          body: JSON.stringify({ method: 'getIdentity', id: 1, jsonrpc: '2.0' })
-        });
-        if(!response.ok) { return resolve(999) }
+        let response;
+        try {
+          response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            referrer: "",
+            referrerPolicy: "no-referrer",
+            body: JSON.stringify({ method: 'getIdentity', id: 1, jsonrpc: '2.0' })
+          });
+        } catch (e) {}
+        if(!_optionalChain$2$1([response, 'optionalAccess', _ => _.ok])) { return resolve(999) }
         let after = new Date().getTime();
         resolve(after-before);
       })
@@ -50644,6 +50658,7 @@ class PaymentRoute {
     feeAmount,
     exchangeRoutes,
     approvalRequired,
+    currentAllowance,
     approvalTransaction,
     directTransfer,
   }) {
@@ -50660,6 +50675,7 @@ class PaymentRoute {
     this.fee = fee;
     this.feeAmount = feeAmount;
     this.exchangeRoutes = exchangeRoutes || [];
+    this.currentAllowance = currentAllowance;
     this.approvalRequired = approvalRequired;
     this.approvalTransaction = approvalTransaction;
     this.directTransfer = directTransfer;
@@ -50949,6 +50965,7 @@ let addApproval = (routes) => {
         ) {
           routes[index].approvalRequired = false;
         } else {
+          routes[index].currentAllowance = ethers.BigNumber.from(allowances[index]);
           routes[index].approvalRequired = ethers.BigNumber.from(route.fromAmount).gte(ethers.BigNumber.from(allowances[index]));
           if(routes[index].approvalRequired) {
             routes[index].approvalTransaction = {
