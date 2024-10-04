@@ -5,8 +5,8 @@ let routes = await Web3Payments.route({
   accept: [
     {
       blockchain: 'avalanche',
-      token: '0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7',
-      amount: 1,
+      token: '0xef0cdae2FfEEeFA539a244a16b3f46ba75b8c810',
+      amount: 0.001,
       toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
     }
   ],

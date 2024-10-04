@@ -6,7 +6,7 @@ let routes = await Web3Payments.route({
     {
       blockchain: 'ethereum',
       token: '0xdac17f958d2ee523a2206206994597c13d831ec7',
-      amount: 1,
+      amount: 0.01,
       toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
     }
   ],
@@ -15,7 +15,7 @@ let routes = await Web3Payments.route({
   }
 })
 
-let route = routes[0]
+let route = routes[1]
 let transaction = await route.getTransaction()
 
 const wallet = (await Web3Wallets.getWallets())[0]

@@ -139,7 +139,7 @@
 
   function _optionalChain$5(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
   const BATCH_INTERVAL$1 = 10;
-  const CHUNK_SIZE$1 = 99;
+  const CHUNK_SIZE$1 = 50;
   const MAX_RETRY$1 = 5;
 
   class StaticJsonRpcBatchProvider extends ethers.ethers.providers.JsonRpcProvider {
@@ -153,51 +153,81 @@
       this._pendingBatch = [];
     }
 
+    handleError(error, attempt, chunk) {
+      if(attempt < MAX_RETRY$1 && error) {
+        const index = this._endpoints.indexOf(this._endpoint)+1;
+        this._failover();
+        this._endpoint = index >= this._endpoints.length ? this._endpoints[0] : this._endpoints[index];
+        this.requestChunk(chunk, this._endpoint, attempt+1);
+      } else {
+        chunk.forEach((inflightRequest) => {
+          inflightRequest.reject(error);
+        });
+      }
+    }
+
     detectNetwork() {
       return Promise.resolve(Blockchains__default["default"].findByName(this._network).id)
     }
 
+    batchRequest(batch, attempt) {
+      return new Promise((resolve, reject) => {
+        
+        if (batch.length === 0) resolve([]); // Do nothing if requests is empty
+
+        fetch(
+          this._endpoint,
+          {
+            method: 'POST',
+            body: JSON.stringify(batch),
+            headers: { 'Content-Type': 'application/json' },
+          }
+        ).then((response)=>{
+          if(response.ok) {
+            response.json().then((parsedJson)=>{
+              if(parsedJson.find((entry)=>{
+                return _optionalChain$5([entry, 'optionalAccess', _ => _.error]) && [-32062,-32016].includes(_optionalChain$5([entry, 'optionalAccess', _2 => _2.error, 'optionalAccess', _3 => _3.code]))
+              })) {
+                if(attempt < MAX_RETRY$1) {
+                  reject('Error in batch found!');
+                } else {
+                  resolve(parsedJson);
+                }
+              } else {
+                resolve(parsedJson);
+              }
+            }).catch(reject);
+          } else {
+            reject(`${response.status} ${response.text}`);
+          }
+        }).catch(reject);
+      })
+    }
+
     requestChunk(chunk, endpoint, attempt) {
 
-      try {
+      const batch = chunk.map((inflight) => inflight.request);
 
-        const request = chunk.map((inflight) => inflight.request);
-        return ethers.ethers.utils.fetchJson(endpoint, JSON.stringify(request))
+      try {
+        return this.batchRequest(batch, attempt)
           .then((result) => {
             // For each result, feed it to the correct Promise, depending
             // on whether it was a success or error
             chunk.forEach((inflightRequest, index) => {
               const payload = result[index];
-              if (_optionalChain$5([payload, 'optionalAccess', _ => _.error])) {
+              if (_optionalChain$5([payload, 'optionalAccess', _4 => _4.error])) {
                 const error = new Error(payload.error.message);
                 error.code = payload.error.code;
                 error.data = payload.error.data;
                 inflightRequest.reject(error);
-              } else if(_optionalChain$5([payload, 'optionalAccess', _2 => _2.result])) {
+              } else if(_optionalChain$5([payload, 'optionalAccess', _5 => _5.result])) {
                 inflightRequest.resolve(payload.result);
               } else {
                 inflightRequest.reject();
               }
             });
-          }).catch((error) => {
-            if(attempt < MAX_RETRY$1 && error && error.code == 'SERVER_ERROR') {
-              const index = this._endpoints.indexOf(this._endpoint)+1;
-              this._failover();
-              this._endpoint = index >= this._endpoints.length ? this._endpoints[0] : this._endpoints[index];
-              this.requestChunk(chunk, this._endpoint, attempt+1);
-            } else {
-              chunk.forEach((inflightRequest) => {
-                inflightRequest.reject(error);
-              });
-            }
-          })
-
-      } catch (e) {
-
-        chunk.forEach((inflightRequest) => {
-          inflightRequest.reject();
-        });
-      }
+          }).catch((error) => this.handleError(error, attempt, chunk))
+      } catch (error){ this.handleError(error, attempt, chunk); }
     }
       
     send(method, params) {
@@ -257,6 +287,7 @@
   };
 
   const setProvider$2 = (blockchain, provider)=> {
+    if(provider == undefined) { return }
     if(getAllProviders$1()[blockchain] === undefined) { getAllProviders$1()[blockchain] = []; }
     const index = getAllProviders$1()[blockchain].indexOf(provider);
     if(index > -1) {
@@ -364,7 +395,7 @@
 
   function _optionalChain$3(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
   const BATCH_INTERVAL = 10;
-  const CHUNK_SIZE = 99;
+  const CHUNK_SIZE = 50;
   const MAX_RETRY = 10;
 
   class StaticJsonRpcSequentialProvider extends solanaWeb3_js.Connection {
@@ -503,6 +534,7 @@
   };
 
   const setProvider$1 = (blockchain, provider)=> {
+    if(provider == undefined) { return }
     if(getAllProviders()[blockchain] === undefined) { getAllProviders()[blockchain] = []; }
     const index = getAllProviders()[blockchain].indexOf(provider);
     if(index > -1) {
@@ -608,8 +640,8 @@
     setProvider: setProvider$1,
   };
 
-  let supported$1 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base'];
-  supported$1.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base'];
+  let supported$1 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
+  supported$1.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
   supported$1.solana = ['solana'];
 
   function _optionalChain$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }

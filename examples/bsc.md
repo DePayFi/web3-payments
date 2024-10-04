@@ -54,7 +54,7 @@ let routes = await Web3Payments.route({
     {
       blockchain: 'bsc',
       token: '0xb0b195aefa3650a6908f15cdac7d92f8a5791b0b',
-      amount: 1,
+      amount: 0.01,
       toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
     }
   ],
