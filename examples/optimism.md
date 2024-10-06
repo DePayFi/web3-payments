@@ -5,8 +5,8 @@ let routes = await Web3Payments.route({
   accept: [
     {
       blockchain: 'optimism',
-      token: '0x94b008aA00579c1307B0EF2c499aD98a8ce58e58',
-      amount: 1,
+      token: '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1',
+      amount: 0.01,
       toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
     }
   ],
