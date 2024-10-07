@@ -42,17 +42,20 @@ const EXCHANGE_PROXIES = {
   'polygon': {
     [Blockchains.polygon.wrapped.address]: '0xaE59C9d3E055BdFAa583E169aA5Ebe395689476a'
   },
+  'worldchain': {
+    [Blockchains.worldchain.wrapped.address]: '0x2CA727BC33915823e3D05fe043d310B8c5b2dC5b'
+  },
   'solana': {}
 }
 
-const getTransaction = async({ paymentRoute })=> {
+const getTransaction = async({ paymentRoute, options })=> {
 
   const transaction = {
     blockchain: paymentRoute.blockchain,
     to: transactionAddress({ paymentRoute }),
     api: transactionApi({ paymentRoute }),
     method: transactionMethod({ paymentRoute }),
-    params: await transactionParams({ paymentRoute }),
+    params: await transactionParams({ paymentRoute, options }),
     value: transactionValue({ paymentRoute })
   }
 
@@ -139,7 +142,46 @@ const getExchangeCallData = ({ exchangeTransaction })=>{
   return contract.interface.encodeFunctionData(contractMethod, paramsToEncode)
 }
 
-const transactionParams = async ({ paymentRoute })=> {
+const getPermit2SignatureTransferNonce = async({ address, blockchain })=>{
+        
+  const getBitmap = (address, word)=>Web3Client.request({
+    blockchain: blockchain,
+    address: Blockchains[blockchain].permit2,
+    api: [{"inputs":[{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"AllowanceExpired","type":"error"},{"inputs":[],"name":"ExcessiveInvalidation","type":"error"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"InsufficientAllowance","type":"error"},{"inputs":[{"internalType":"uint256","name":"maxAmount","type":"uint256"}],"name":"InvalidAmount","type":"error"},{"inputs":[],"name":"InvalidContractSignature","type":"error"},{"inputs":[],"name":"InvalidNonce","type":"error"},{"inputs":[],"name":"InvalidSignature","type":"error"},{"inputs":[],"name":"InvalidSignatureLength","type":"error"},{"inputs":[],"name":"InvalidSigner","type":"error"},{"inputs":[],"name":"LengthMismatch","type":"error"},{"inputs":[{"internalType":"uint256","name":"signatureDeadline","type":"uint256"}],"name":"SignatureExpired","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"token","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint160","name":"amount","type":"uint160"},{"indexed":false,"internalType":"uint48","name":"expiration","type":"uint48"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":false,"internalType":"address","name":"token","type":"address"},{"indexed":false,"internalType":"address","name":"spender","type":"address"}],"name":"Lockdown","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"token","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint48","name":"newNonce","type":"uint48"},{"indexed":false,"internalType":"uint48","name":"oldNonce","type":"uint48"}],"name":"NonceInvalidation","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"token","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint160","name":"amount","type":"uint160"},{"indexed":false,"internalType":"uint48","name":"expiration","type":"uint48"},{"indexed":false,"internalType":"uint48","name":"nonce","type":"uint48"}],"name":"Permit","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":false,"internalType":"uint256","name":"word","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"mask","type":"uint256"}],"name":"UnorderedNonceInvalidation","type":"event"},{"inputs":[],"name":"DOMAIN_SEPARATOR","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"uint48","name":"expiration","type":"uint48"},{"internalType":"uint48","name":"nonce","type":"uint48"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"uint48","name":"expiration","type":"uint48"}],"name":"approve","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint48","name":"newNonce","type":"uint48"}],"name":"invalidateNonces","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"wordPos","type":"uint256"},{"internalType":"uint256","name":"mask","type":"uint256"}],"name":"invalidateUnorderedNonces","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"address","name":"spender","type":"address"}],"internalType":"struct IAllowanceTransfer.TokenSpenderPair[]","name":"approvals","type":"tuple[]"}],"name":"lockdown","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"nonceBitmap","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"uint48","name":"expiration","type":"uint48"},{"internalType":"uint48","name":"nonce","type":"uint48"}],"internalType":"struct IAllowanceTransfer.PermitDetails[]","name":"details","type":"tuple[]"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"sigDeadline","type":"uint256"}],"internalType":"struct IAllowanceTransfer.PermitBatch","name":"permitBatch","type":"tuple"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"permit","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"uint48","name":"expiration","type":"uint48"},{"internalType":"uint48","name":"nonce","type":"uint48"}],"internalType":"struct IAllowanceTransfer.PermitDetails","name":"details","type":"tuple"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"sigDeadline","type":"uint256"}],"internalType":"struct IAllowanceTransfer.PermitSingle","name":"permitSingle","type":"tuple"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"permit","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"internalType":"struct ISignatureTransfer.TokenPermissions","name":"permitted","type":"tuple"},{"internalType":"uint256","name":"nonce","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"internalType":"struct ISignatureTransfer.PermitTransferFrom","name":"permit","type":"tuple"},{"components":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"requestedAmount","type":"uint256"}],"internalType":"struct ISignatureTransfer.SignatureTransferDetails","name":"transferDetails","type":"tuple"},{"internalType":"address","name":"owner","type":"address"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"permitTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"internalType":"struct ISignatureTransfer.TokenPermissions[]","name":"permitted","type":"tuple[]"},{"internalType":"uint256","name":"nonce","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"internalType":"struct ISignatureTransfer.PermitBatchTransferFrom","name":"permit","type":"tuple"},{"components":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"requestedAmount","type":"uint256"}],"internalType":"struct ISignatureTransfer.SignatureTransferDetails[]","name":"transferDetails","type":"tuple[]"},{"internalType":"address","name":"owner","type":"address"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"permitTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"internalType":"struct ISignatureTransfer.TokenPermissions","name":"permitted","type":"tuple"},{"internalType":"uint256","name":"nonce","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"internalType":"struct ISignatureTransfer.PermitTransferFrom","name":"permit","type":"tuple"},{"components":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"requestedAmount","type":"uint256"}],"internalType":"struct ISignatureTransfer.SignatureTransferDetails","name":"transferDetails","type":"tuple"},{"internalType":"address","name":"owner","type":"address"},{"internalType":"bytes32","name":"witness","type":"bytes32"},{"internalType":"string","name":"witnessTypeString","type":"string"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"permitWitnessTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"internalType":"struct ISignatureTransfer.TokenPermissions[]","name":"permitted","type":"tuple[]"},{"internalType":"uint256","name":"nonce","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"internalType":"struct ISignatureTransfer.PermitBatchTransferFrom","name":"permit","type":"tuple"},{"components":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"requestedAmount","type":"uint256"}],"internalType":"struct ISignatureTransfer.SignatureTransferDetails[]","name":"transferDetails","type":"tuple[]"},{"internalType":"address","name":"owner","type":"address"},{"internalType":"bytes32","name":"witness","type":"bytes32"},{"internalType":"string","name":"witnessTypeString","type":"string"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"permitWitnessTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"components":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"address","name":"token","type":"address"}],"internalType":"struct IAllowanceTransfer.AllowanceTransferDetails[]","name":"transferDetails","type":"tuple[]"}],"name":"transferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"address","name":"token","type":"address"}],"name":"transferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"}],
+    method: 'nonceBitmap',
+    params: [address, word]
+  })
+
+  const getFirstUnsetBit = (bitmap)=>{
+    for (let i = 0; i < 256; i++) {
+      if (bitmap.shr(i).and(1).eq(0)) {
+        return i
+      }
+    }
+    return -1
+  }
+
+  function buildNonce(word, bitPos) {
+    return ethers.BigNumber.from(word).mul(256).add(bitPos)
+  }
+
+  let word = 0
+
+  while(word < 1) {
+    const bitmap = await getBitmap(address, word)
+    if(bitmap.toString() != Blockchains[blockchain].maxInt) {
+      const bitPos = getFirstUnsetBit(bitmap)
+      if (bitPos >= 0) {
+        // Build and return the nonce
+        const nonce = buildNonce(word, bitPos)
+        return nonce
+      }
+    }
+    word = word+1;
+  }
+}
+
+const transactionParams = async ({ paymentRoute, options })=> {
   if(paymentRoute.directTransfer && !paymentRoute.fee) {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
@@ -147,7 +189,12 @@ const transactionParams = async ({ paymentRoute })=> {
       return [paymentRoute.toAddress, paymentRoute.toAmount]
     }
   } else {
-    const deadline = Math.ceil(new Date()/1000)+3600 // 1 hour
+    let deadline
+    if(paymentRoute.blockchain === 'worldchain'){ // protocol V3 deadline
+      deadline = Math.ceil(new Date())+3600*1000 // 1 hour in ms
+    } else {
+      deadline = Math.ceil(new Date()/1000)+3600 // 1 hour in s
+    }
     const exchangeRoute = paymentRoute.exchangeRoutes[0]
     const exchangeType = getExchangeType({ exchangeRoute, blockchain: paymentRoute.blockchain })
     const exchangeTransaction = !exchangeRoute ? undefined : await exchangeRoute.getTransaction({
@@ -168,23 +215,97 @@ const transactionParams = async ({ paymentRoute })=> {
         exchangeAddress = EXCHANGE_PROXIES[exchangeTransaction.blockchain][exchangeRoute.exchange[paymentRoute.blockchain].router.address] || exchangeRoute.exchange[paymentRoute.blockchain].router.address
       }
     }
-    return {
-      payment: {
-        amountIn: paymentRoute.fromAmount,
-        paymentAmount: paymentRoute.toAmount,
-        feeAmount: paymentRoute.feeAmount || 0,
-        tokenInAddress: paymentRoute.fromToken.address,
-        exchangeAddress,
-        tokenOutAddress: paymentRoute.toToken.address,
-        paymentReceiverAddress: paymentRoute.toAddress,
-        feeReceiverAddress: paymentRoute.fee ? paymentRoute.fee.receiver : Blockchains[paymentRoute.blockchain].zero,
-        exchangeType: exchangeType,
-        receiverType: 0,
-        exchangeCallData: exchangeCallData,
-        receiverCallData: Blockchains[paymentRoute.blockchain].zero,
-        deadline,
+    let params
+    if(options && options?.wallet?.name === 'World App' && paymentRoute.blockchain === 'worldchain'){
+      
+      const permitDeadline = Math.floor(Date.now() / 1000) + 30 * 60
+      const nonce = getPermit2SignatureTransferNonce({ blockchain: paymentRoute.blockchain, address: paymentRoute.fromAddress })
+      
+      const permitTransfer = {
+        permitted: {
+          token: paymentRoute.fromToken.address,
+          amount: paymentRoute.fromAmount.toString(),
+        },
+        nonce: nonce.toString(),
+        deadline: permitDeadline.toString(),
+      }
+
+      params = {
+        args: [
+          [ // payment
+            paymentRoute.fromAmount.toString(), // amountIn
+            paymentRoute.toAmount.toString(), // paymentAmount
+            (paymentRoute.feeAmount || 0).toString(), // feeAmount
+            "0", // protocolAmount
+            deadline.toString(), // deadline
+            paymentRoute.fromToken.address, // tokenInAddress
+            exchangeAddress, // exchangeAddress
+            paymentRoute.toToken.address, // tokenOutAddress
+            paymentRoute.toAddress, // paymentReceiverAddress
+            paymentRoute.fee ? paymentRoute.fee.receiver : Blockchains[paymentRoute.blockchain].zero, // feeReceiverAddress
+            exchangeType, // exchangeType
+            0, // receiverType
+            true, // permit2
+            exchangeCallData, // exchangeCallData
+            '0x', // receiverCallData
+          ],
+          [ // permitTransferFromAndSignature
+            [ // permitTransferFrom
+              [ // permitted
+                paymentRoute.fromToken.address, // token
+                paymentRoute.fromAmount.toString() // amount
+              ],
+              nonce.toString(), // nonce
+              permitDeadline.toString() // deadline
+            ],
+            "PERMIT2_SIGNATURE_PLACEHOLDER_0"
+          ]
+        ],
+        permit2: {
+          ...permitTransfer,
+          spender: routers[paymentRoute.blockchain].address,
+        },
+      }
+
+    } else if(paymentRoute.blockchain === 'worldchain') {
+      params = {
+        payment: {
+          amountIn: paymentRoute.fromAmount,
+          paymentAmount: paymentRoute.toAmount,
+          feeAmount: paymentRoute.feeAmount || 0,
+          protocolAmount: 0,
+          tokenInAddress: paymentRoute.fromToken.address,
+          exchangeAddress,
+          tokenOutAddress: paymentRoute.toToken.address,
+          paymentReceiverAddress: paymentRoute.toAddress,
+          feeReceiverAddress: paymentRoute.fee ? paymentRoute.fee.receiver : Blockchains[paymentRoute.blockchain].zero,
+          exchangeType: exchangeType,
+          receiverType: 0,
+          exchangeCallData: exchangeCallData,
+          receiverCallData: Blockchains[paymentRoute.blockchain].zero,
+          deadline,
+        }
+      }
+    } else {
+      params = {
+        payment: {
+          amountIn: paymentRoute.fromAmount,
+          paymentAmount: paymentRoute.toAmount,
+          feeAmount: paymentRoute.feeAmount || 0,
+          tokenInAddress: paymentRoute.fromToken.address,
+          exchangeAddress,
+          tokenOutAddress: paymentRoute.toToken.address,
+          paymentReceiverAddress: paymentRoute.toAddress,
+          feeReceiverAddress: paymentRoute.fee ? paymentRoute.fee.receiver : Blockchains[paymentRoute.blockchain].zero,
+          exchangeType: exchangeType,
+          receiverType: 0,
+          exchangeCallData: exchangeCallData,
+          receiverCallData: Blockchains[paymentRoute.blockchain].zero,
+          deadline,
+        }
       }
     }
+    return params
   }
 }
 
