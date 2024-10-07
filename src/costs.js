@@ -5,6 +5,9 @@ const getBlockchainCost = (blockchain) => {
     case 'solana':
       return 0.000125
       break;
+    case 'worldchain':
+      return 0.0043
+      break;
     case 'gnosis':
       return 0.0090
       break;
