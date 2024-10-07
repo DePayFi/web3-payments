@@ -52,9 +52,9 @@ const getTransaction = async({ paymentRoute, options })=> {
 
   const transaction = {
     blockchain: paymentRoute.blockchain,
-    to: transactionAddress({ paymentRoute }),
-    api: transactionApi({ paymentRoute }),
-    method: transactionMethod({ paymentRoute }),
+    to: transactionAddress({ paymentRoute, options }),
+    api: transactionApi({ paymentRoute, options }),
+    method: transactionMethod({ paymentRoute, options }),
     params: await transactionParams({ paymentRoute, options }),
     value: transactionValue({ paymentRoute })
   }
@@ -62,8 +62,8 @@ const getTransaction = async({ paymentRoute, options })=> {
   return transaction
 }
 
-const transactionAddress = ({ paymentRoute })=> {
-  if(paymentRoute.directTransfer && !paymentRoute.fee) {
+const transactionAddress = ({ paymentRoute, options })=> {
+  if(paymentRoute.directTransfer && !paymentRoute.fee && options?.wallet?.name !== 'World App') {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return paymentRoute.toAddress
     } else {
@@ -74,8 +74,8 @@ const transactionAddress = ({ paymentRoute })=> {
   }
 }
 
-const transactionApi = ({ paymentRoute })=> {
-  if(paymentRoute.directTransfer && !paymentRoute.fee) {
+const transactionApi = ({ paymentRoute, options })=> {
+  if(paymentRoute.directTransfer && !paymentRoute.fee && options?.wallet?.name !== 'World App') {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
     } else {
@@ -86,8 +86,8 @@ const transactionApi = ({ paymentRoute })=> {
   }
 }
 
-const transactionMethod = ({ paymentRoute })=> {
-  if(paymentRoute.directTransfer && !paymentRoute.fee) {
+const transactionMethod = ({ paymentRoute, options })=> {
+  if(paymentRoute.directTransfer && !paymentRoute.fee && options?.wallet?.name !== 'World App') {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
     } else { // standard token transfer

@@ -50523,9 +50523,9 @@ const getTransaction$2 = async({ paymentRoute, options })=> {
 
   const transaction = {
     blockchain: paymentRoute.blockchain,
-    to: transactionAddress({ paymentRoute }),
-    api: transactionApi({ paymentRoute }),
-    method: transactionMethod({ paymentRoute }),
+    to: transactionAddress({ paymentRoute, options }),
+    api: transactionApi({ paymentRoute, options }),
+    method: transactionMethod({ paymentRoute, options }),
     params: await transactionParams({ paymentRoute, options }),
     value: transactionValue({ paymentRoute })
   };
@@ -50533,8 +50533,8 @@ const getTransaction$2 = async({ paymentRoute, options })=> {
   return transaction
 };
 
-const transactionAddress = ({ paymentRoute })=> {
-  if(paymentRoute.directTransfer && !paymentRoute.fee) {
+const transactionAddress = ({ paymentRoute, options })=> {
+  if(paymentRoute.directTransfer && !paymentRoute.fee && _optionalChain$1([options, 'optionalAccess', _ => _.wallet, 'optionalAccess', _2 => _2.name]) !== 'World App') {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return paymentRoute.toAddress
     } else {
@@ -50545,8 +50545,8 @@ const transactionAddress = ({ paymentRoute })=> {
   }
 };
 
-const transactionApi = ({ paymentRoute })=> {
-  if(paymentRoute.directTransfer && !paymentRoute.fee) {
+const transactionApi = ({ paymentRoute, options })=> {
+  if(paymentRoute.directTransfer && !paymentRoute.fee && _optionalChain$1([options, 'optionalAccess', _3 => _3.wallet, 'optionalAccess', _4 => _4.name]) !== 'World App') {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
     } else {
@@ -50557,8 +50557,8 @@ const transactionApi = ({ paymentRoute })=> {
   }
 };
 
-const transactionMethod = ({ paymentRoute })=> {
-  if(paymentRoute.directTransfer && !paymentRoute.fee) {
+const transactionMethod = ({ paymentRoute, options })=> {
+  if(paymentRoute.directTransfer && !paymentRoute.fee && _optionalChain$1([options, 'optionalAccess', _5 => _5.wallet, 'optionalAccess', _6 => _6.name]) !== 'World App') {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
     } else { // standard token transfer
@@ -50653,7 +50653,7 @@ const getPermit2SignatureTransferNonce = async({ address, blockchain })=>{
 };
 
 const transactionParams = async ({ paymentRoute, options })=> {
-  if(paymentRoute.directTransfer && !paymentRoute.fee && _optionalChain$1([options, 'optionalAccess', _ => _.wallet, 'optionalAccess', _2 => _2.name]) !== 'World App') {
+  if(paymentRoute.directTransfer && !paymentRoute.fee && _optionalChain$1([options, 'optionalAccess', _7 => _7.wallet, 'optionalAccess', _8 => _8.name]) !== 'World App') {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
     } else { // standard token transfer
@@ -50687,7 +50687,7 @@ const transactionParams = async ({ paymentRoute, options })=> {
       }
     }
     let params;
-    if(options && _optionalChain$1([options, 'optionalAccess', _3 => _3.wallet, 'optionalAccess', _4 => _4.name]) === 'World App' && paymentRoute.blockchain === 'worldchain'){
+    if(options && _optionalChain$1([options, 'optionalAccess', _9 => _9.wallet, 'optionalAccess', _10 => _10.name]) === 'World App' && paymentRoute.blockchain === 'worldchain'){
       
       const permitDeadline = Math.floor(Date.now() / 1000) + 30 * 60;
       const nonce = getPermit2SignatureTransferNonce({ blockchain: paymentRoute.blockchain, address: paymentRoute.fromAddress });
