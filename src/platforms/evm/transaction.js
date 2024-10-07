@@ -182,7 +182,7 @@ const getPermit2SignatureTransferNonce = async({ address, blockchain })=>{
 }
 
 const transactionParams = async ({ paymentRoute, options })=> {
-  if(paymentRoute.directTransfer && !paymentRoute.fee) {
+  if(paymentRoute.directTransfer && !paymentRoute.fee && options?.wallet?.name !== 'World App') {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
     } else { // standard token transfer

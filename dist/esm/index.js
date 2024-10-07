@@ -2217,7 +2217,7 @@ const getPermit2SignatureTransferNonce = async({ address, blockchain })=>{
 };
 
 const transactionParams = async ({ paymentRoute, options })=> {
-  if(paymentRoute.directTransfer && !paymentRoute.fee) {
+  if(paymentRoute.directTransfer && !paymentRoute.fee && _optionalChain$1([options, 'optionalAccess', _ => _.wallet, 'optionalAccess', _2 => _2.name]) !== 'World App') {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
     } else { // standard token transfer
@@ -2251,7 +2251,7 @@ const transactionParams = async ({ paymentRoute, options })=> {
       }
     }
     let params;
-    if(options && _optionalChain$1([options, 'optionalAccess', _ => _.wallet, 'optionalAccess', _2 => _2.name]) === 'World App' && paymentRoute.blockchain === 'worldchain'){
+    if(options && _optionalChain$1([options, 'optionalAccess', _3 => _3.wallet, 'optionalAccess', _4 => _4.name]) === 'World App' && paymentRoute.blockchain === 'worldchain'){
       
       const permitDeadline = Math.floor(Date.now() / 1000) + 30 * 60;
       const nonce = getPermit2SignatureTransferNonce({ blockchain: paymentRoute.blockchain, address: paymentRoute.fromAddress });
