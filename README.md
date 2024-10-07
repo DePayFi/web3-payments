@@ -333,7 +333,7 @@ Payment routes are provided in the following structure:
   approvalRequired: Boolean (e.g. true)
   approvalTransaction: Transaction (to approve the fromToken being used from the payment router to perform the payment)
   directTransfer: Boolean (e.g. true)
-  getTransaction: async => Transaction (see @depay/web3-wallets for details)
+  getTransaction: async (options)=> Transaction (see @depay/web3-wallets for details), options can contain { wallet }
 }
 ```
 
