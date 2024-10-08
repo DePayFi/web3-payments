@@ -63,7 +63,9 @@ class PaymentRoute {
     this.approvalRequired = approvalRequired
     this.approvalTransaction = approvalTransaction
     this.directTransfer = directTransfer
-    this.getTransaction = async (options)=> await getTransaction({ paymentRoute: this, options })
+    this.getTransaction = async (options)=> {
+      return await getTransaction({ paymentRoute: this, options })
+    }
   }
 }
 

@@ -3360,11 +3360,11 @@ supported.solana = ['solana'];
 
 let evmGetTransaction = ()=>{};
 
-const getTransaction$1 = ({ paymentRoute, fee })=>{
+const getTransaction$1 = ({ paymentRoute, fee, options })=>{
   if(supported.evm.includes(paymentRoute.blockchain)) {
     return evmGetTransaction()
   } else if(supported.solana.includes(paymentRoute.blockchain)) {
-    return getTransaction$2({ paymentRoute, fee })
+    return getTransaction$2({ paymentRoute, fee, options })
   } else {
     throw('Blockchain not supported!')
   }
@@ -3409,7 +3409,9 @@ class PaymentRoute {
     this.approvalRequired = approvalRequired;
     this.approvalTransaction = approvalTransaction;
     this.directTransfer = directTransfer;
-    this.getTransaction = async (options)=> await getTransaction$1({ paymentRoute: this, options });
+    this.getTransaction = async (options)=> {
+      return await getTransaction$1({ paymentRoute: this, options })
+    };
   }
 }
 

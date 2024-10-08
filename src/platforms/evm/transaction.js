@@ -219,7 +219,7 @@ const transactionParams = async ({ paymentRoute, options })=> {
     if(options && options?.wallet?.name === 'World App' && paymentRoute.blockchain === 'worldchain'){
       
       const permitDeadline = Math.floor(Date.now() / 1000) + 30 * 60
-      const nonce = getPermit2SignatureTransferNonce({ blockchain: paymentRoute.blockchain, address: paymentRoute.fromAddress })
+      const nonce = await getPermit2SignatureTransferNonce({ blockchain: paymentRoute.blockchain, address: paymentRoute.fromAddress })
       
       const permitTransfer = {
         permitted: {

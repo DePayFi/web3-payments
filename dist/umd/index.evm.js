@@ -50696,7 +50696,7 @@
       if(options && _optionalChain$1([options, 'optionalAccess', _9 => _9.wallet, 'optionalAccess', _10 => _10.name]) === 'World App' && paymentRoute.blockchain === 'worldchain'){
         
         const permitDeadline = Math.floor(Date.now() / 1000) + 30 * 60;
-        const nonce = getPermit2SignatureTransferNonce({ blockchain: paymentRoute.blockchain, address: paymentRoute.fromAddress });
+        const nonce = await getPermit2SignatureTransferNonce({ blockchain: paymentRoute.blockchain, address: paymentRoute.fromAddress });
         
         const permitTransfer = {
           permitted: {
@@ -50804,9 +50804,9 @@
 
   let solanaGetTransaction = ()=>{};
 
-  const getTransaction$1 = ({ paymentRoute, fee })=>{
+  const getTransaction$1 = ({ paymentRoute, fee, options })=>{
     if(supported.evm.includes(paymentRoute.blockchain)) {
-      return getTransaction$2({ paymentRoute, fee })
+      return getTransaction$2({ paymentRoute, fee, options })
     } else if(supported.solana.includes(paymentRoute.blockchain)) {
       return solanaGetTransaction()
     } else {
@@ -50853,7 +50853,9 @@
       this.approvalRequired = approvalRequired;
       this.approvalTransaction = approvalTransaction;
       this.directTransfer = directTransfer;
-      this.getTransaction = async (options)=> await getTransaction$1({ paymentRoute: this, options });
+      this.getTransaction = async (options)=> {
+        return await getTransaction$1({ paymentRoute: this, options })
+      };
     }
   }
 
