@@ -100,7 +100,7 @@ const transactionMethod = ({ paymentRoute, options })=> {
 
 const getExchangeType = ({ exchangeRoute, blockchain })=> {
   if( typeof exchangeRoute === 'undefined' ) { return 0 }
-  if(exchangeRoute.exchange.name === 'uniswap_v3' || exchangeRoute.exchange[blockchain].router.address === Blockchains[blockchain].wrapped.address) {
+  if(exchangeRoute.exchange[blockchain].router.address === Blockchains[blockchain].wrapped.address) {
     return 2 // push
   } else {
     return 1 // pull
