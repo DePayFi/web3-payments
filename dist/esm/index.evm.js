@@ -51036,14 +51036,23 @@ const EXCHANGE_PROXIES = {
 
 const getTransaction$2 = async({ paymentRoute, options })=> {
 
+  let deadline;
+  if(paymentRoute.blockchain === 'worldchain'){ // protocol V3 deadline
+    deadline = Math.ceil(new Date())+3600*1000; // 1 hour in ms
+  } else {
+    deadline = Math.ceil(new Date()/1000)+3600; // 1 hour in s
+  }
+
   const transaction = {
     blockchain: paymentRoute.blockchain,
     to: transactionAddress({ paymentRoute, options }),
     api: transactionApi({ paymentRoute, options }),
     method: transactionMethod({ paymentRoute, options }),
-    params: await transactionParams({ paymentRoute, options }),
+    params: await transactionParams({ paymentRoute, options, deadline }),
     value: transactionValue({ paymentRoute })
   };
+
+  transaction.deadline = deadline;
 
   return transaction
 };
@@ -51167,7 +51176,7 @@ const getPermit2SignatureTransferNonce = async({ address, blockchain })=>{
   }
 };
 
-const transactionParams = async ({ paymentRoute, options })=> {
+const transactionParams = async ({ paymentRoute, options, deadline })=> {
   if(paymentRoute.directTransfer && !paymentRoute.fee && _optionalChain$1([options, 'optionalAccess', _7 => _7.wallet, 'optionalAccess', _8 => _8.name]) !== 'World App') {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
@@ -51175,12 +51184,6 @@ const transactionParams = async ({ paymentRoute, options })=> {
       return [paymentRoute.toAddress, paymentRoute.toAmount]
     }
   } else {
-    let deadline;
-    if(paymentRoute.blockchain === 'worldchain'){ // protocol V3 deadline
-      deadline = Math.ceil(new Date())+3600*1000; // 1 hour in ms
-    } else {
-      deadline = Math.ceil(new Date()/1000)+3600; // 1 hour in s
-    }
     const exchangeRoute = paymentRoute.exchangeRoutes[0];
     const exchangeType = getExchangeType({ exchangeRoute, blockchain: paymentRoute.blockchain });
     const exchangeTransaction = !exchangeRoute ? undefined : await exchangeRoute.getTransaction({
