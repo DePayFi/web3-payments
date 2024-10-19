@@ -51464,7 +51464,10 @@
 
       // add native currency as priority if does not exist already
       [...new Set(blockchains)].forEach((blockchain)=>{
-        if(!priority.find((priority)=>priority.blockchain === blockchain && priority.address === Blockchains__default["default"][blockchain].currency.address)) {
+        if(
+          !priority.find((priority)=>priority.blockchain === blockchain && priority.address === Blockchains__default["default"][blockchain].currency.address) &&
+          (!whitelist || (whitelist && whitelist[blockchain] && whitelist[blockchain].includes(Blockchains__default["default"][blockchain].currency.address)))
+        ) {
           priority.push({ blockchain, address: Blockchains__default["default"][blockchain].currency.address });
         }
       });

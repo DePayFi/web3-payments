@@ -51458,7 +51458,10 @@ function route({ accept, from, whitelist, blacklist, drip }) {
 
     // add native currency as priority if does not exist already
     [...new Set(blockchains)].forEach((blockchain)=>{
-      if(!priority.find((priority)=>priority.blockchain === blockchain && priority.address === Blockchains[blockchain].currency.address)) {
+      if(
+        !priority.find((priority)=>priority.blockchain === blockchain && priority.address === Blockchains[blockchain].currency.address) &&
+        (!whitelist || (whitelist && whitelist[blockchain] && whitelist[blockchain].includes(Blockchains[blockchain].currency.address)))
+      ) {
         priority.push({ blockchain, address: Blockchains[blockchain].currency.address });
       }
     });
