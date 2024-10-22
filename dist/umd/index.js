@@ -2597,7 +2597,7 @@
         } catch (e) {}
       };
 
-      const allAssets = await web3Assets.dripAssets({
+      const allAssets = await web3Assets.getAssets({
         accounts: from,
         priority,
         only: whitelist,
