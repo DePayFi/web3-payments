@@ -47305,6 +47305,7 @@ class StaticJsonRpcBatchProvider$1 extends ethers.providers.JsonRpcProvider {
           method: 'POST',
           body: JSON.stringify(batch),
           headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(10000)  // 10-second timeout
         }
       ).then((response)=>{
         if(response.ok) {
@@ -47459,7 +47460,8 @@ const setProviderEndpoints$2 = async (blockchain, endpoints, detectFastest = tru
             },
             referrer: "",
             referrerPolicy: "no-referrer",
-            body: JSON.stringify({ method: 'net_version', id: 1, jsonrpc: '2.0' })
+            body: JSON.stringify({ method: 'net_version', id: 1, jsonrpc: '2.0' }),
+            signal: AbortSignal.timeout(10000)  // 10-second timeout
           });
         } catch (e) {}
         if(!_optionalChain$4$1([response, 'optionalAccess', _ => _.ok])) { return resolve(999) }
@@ -47562,6 +47564,7 @@ class StaticJsonRpcSequentialProvider extends Connection {
           method: 'POST',
           body: JSON.stringify(batch),
           headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(10000)  // 10-second timeout
         }
       ).then((response)=>{
         if(response.ok) {
@@ -47706,7 +47709,8 @@ const setProviderEndpoints$1$1 = async (blockchain, endpoints, detectFastest = t
             },
             referrer: "",
             referrerPolicy: "no-referrer",
-            body: JSON.stringify({ method: 'getIdentity', id: 1, jsonrpc: '2.0' })
+            body: JSON.stringify({ method: 'getIdentity', id: 1, jsonrpc: '2.0' }),
+            signal: AbortSignal.timeout(10000)  // 10-second timeout
           });
         } catch (e) {}
         if(!_optionalChain$2$2([response, 'optionalAccess', _ => _.ok])) { return resolve(999) }
@@ -50546,6 +50550,7 @@ class StaticJsonRpcBatchProvider extends ethers.providers.JsonRpcProvider {
           method: 'POST',
           body: JSON.stringify(batch),
           headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(10000)  // 10-second timeout
         }
       ).then((response)=>{
         if(response.ok) {
@@ -50700,7 +50705,8 @@ const setProviderEndpoints$1 = async (blockchain, endpoints, detectFastest = tru
             },
             referrer: "",
             referrerPolicy: "no-referrer",
-            body: JSON.stringify({ method: 'net_version', id: 1, jsonrpc: '2.0' })
+            body: JSON.stringify({ method: 'net_version', id: 1, jsonrpc: '2.0' }),
+            signal: AbortSignal.timeout(10000)  // 10-second timeout
           });
         } catch (e) {}
         if(!_optionalChain$1$1([response, 'optionalAccess', _ => _.ok])) { return resolve(999) }
