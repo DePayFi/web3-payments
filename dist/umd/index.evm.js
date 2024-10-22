@@ -51551,7 +51551,7 @@
         } catch (e) {}
       };
 
-      const allAssets = await web3AssetsEvm.getAssets({
+      const allAssets = await web3AssetsEvm.dripAssets({
         accounts: from,
         priority,
         only: whitelist,

@@ -3594,7 +3594,7 @@
         } catch (e) {}
       };
 
-      const allAssets = await web3AssetsSolana.getAssets({
+      const allAssets = await web3AssetsSolana.dripAssets({
         accounts: from,
         priority,
         only: whitelist,

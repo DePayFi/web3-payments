@@ -1,7 +1,7 @@
 import Blockchains from '@depay/web3-blockchains';
 import { BN, struct, u64, i64, u128, bool, ACCOUNT_LAYOUT, PublicKey, Connection, u32, publicKey, u8, rustEnum, str, u16, option, vec, Buffer, TransactionInstruction, SystemProgram, Keypair } from '@depay/solana-web3.js';
 import { ethers } from 'ethers';
-import { getAssets } from '@depay/web3-assets-solana';
+import { dripAssets } from '@depay/web3-assets-solana';
 import Exchanges from '@depay/web3-exchanges-solana';
 import Token$1 from '@depay/web3-tokens-solana';
 
@@ -3589,7 +3589,7 @@ function route({ accept, from, whitelist, blacklist, drip }) {
       } catch (e) {}
     };
 
-    const allAssets = await getAssets({
+    const allAssets = await dripAssets({
       accounts: from,
       priority,
       only: whitelist,
