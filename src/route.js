@@ -1,18 +1,18 @@
 /*#if _EVM
 
-import { getAssets } from '@depay/web3-assets-evm'
+import { dripAssets } from '@depay/web3-assets-evm'
 import Exchanges from '@depay/web3-exchanges-evm'
 import Token from '@depay/web3-tokens-evm'
 
 /*#elif _SOLANA
 
-import { getAssets } from '@depay/web3-assets-solana'
+import { dripAssets } from '@depay/web3-assets-solana'
 import Exchanges from '@depay/web3-exchanges-solana'
 import Token from '@depay/web3-tokens-solana'
 
 //#else */
 
-import { getAssets } from '@depay/web3-assets'
+import { dripAssets } from '@depay/web3-assets'
 import Exchanges from '@depay/web3-exchanges'
 import Token from '@depay/web3-tokens'
 
@@ -243,11 +243,18 @@ function route({ accept, from, whitelist, blacklist, drip }) {
       } catch {}
     }
 
-    const allAssets = await getAssets({
+    const allAssets = await dripAssets({
       accounts: from,
       priority,
       only: whitelist,
       exclude: blacklist,
+      drip: !drip ? undefined : (asset)=>{
+        assetsToRoutes({ assets: [asset], blacklist, accept, from }).then((routes)=>{
+          if(routes?.length) {
+            dripRoute(routes[0])
+          }
+        })
+      }
     })
 
     let allPaymentRoutes = (await assetsToRoutes({ assets: allAssets, blacklist, accept, from }) || [])

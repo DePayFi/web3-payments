@@ -1,6 +1,6 @@
 import Blockchains from '@depay/web3-blockchains';
 import { ethers } from 'ethers';
-import { getAssets } from '@depay/web3-assets-evm';
+import { dripAssets } from '@depay/web3-assets-evm';
 import Exchanges from '@depay/web3-exchanges-evm';
 import Token$1 from '@depay/web3-tokens-evm';
 
@@ -51545,11 +51545,18 @@ function route({ accept, from, whitelist, blacklist, drip }) {
       } catch (e) {}
     };
 
-    const allAssets = await getAssets({
+    const allAssets = await dripAssets({
       accounts: from,
       priority,
       only: whitelist,
       exclude: blacklist,
+      drip: !drip ? undefined : (asset)=>{
+        assetsToRoutes({ assets: [asset], blacklist, accept, from }).then((routes)=>{
+          if(_optionalChain([routes, 'optionalAccess', _5 => _5.length])) {
+            dripRoute(routes[0]);
+          }
+        });
+      }
     });
 
     let allPaymentRoutes = (await assetsToRoutes({ assets: allAssets, blacklist, accept, from }) || []);
