@@ -2597,18 +2597,11 @@
         } catch (e) {}
       };
 
-      const allAssets = await web3Assets.dripAssets({
+      const allAssets = await web3Assets.getAssets({
         accounts: from,
         priority,
         only: whitelist,
         exclude: blacklist,
-        drip: !drip ? undefined : (asset)=>{
-          assetsToRoutes({ assets: [asset], blacklist, accept, from }).then((routes)=>{
-            if(_optionalChain([routes, 'optionalAccess', _5 => _5.length])) {
-              dripRoute(routes[0]);
-            }
-          });
-        }
       });
 
       let allPaymentRoutes = (await assetsToRoutes({ assets: allAssets, blacklist, accept, from }) || []);
