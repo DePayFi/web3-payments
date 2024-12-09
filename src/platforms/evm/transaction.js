@@ -52,12 +52,7 @@ const EXCHANGE_PROXIES = {
 
 const getTransaction = async({ paymentRoute, options })=> {
 
-  let deadline
-  if(paymentRoute.blockchain === 'worldchain'){ // protocol V3 deadline
-    deadline = Math.ceil(new Date())+3600*1000 // 1 hour in ms
-  } else {
-    deadline = Math.ceil(new Date()/1000)+3600 // 1 hour in s
-  }
+  let deadline = Math.ceil(new Date())+3600*1000 // 1 hour in ms
 
   const transaction = {
     blockchain: paymentRoute.blockchain,
@@ -272,31 +267,13 @@ const transactionParams = async ({ paymentRoute, options, deadline })=> {
         },
       }
 
-    } else if(paymentRoute.blockchain === 'worldchain') {
-      params = {
-        payment: {
-          amountIn: paymentRoute.fromAmount,
-          paymentAmount: paymentRoute.toAmount,
-          feeAmount: paymentRoute.feeAmount || 0,
-          protocolAmount: 0,
-          tokenInAddress: paymentRoute.fromToken.address,
-          exchangeAddress,
-          tokenOutAddress: paymentRoute.toToken.address,
-          paymentReceiverAddress: paymentRoute.toAddress,
-          feeReceiverAddress: paymentRoute.fee ? paymentRoute.fee.receiver : Blockchains[paymentRoute.blockchain].zero,
-          exchangeType: exchangeType,
-          receiverType: 0,
-          exchangeCallData: exchangeCallData,
-          receiverCallData: Blockchains[paymentRoute.blockchain].zero,
-          deadline,
-        }
-      }
     } else {
       params = {
         payment: {
           amountIn: paymentRoute.fromAmount,
           paymentAmount: paymentRoute.toAmount,
           feeAmount: paymentRoute.feeAmount || 0,
+          protocolAmount: 0,
           tokenInAddress: paymentRoute.fromToken.address,
           exchangeAddress,
           tokenOutAddress: paymentRoute.toToken.address,

@@ -24,6 +24,7 @@ import throttle from 'lodash/throttle'
 import { ethers } from 'ethers'
 import { getBlockchainCost } from './costs'
 import { getTransaction } from './transaction'
+import { getPermit2ApprovalSignature, getRouterApprovalTransaction, getPermit2ApprovalTransaction } from './approval'
 import { supported } from './blockchains'
 
 class PaymentRoute {
@@ -40,11 +41,12 @@ class PaymentRoute {
     toAddress,
     fee,
     feeAmount,
+    protocol,
+    protocolAmount,
     exchangeRoutes,
-    approvalRequired,
-    currentAllowance,
-    approvalTransaction,
     directTransfer,
+    currentRouterAllowance,
+    currentPermit2Allowance,
   }) {
     this.blockchain = blockchain
     this.fromAddress = fromAddress
@@ -58,11 +60,18 @@ class PaymentRoute {
     this.toAddress = toAddress
     this.fee = fee
     this.feeAmount = feeAmount
+    this.protocol = protocol
+    this.protocolAmount = protocolAmount
     this.exchangeRoutes = exchangeRoutes || []
-    this.currentAllowance = currentAllowance
-    this.approvalRequired = approvalRequired
-    this.approvalTransaction = approvalTransaction
     this.directTransfer = directTransfer
+    this.currentRouterAllowance = currentRouterAllowance
+    this.currentPermit2Allowance = currentPermit2Allowance
+    this.getApprovalTransaction = async (options)=> {
+      return await getApprovalTransaction({ paymentRoute: this, options })
+    }
+    this.getApprovalSignature = async (options)=> {
+      return await getApprovalSignature({ paymentRoute: this, options })
+    }
     this.getTransaction = async (options)=> {
       return await getTransaction({ paymentRoute: this, options })
     }
@@ -92,6 +101,7 @@ function convertToRoutes({ assets, accept, from }) {
           fromAddress: from[configuration.blockchain],
           toAddress: configuration.toAddress,
           fee: configuration.fee,
+          protocol: configuration.protocol,
         })
       } else if(configuration.fromToken && configuration.fromAmount && fromToken.address.toLowerCase() == configuration.fromToken.toLowerCase()) {
         let blockchain = configuration.blockchain
@@ -336,9 +346,15 @@ let addApproval = (routes) => {
   return Promise.all(routes.map(
     (route) => {
       if(route.blockchain === 'solana') {
-        return Promise.resolve(Blockchains.solana.maxInt)
+        return [
+          Promise.resolve(Blockchains.solana.maxInt),
+          Promise.resolve(Blockchains.solana.maxInt)
+        ]
       } else {
-        return route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address).catch(()=>{})
+        return Promise.all([
+          route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address).catch(()=>{}),
+          route.fromToken.allowance(route.fromAddress, Blockchains[route.blockchain].permit2).catch(()=>{})
+        ])
       }
     }
   )).then(
@@ -346,25 +362,14 @@ let addApproval = (routes) => {
       routes.map((route, index) => {
         if(
           (
-            allowances[index] === undefined ||
-            route.directTransfer ||
-            route.fromToken.address.toLowerCase() == Blockchains[route.blockchain].currency.address.toLowerCase() ||
-            route.blockchain === 'solana'
+            allowances[index] !== undefined &&
+            !route.directTransfer &&
+            route.fromToken.address.toLowerCase() != Blockchains[route.blockchain].currency.address.toLowerCase() &&
+            route.blockchain !== 'solana'
           )
         ) {
-          routes[index].approvalRequired = false
-        } else {
-          routes[index].currentAllowance = ethers.BigNumber.from(allowances[index])
-          routes[index].approvalRequired = ethers.BigNumber.from(route.fromAmount).gte(ethers.BigNumber.from(allowances[index]))
-          if(routes[index].approvalRequired) {
-            routes[index].approvalTransaction = {
-              blockchain: route.blockchain,
-              to: route.fromToken.address,
-              api: Token[route.blockchain].DEFAULT,
-              method: 'approve',
-              params: [routers[route.blockchain].address, Blockchains[route.blockchain].maxInt]
-            }
-          }
+          routes[index].currentRouterAllowance = ethers.BigNumber.from(allowances[index][0])
+          routes[index].currentPermit2Allowance = ethers.BigNumber.from(allowances[index][1])
         }
       })
       return routes
@@ -434,22 +439,27 @@ let addRouteAmounts = ({ routes })=> {
       if(route.directTransfer && !route.fee) {
         route.fromAmount = route.toAmount
       } else {
-        let { fromAmount, toAmount, feeAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0] })
+        let { fromAmount, toAmount, feeAmount, protocolAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0] })
         route.fromAmount = fromAmount
         route.toAmount = toAmount
         if(route.fee){
           route.feeAmount = feeAmount
         }
+        if(route.protocol){
+          route.protocolAmount = protocolAmount
+        }
       }
     } else if (supported.solana.includes(route.blockchain)) {
 
-      let { fromAmount, toAmount, feeAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0] })
+      let { fromAmount, toAmount, feeAmount, protocolAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0] })
       route.fromAmount = fromAmount
       route.toAmount = toAmount
       if(route.fee){
         route.feeAmount = feeAmount
       }
-
+      if(route.protocol){
+        route.protocolAmount = protocolAmount
+      }
     }
     
     return route
@@ -476,7 +486,7 @@ let sortPaymentRoutes = (routes) => {
   let equal = 0
   return routes.sort((a, b) => {
 
-    // cheaper blockchains are more cost-efficien
+    // cheaper blockchains are more cost-efficient
     if (getBlockchainCost(a.fromToken.blockchain) < getBlockchainCost(b.fromToken.blockchain)) {
       return aWins
     }
@@ -492,15 +502,15 @@ let sortPaymentRoutes = (routes) => {
       return bWins
     }
 
-    // requiring approval is less cost efficient
-    if (a.approvalRequired && !b.approvalRequired) {
+    // requiring approval is less cost-efficient
+    if (a.currentRouterAllowance.lt(b.currentRouterAllowance) || a.currentPermit2Allowance.lt(b.currentPermit2Allowance)) {
       return bWins
     }
-    if (b.approvalRequired && !a.approvalRequired) {
+    if (a.currentRouterAllowance.gt(b.currentRouterAllowance) || a.currentPermit2Allowance.gt(b.currentPermit2Allowance)) {
       return aWins
     }
 
-    // NATIVE -> WRAPPED is more cost efficient that swapping to another token
+    // NATIVE -> WRAPPED is more cost-efficient that swapping to another token
     if (JSON.stringify([a.fromToken.address.toLowerCase(), a.toToken.address.toLowerCase()].sort()) == JSON.stringify([Blockchains[a.blockchain].currency.address.toLowerCase(), Blockchains[a.blockchain].wrapped.address.toLowerCase()].sort())) {
       return aWins
     }
@@ -508,7 +518,7 @@ let sortPaymentRoutes = (routes) => {
       return bWins
     }
 
-    // NATIVE input token is more cost efficient
+    // NATIVE input token is more cost-efficient
     if (a.fromToken.address.toLowerCase() == Blockchains[a.blockchain].currency.address.toLowerCase()) {
       return aWins
     }

@@ -231,7 +231,7 @@ let paymentRoutes = await route({
 
 #### fee
 
-`route` allows you also to configure a `fee` that is taken from the payment amount and is sent to another receiver (the fee receiver):
+`route` allows you to configure a `fee` that is taken from the payment amount and is sent to another receiver (the fee receiver):
 
 ```javascript
 let paymentRoutes = await route({
@@ -276,6 +276,21 @@ let paymentRoutes = await route({
   }]
 })
 // splits 0.3 of the amount paid and sends it to the feeReceiver
+```
+
+#### protocol
+
+`route` allows you to configure a `protocol` fee that is taken from the payment to pay the protocol:
+
+```javascript
+let paymentRoutes = await route({
+  
+  //...
+  protocol: '1.5%'
+
+})
+
+// leaves 1.5% of the outToken to the protocol when payment has been performed
 ```
 
 ### routers
@@ -328,20 +343,31 @@ Payment routes are provided in the following structure:
   toAddress: String (e.g. '0x65aBbdEd9B937E38480A50eca85A8E4D2c8350E4')
   fee: Object (e.g. undefined or fee object)
   feeAmount: BigNumber (e.g. <BigNumber '2100000000000000000'>)
+  protocl: String (e.g. '1.5%')
+  protocolAmount: BigNumber (e.g. <BigNumber '2100000000000000000'>)
   exchangeRoutes: Array (list of exchange routes offering to convert )
-  currentAllowance: BigNumber (e.g. <BigNumber '2100000000000000000'>)
-  approvalRequired: Boolean (e.g. true)
-  approvalTransaction: Transaction (to approve the fromToken being used from the payment router to perform the payment)
   directTransfer: Boolean (e.g. true)
+  currentRouterAllowance: BigNumber (e.g. <BigNumber '2100000000000000000'>)
+  currentPermit2Allowance: BigNumber (e.g. <BigNumber '2100000000000000000'>)
+  getRouterApprovalTransaction: async (options)=> Transaction (see @depay/web3-wallets)
+  getPermit2ApprovalTransaction: async (options)=> Transaction (see @depay/web3-wallets)
+  getPermit2ApprovalSignature: async ()=> SignatureTransferSignature
   getTransaction: async (options)=> Transaction (see @depay/web3-wallets for details), options can contain { wallet }
 }
 ```
 
-`approvalRequired`: indicates if a upfront token approval is required in order to perform the payment, make sure you execute `approve` before executing the payment transaction itself.
-
-`currentAllowance`: provides the current set allowance as BigNumber.
-
 `directTransfer`: indicates if the payment does not require any swapping/exchanging.
+
+`currentRouterAllowance`: provides the current set allowance for the payment router as BigNumber.
+
+`currentPermit2Allowance`: provides the current set allowance for permit2 as BigNumber.
+
+`getRouterApprovalTransaction`: transaction to approve the fromToken being used from the payment router to perform the payment. Setting options to `{ limited: true }` only approves the amount required instead of a max. approval.
+
+`getPermit2ApprovalTransaction`: transaction to approve the fromToken being used from the payment router using permit2 to perform the payment.
+
+`getPermit2ApprovalSignature`: receive the permit2 signature transfer signature that can be passed to getTransaction({ signature }).
+
 
 See [@depay/web3-wallets](https://github.com/DePayFi/web3-wallets#sendtransaction) for details about the transaction format.
 
