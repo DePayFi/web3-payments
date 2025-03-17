@@ -6,11 +6,11 @@ import {
   getPermit2ApprovalSignature as evmGetPermit2ApprovalSignature
 } from './platforms/evm/approval'
 
-/*#elif _SOLANA
+/*#elif _SVM
 
 let evmGetRouterApprovalTransaction = ()=>{}
 let evmGetPermit2ApprovalTransaction = ()=>{}
-let evmGetPermit2ApprovalTransaction = ()=>{}
+let evmGetPermit2ApprovalSignature = ()=>{}
 
 //#else */
 
@@ -27,7 +27,7 @@ import { supported } from './blockchains'
 const getRouterApprovalTransaction = ({ paymentRoute, options })=>{
   if(supported.evm.includes(paymentRoute.blockchain)) {
     return evmGetRouterApprovalTransaction({ paymentRoute, options })
-  } else if(supported.solana.includes(paymentRoute.blockchain)) {
+  } else if(supported.svm.includes(paymentRoute.blockchain)) {
   } else {
     throw('Blockchain not supported!')
   }
@@ -36,7 +36,7 @@ const getRouterApprovalTransaction = ({ paymentRoute, options })=>{
 const getPermit2ApprovalTransaction = ({ paymentRoute, options })=>{
   if(supported.evm.includes(paymentRoute.blockchain)) {
     return evmGetPermit2ApprovalTransaction({ paymentRoute, options })
-  } else if(supported.solana.includes(paymentRoute.blockchain)) {
+  } else if(supported.svm.includes(paymentRoute.blockchain)) {
   } else {
     throw('Blockchain not supported!')
   }
@@ -44,8 +44,8 @@ const getPermit2ApprovalTransaction = ({ paymentRoute, options })=>{
 
 const getPermit2ApprovalSignature = ({ paymentRoute, options })=>{
   if(supported.evm.includes(paymentRoute.blockchain)) {
-    return evmGetPermit2ApprovalTransaction({ paymentRoute, options })
-  } else if(supported.solana.includes(paymentRoute.blockchain)) {
+    return evmGetPermit2ApprovalSignature({ paymentRoute, options })
+  } else if(supported.svm.includes(paymentRoute.blockchain)) {
   } else {
     throw('Blockchain not supported!')
   }

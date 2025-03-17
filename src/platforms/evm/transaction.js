@@ -3,7 +3,7 @@
 import Token from '@depay/web3-tokens-evm'
 import { request } from '@depay/web3-client-evm'
 
-/*#elif _SOLANA
+/*#elif _SVM
 
 //#else */
 
@@ -52,7 +52,7 @@ const EXCHANGE_PROXIES = {
 
 const getTransaction = async({ paymentRoute, options })=> {
 
-  let deadline = Math.ceil(new Date())+3600*1000 // 1 hour in ms
+  let deadline = options?.deadline || Math.ceil(new Date())+(1800*1000) // 30 minutes in ms (default)
 
   const transaction = {
     blockchain: paymentRoute.blockchain,
@@ -69,7 +69,7 @@ const getTransaction = async({ paymentRoute, options })=> {
 }
 
 const transactionAddress = ({ paymentRoute, options })=> {
-  if(paymentRoute.directTransfer && !paymentRoute.fee && options?.wallet?.name !== 'World App') {
+  if(paymentRoute.directTransfer && !paymentRoute.fee && !paymentRoute.fee2 && options?.wallet?.name !== 'World App') {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return paymentRoute.toAddress
     } else {
@@ -81,7 +81,7 @@ const transactionAddress = ({ paymentRoute, options })=> {
 }
 
 const transactionApi = ({ paymentRoute, options })=> {
-  if(paymentRoute.directTransfer && !paymentRoute.fee && options?.wallet?.name !== 'World App') {
+  if(paymentRoute.directTransfer && !paymentRoute.fee && !paymentRoute.fee2 && options?.wallet?.name !== 'World App') {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
     } else {
@@ -93,7 +93,7 @@ const transactionApi = ({ paymentRoute, options })=> {
 }
 
 const transactionMethod = ({ paymentRoute, options })=> {
-  if(paymentRoute.directTransfer && !paymentRoute.fee && options?.wallet?.name !== 'World App') {
+  if(paymentRoute.directTransfer && !paymentRoute.fee && !paymentRoute.fee2 && options?.wallet?.name !== 'World App') {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
     } else { // standard token transfer
@@ -188,7 +188,7 @@ const getPermit2SignatureTransferNonce = async({ address, blockchain })=>{
 }
 
 const transactionParams = async ({ paymentRoute, options, deadline })=> {
-  if(paymentRoute.directTransfer && !paymentRoute.fee && options?.wallet?.name !== 'World App') {
+  if(paymentRoute.directTransfer && !paymentRoute.fee && !paymentRoute.fee2 && options?.wallet?.name !== 'World App') {
     if(paymentRoute.toToken.address == Blockchains[paymentRoute.blockchain].currency.address) {
       return undefined
     } else { // standard token transfer
@@ -218,7 +218,7 @@ const transactionParams = async ({ paymentRoute, options, deadline })=> {
     let params
     if(options && options?.wallet?.name === 'World App' && paymentRoute.blockchain === 'worldchain'){
       
-      const permitDeadline = Math.floor(Date.now() / 1000) + 30 * 60
+      const permitDeadline = Math.floor(Date.now() / 1000) + 30 * 60 // 60 minutes in seconds (default)
       const nonce = await getPermit2SignatureTransferNonce({ blockchain: paymentRoute.blockchain, address: paymentRoute.fromAddress })
       
       const permitTransfer = {
@@ -236,13 +236,15 @@ const transactionParams = async ({ paymentRoute, options, deadline })=> {
             paymentRoute.fromAmount.toString(), // amountIn
             paymentRoute.toAmount.toString(), // paymentAmount
             (paymentRoute.feeAmount || 0).toString(), // feeAmount
-            "0", // protocolAmount
+            (paymentRoute.feeAmount2 || 0).toString(), // feeAmount
+            (paymentRoute.protocolFeeAmount || 0).toString(), // protocolAmount
             deadline.toString(), // deadline
             paymentRoute.fromToken.address, // tokenInAddress
             exchangeAddress, // exchangeAddress
             paymentRoute.toToken.address, // tokenOutAddress
             paymentRoute.toAddress, // paymentReceiverAddress
             paymentRoute.fee ? paymentRoute.fee.receiver : Blockchains[paymentRoute.blockchain].zero, // feeReceiverAddress
+            paymentRoute.fee2 ? paymentRoute.fee2.receiver : Blockchains[paymentRoute.blockchain].zero, // feeReceiverAddress2
             exchangeType, // exchangeType
             0, // receiverType
             true, // permit2
@@ -268,17 +270,20 @@ const transactionParams = async ({ paymentRoute, options, deadline })=> {
       }
 
     } else {
+
       params = {
         payment: {
           amountIn: paymentRoute.fromAmount,
           paymentAmount: paymentRoute.toAmount,
-          feeAmount: paymentRoute.feeAmount || 0,
-          protocolAmount: 0,
+          feeAmount: (paymentRoute.feeAmount || 0).toString(),
+          feeAmount2: (paymentRoute.feeAmount2 || 0).toString(),
+          protocolAmount: (paymentRoute.protocolFeeAmount || 0).toString(),
           tokenInAddress: paymentRoute.fromToken.address,
           exchangeAddress,
           tokenOutAddress: paymentRoute.toToken.address,
           paymentReceiverAddress: paymentRoute.toAddress,
           feeReceiverAddress: paymentRoute.fee ? paymentRoute.fee.receiver : Blockchains[paymentRoute.blockchain].zero,
+          feeReceiverAddress2: paymentRoute.fee2 ? paymentRoute.fee2.receiver : Blockchains[paymentRoute.blockchain].zero,
           exchangeType: exchangeType,
           receiverType: 0,
           exchangeCallData: exchangeCallData,
@@ -286,7 +291,27 @@ const transactionParams = async ({ paymentRoute, options, deadline })=> {
           deadline,
         }
       }
+
+      if(options?.signature) {
+
+        params = [
+          {...params.payment, permit2: true},
+          { // permitTransferFromAndSignature
+            permitTransferFrom: {
+               permitted: {
+                token: paymentRoute.fromToken.address,
+                amount: paymentRoute.fromAmount.toString(),
+              },
+              nonce: options.signatureNonce,
+              deadline: options.signatureDeadline
+            },
+            signature: options.signature
+          }
+        ]
+
+      }
     }
+
     return params
   }
 }
@@ -304,5 +329,6 @@ const transactionValue = ({ paymentRoute })=> {
 }
 
 export {
-  getTransaction
+  getTransaction,
+  getPermit2SignatureTransferNonce,
 }

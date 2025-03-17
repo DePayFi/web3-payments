@@ -245,7 +245,23 @@ let paymentRoutes = await route({
   }]
 })
 
-// splits 0.3 of the amount paid and sends it to the feeReceiver
+// splits 3% of the amount paid and sends it to the feeReceiver
+```
+
+You can define up to max. 2 fees and separate fee receivers:
+
+```javascript
+let paymentRoutes = await route({
+  
+  accept: [{
+    //...
+    fee: { amount: '3%', receiver: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'},
+    fee2: { amount: '1%', receiver: '0x1dCf54C768352d5A5be0F08891262fd0E53A37ce'},
+  }]
+})
+
+// splits 3% of the amount paid and sends it to the feeReceiver 1: 0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B
+// splits 1% of the amount paid and sends it to the feeReceiver 2: 0x1dCf54C768352d5A5be0F08891262fd0E53A37ce
 ```
 
 `fee.amount` can be passed as percentage (String with ending %) or as a BigNumber string or as a pure number/decimal
@@ -261,7 +277,7 @@ let paymentRoutes = await route({
     }
   }]
 })
-// splits 0.3 of the amount paid and sends it to the feeReceiver
+// splits '300000000000000000' (BigNumber) of the amount paid and sends it to the feeReceiver
 ```
 
 ```javascript
@@ -278,15 +294,15 @@ let paymentRoutes = await route({
 // splits 0.3 of the amount paid and sends it to the feeReceiver
 ```
 
-#### protocol
+#### protocolFee
 
-`route` allows you to configure a `protocol` fee that is taken from the payment to pay the protocol:
+`route` allows you to configure a `protocolFee` that is taken from the payment to pay the protocol:
 
 ```javascript
 let paymentRoutes = await route({
   
   //...
-  protocol: '1.5%'
+  protocolFee: '1.5%'
 
 })
 
@@ -343,12 +359,15 @@ Payment routes are provided in the following structure:
   toAddress: String (e.g. '0x65aBbdEd9B937E38480A50eca85A8E4D2c8350E4')
   fee: Object (e.g. undefined or fee object)
   feeAmount: BigNumber (e.g. <BigNumber '2100000000000000000'>)
-  protocl: String (e.g. '1.5%')
-  protocolAmount: BigNumber (e.g. <BigNumber '2100000000000000000'>)
+  fee2: Object (e.g. undefined or fee object)
+  feeAmount2: BigNumber (e.g. <BigNumber '1100000000000000000'>)
+  protocolFee: String (e.g. '1.5%')
+  protocolFeeAmount: BigNumber (e.g. <BigNumber '2100000000000000000'>)
   exchangeRoutes: Array (list of exchange routes offering to convert )
   directTransfer: Boolean (e.g. true)
   currentRouterAllowance: BigNumber (e.g. <BigNumber '2100000000000000000'>)
   currentPermit2Allowance: BigNumber (e.g. <BigNumber '2100000000000000000'>)
+  approvalRequired: Boolean (e.g. true)
   getRouterApprovalTransaction: async (options)=> Transaction (see @depay/web3-wallets)
   getPermit2ApprovalTransaction: async (options)=> Transaction (see @depay/web3-wallets)
   getPermit2ApprovalSignature: async ()=> SignatureTransferSignature
@@ -356,17 +375,19 @@ Payment routes are provided in the following structure:
 }
 ```
 
-`directTransfer`: indicates if the payment does not require any swapping/exchanging.
+`directTransfer`: Indicates if the payment is a direct transfer and does not go through the DePay payment router smart contract.
 
-`currentRouterAllowance`: provides the current set allowance for the payment router as BigNumber.
+`currentRouterAllowance`: Provides the current set allowance for the payment router as BigNumber.
 
-`currentPermit2Allowance`: provides the current set allowance for permit2 as BigNumber.
+`currentPermit2Allowance`: Provides the current set allowance for permit2 as BigNumber.
 
-`getRouterApprovalTransaction`: transaction to approve the fromToken being used from the payment router to perform the payment. Setting options to `{ limited: true }` only approves the amount required instead of a max. approval.
+`approvalRequired`: Payment requires an approval (e.g. token transfers on EVM without any pre-approval).
 
-`getPermit2ApprovalTransaction`: transaction to approve the fromToken being used from the payment router using permit2 to perform the payment.
+`getRouterApprovalTransaction`: Transaction to approve the fromToken being used from the payment router to perform the payment. Setting options to `{ limited: true }` only approves the amount required instead of a max. approval.
 
-`getPermit2ApprovalSignature`: receive the permit2 signature transfer signature that can be passed to getTransaction({ signature }).
+`getPermit2ApprovalTransaction`: Transaction to approve the fromToken being used from the payment router using permit2 to perform the payment.
+
+`getPermit2ApprovalSignature`: Receive the permit2 signature transfer signature that can be passed to getTransaction({ signature }). Requires prior getPermit2ApprovalTransaction.
 
 
 See [@depay/web3-wallets](https://github.com/DePayFi/web3-wallets#sendtransaction) for details about the transaction format.

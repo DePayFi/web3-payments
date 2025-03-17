@@ -7,12 +7,16 @@ let paymentRoutes = await Web3Payments.route({
   accept: [{
     blockchain: 'solana',
     token: Web3Blockchains.solana.currency.address,
-    amount: 0.1,
-    toAddress: '5AcFMJZkXo14r3Hj99iYd1HScPiM4hAcLZf552DfZkxa',
+    amount: 0.0001,
+    receiver: '5AcFMJZkXo14r3Hj99iYd1HScPiM4hAcLZf552DfZkxa',
     fee: {
       amount: '1%',
       receiver: '3YrWvZAwNiBcMi6PigTRNHRuiTJ8jatwxgRYEx784oHW'
-    }
+    },
+    fee2: {
+      amount: '2%',
+      receiver: '5AcFMJZkXo14r3Hj99iYd1HScPiM4hAcLZf552DfZkxa'
+    },
   }],
   from: {
     solana: '2UgCJaHU5y8NC4uWQcZYeV9a5RyYLF7iKYCybCsdFFD1',
@@ -21,11 +25,7 @@ let paymentRoutes = await Web3Payments.route({
 
 let transaction = await paymentRoutes[0].getTransaction()
 
-let wallet = (await Web3Wallets.getWallets())[0]
-
-transaction.sent = (transaction)=>{ console.log('sent', transaction) }
-transaction.succeeded = (transaction)=>{ console.log('succeeded', transaction) }
-transaction.failed = (transaction)=>{ console.log('failed', transaction) }
+let wallet = (await Web3Wallets.getWallets())[1]
 
 wallet.sendTransaction(transaction)
 ```
@@ -38,12 +38,17 @@ let paymentRoutes = await Web3Payments.route({
   accept: [{
     blockchain: 'solana',
     token: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
-    amount: 0.1,
-    toAddress: '3YrWvZAwNiBcMi6PigTRNHRuiTJ8jatwxgRYEx784oHW',
+    amount: 0.01,
+    receiver: '3YrWvZAwNiBcMi6PigTRNHRuiTJ8jatwxgRYEx784oHW',
     fee: {
       amount: '5%',
       receiver: '5s3M1WuqLyHYGPBnHuaEfFdd339aHtJVTKPdyRpbxHE2'
-    }
+    },
+    fee2: {
+      amount: '3%',
+      receiver: '3Hrw6AsNyJAp71Nkgo4tzJwvGM47DzqMdAtf8ojptkXk'
+    },
+    protocolFee: '1%'
   }],
   from: {
     solana: '2UgCJaHU5y8NC4uWQcZYeV9a5RyYLF7iKYCybCsdFFD1',
@@ -52,7 +57,7 @@ let paymentRoutes = await Web3Payments.route({
 
 let transaction = await paymentRoutes[0].getTransaction()
 
-let wallet = (await Web3Wallets.getWallets())[0]
+let wallet = (await Web3Wallets.getWallets())[1]
 
 transaction.sent = (transaction)=>{ console.log('sent', transaction) }
 transaction.succeeded = (transaction)=>{ console.log('succeeded', transaction) }
@@ -68,22 +73,27 @@ wallet.sendTransaction(transaction)
 let paymentRoutes = await Web3Payments.route({
   accept: [{
     blockchain: 'solana',
-    token: 'orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE',
-    amount: 1,
-    toAddress: '3Hrw6AsNyJAp71Nkgo4tzJwvGM47DzqMdAtf8ojptkXk',
+    token: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+    amount: 0.01,
+    receiver: '3YrWvZAwNiBcMi6PigTRNHRuiTJ8jatwxgRYEx784oHW',
     fee: {
       amount: '5%',
-      receiver: '3YrWvZAwNiBcMi6PigTRNHRuiTJ8jatwxgRYEx784oHW'
-    }
+      receiver: '5s3M1WuqLyHYGPBnHuaEfFdd339aHtJVTKPdyRpbxHE2'
+    },
+    fee2: {
+      amount: '3%',
+      receiver: '3Hrw6AsNyJAp71Nkgo4tzJwvGM47DzqMdAtf8ojptkXk'
+    },
+    protocolFee: '1%'
   }],
   from: {
     solana: '2UgCJaHU5y8NC4uWQcZYeV9a5RyYLF7iKYCybCsdFFD1',
   }
 })
 
-let transaction = await paymentRoutes[0].getTransaction()
+let transaction = await paymentRoutes[1].getTransaction()
 
-let wallet = (await Web3Wallets.getWallets())[0]
+let wallet = (await Web3Wallets.getWallets())[1]
 
 transaction.sent = (transaction)=>{ console.log('sent', transaction) }
 transaction.succeeded = (transaction)=>{ console.log('succeeded', transaction) }
@@ -101,7 +111,7 @@ let paymentRoutes = await Web3Payments.route({
     blockchain: 'solana',
     token: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
     amount: 1,
-    toAddress: '3Hrw6AsNyJAp71Nkgo4tzJwvGM47DzqMdAtf8ojptkXk',
+    receiver: '3Hrw6AsNyJAp71Nkgo4tzJwvGM47DzqMdAtf8ojptkXk',
     fee: {
       amount: '5%',
       receiver: '3YrWvZAwNiBcMi6PigTRNHRuiTJ8jatwxgRYEx784oHW'
@@ -132,14 +142,19 @@ let paymentRoutes = await Web3Payments.route({
     blockchain: 'solana',
     token: Web3Blockchains.solana.currency.address,
     amount: 0.001,
-    toAddress: '3YrWvZAwNiBcMi6PigTRNHRuiTJ8jatwxgRYEx784oHW',
+    receiver: '3YrWvZAwNiBcMi6PigTRNHRuiTJ8jatwxgRYEx784oHW',
     fee: {
       amount: '1%',
       receiver: '5s3M1WuqLyHYGPBnHuaEfFdd339aHtJVTKPdyRpbxHE2'
-    }
+    },
+    fee2: {
+      amount: '3%',
+      receiver: '3Hrw6AsNyJAp71Nkgo4tzJwvGM47DzqMdAtf8ojptkXk'
+    },
+    protocolFee: '1.5%'
   }],
   from: {
-    solana: '3Hrw6AsNyJAp71Nkgo4tzJwvGM47DzqMdAtf8ojptkXk',
+    solana: '2UgCJaHU5y8NC4uWQcZYeV9a5RyYLF7iKYCybCsdFFD1',
   }
 })
 
@@ -163,11 +178,16 @@ let paymentRoutes = await Web3Payments.route({
     blockchain: 'solana',
     token: Web3Blockchains.solana.wrapped.address,
     amount: 0.001,
-    toAddress: '5AcFMJZkXo14r3Hj99iYd1HScPiM4hAcLZf552DfZkxa',
+    receiver: '5AcFMJZkXo14r3Hj99iYd1HScPiM4hAcLZf552DfZkxa',
     fee: {
       amount: '1%',
       receiver: '5s3M1WuqLyHYGPBnHuaEfFdd339aHtJVTKPdyRpbxHE2'
-    }
+    },
+    fee2: {
+      amount: '3%',
+      receiver: '3Hrw6AsNyJAp71Nkgo4tzJwvGM47DzqMdAtf8ojptkXk'
+    },
+    protocolFee: '1.5%'
   }],
   from: {
     solana: '2UgCJaHU5y8NC4uWQcZYeV9a5RyYLF7iKYCybCsdFFD1',
@@ -196,7 +216,7 @@ let paymentRoutes = await Web3Payments.route({
     blockchain: 'solana',
     token: Web3Blockchains.solana.currency.address,
     amount: 0.001,
-    toAddress: '5AcFMJZkXo14r3Hj99iYd1HScPiM4hAcLZf552DfZkxa',
+    receiver: '5AcFMJZkXo14r3Hj99iYd1HScPiM4hAcLZf552DfZkxa',
     fee: {
       amount: '1%',
       receiver: '5s3M1WuqLyHYGPBnHuaEfFdd339aHtJVTKPdyRpbxHE2'

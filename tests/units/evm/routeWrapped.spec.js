@@ -117,8 +117,10 @@ describe('route wrapped', ()=> {
     expect(transaction.params.payment.paymentReceiverAddress).toEqual(toAddress)
     expect(routes[0].directTransfer).toEqual(false)
     expect(routes[0].approvalRequired).toEqual(true)
-    expect(routes[0].approvalTransaction.to).toEqual(WRAPPED)
-    expect(routes[0].approvalTransaction.method).toEqual('approve')
-    expect(routes[0].approvalTransaction.params).toEqual([routers[blockchain].address, Blockchains[blockchain].maxInt])
+
+    let approvalTransaction = await routes[0].getRouterApprovalTransaction()
+    expect(approvalTransaction.to).toEqual(WRAPPED)
+    expect(approvalTransaction.method).toEqual('approve')
+    expect(approvalTransaction.params).toEqual([routers[blockchain].address, Blockchains[blockchain].maxInt])
   });
 })

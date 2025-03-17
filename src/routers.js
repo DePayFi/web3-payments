@@ -1,19 +1,19 @@
 /*#if _EVM
 
 import evmRouters from './platforms/evm/routers'
-let solanaRouters = {}
+let svmRouters = {}
 
-/*#elif _SOLANA
+/*#elif _SVM
 
 let evmRouters = {}
-import solanaRouters from './platforms/evm/routers'
+import svmRouters from './platforms/evm/routers'
 
 //#else */
 
 import evmRouters from './platforms/evm/routers'
-import solanaRouters from './platforms/solana/routers'
+import svmRouters from './platforms/svm/routers'
 
 //#endif
 
-export default {... evmRouters, ...solanaRouters}
+export default {... evmRouters, ...svmRouters}
 

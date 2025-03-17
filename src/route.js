@@ -4,11 +4,11 @@ import { dripAssets } from '@depay/web3-assets-evm'
 import Exchanges from '@depay/web3-exchanges-evm'
 import Token from '@depay/web3-tokens-evm'
 
-/*#elif _SOLANA
+/*#elif _SVM
 
-import { dripAssets } from '@depay/web3-assets-solana'
-import Exchanges from '@depay/web3-exchanges-solana'
-import Token from '@depay/web3-tokens-solana'
+import { dripAssets } from '@depay/web3-assets-svm'
+import Exchanges from '@depay/web3-exchanges-svm'
+import Token from '@depay/web3-tokens-svm'
 
 //#else */
 
@@ -24,7 +24,7 @@ import throttle from 'lodash/throttle'
 import { ethers } from 'ethers'
 import { getBlockchainCost } from './costs'
 import { getTransaction } from './transaction'
-import { getPermit2ApprovalSignature, getRouterApprovalTransaction, getPermit2ApprovalTransaction } from './approval'
+import { getRouterApprovalTransaction, getPermit2ApprovalTransaction, getPermit2ApprovalSignature } from './approval'
 import { supported } from './blockchains'
 
 class PaymentRoute {
@@ -41,10 +41,13 @@ class PaymentRoute {
     toAddress,
     fee,
     feeAmount,
-    protocol,
-    protocolAmount,
+    fee2,
+    feeAmount2,
+    protocolFee,
+    protocolFeeAmount,
     exchangeRoutes,
     directTransfer,
+    approvalRequired,
     currentRouterAllowance,
     currentPermit2Allowance,
   }) {
@@ -60,17 +63,23 @@ class PaymentRoute {
     this.toAddress = toAddress
     this.fee = fee
     this.feeAmount = feeAmount
-    this.protocol = protocol
-    this.protocolAmount = protocolAmount
+    this.fee2 = fee2
+    this.feeAmount2 = feeAmount2
+    this.protocolFee = protocolFee
+    this.protocolFeeAmount = protocolFeeAmount
     this.exchangeRoutes = exchangeRoutes || []
     this.directTransfer = directTransfer
+    this.approvalRequired = approvalRequired
     this.currentRouterAllowance = currentRouterAllowance
     this.currentPermit2Allowance = currentPermit2Allowance
-    this.getApprovalTransaction = async (options)=> {
-      return await getApprovalTransaction({ paymentRoute: this, options })
+    this.getRouterApprovalTransaction = async (options)=> {
+      return await getRouterApprovalTransaction({ paymentRoute: this, options })
     }
-    this.getApprovalSignature = async (options)=> {
-      return await getApprovalSignature({ paymentRoute: this, options })
+    this.getPermit2ApprovalTransaction = async (options)=> {
+      return await getPermit2ApprovalTransaction({ paymentRoute: this, options })
+    }
+    this.getPermit2ApprovalSignature = async (options)=> {
+      return await getPermit2ApprovalSignature({ paymentRoute: this, options })
     }
     this.getTransaction = async (options)=> {
       return await getTransaction({ paymentRoute: this, options })
@@ -99,9 +108,10 @@ function convertToRoutes({ assets, accept, from }) {
           toDecimals,
           fromBalance: asset.balance,
           fromAddress: from[configuration.blockchain],
-          toAddress: configuration.toAddress,
+          toAddress: configuration.receiver,
           fee: configuration.fee,
-          protocol: configuration.protocol,
+          fee2: configuration.fee2,
+          protocolFee: configuration.protocolFee,
         })
       } else if(configuration.fromToken && configuration.fromAmount && fromToken.address.toLowerCase() == configuration.fromToken.toLowerCase()) {
         let blockchain = configuration.blockchain
@@ -119,7 +129,7 @@ function convertToRoutes({ assets, accept, from }) {
           toDecimals,
           fromBalance: asset.balance,
           fromAddress: from[configuration.blockchain],
-          toAddress: configuration.toAddress,
+          toAddress: configuration.receiver,
           fee: configuration.fee,
         })
       }
@@ -141,10 +151,28 @@ function assetsToRoutes({ assets, blacklist, accept, from }) {
     .then((routes)=>routes.map((route)=>new PaymentRoute(route)))
 }
 
+function feeSanityCheck(accept, attribute) {
+  if(!accept) { return }
+
+  accept.forEach((accept)=>{ 
+    if(accept && accept[attribute] != undefined) {
+      if(
+        (typeof accept[attribute] == 'string' && accept[attribute].match(/\.\d\d+\%/)) ||
+        (typeof accept[attribute] == 'object' && typeof accept[attribute].amount == 'string' && accept[attribute].amount.match(/\.\d\d+\%/))
+      ) {
+        throw('Only up to 1 decimal is supported for fee amounts in percent!')
+      } else if(
+        (['string', 'number'].includes(typeof accept[attribute]) && accept[attribute].toString().match(/^0/))  ||
+        (typeof accept[attribute] == 'object' && ['string', 'number'].includes(typeof accept[attribute].amount) && accept[attribute].amount.toString().match(/^0/))
+      ) {
+        throw('Zero fee is not possible!')
+      }
+    }
+  })
+}
+
 function route({ accept, from, whitelist, blacklist, drip }) {
-  if(accept.some((accept)=>{ return accept && accept.fee && typeof(accept.fee.amount) == 'string' && accept.fee.amount.match(/\.\d\d+\%/) })) {
-    throw('Only up to 1 decimal is supported for fee amounts!')
-  }
+  ['fee', 'fee2', 'protocolFee'].forEach((attribute)=>feeSanityCheck(accept, attribute))
 
   return new Promise(async (resolveAll, rejectAll)=>{
 
@@ -359,18 +387,28 @@ let addApproval = (routes) => {
     }
   )).then(
     (allowances) => {
-      routes.map((route, index) => {
+      routes = routes.map((route, index) => {
         if(
-          (
-            allowances[index] !== undefined &&
-            !route.directTransfer &&
-            route.fromToken.address.toLowerCase() != Blockchains[route.blockchain].currency.address.toLowerCase() &&
-            route.blockchain !== 'solana'
-          )
-        ) {
-          routes[index].currentRouterAllowance = ethers.BigNumber.from(allowances[index][0])
-          routes[index].currentPermit2Allowance = ethers.BigNumber.from(allowances[index][1])
+          route.directTransfer ||
+          route.fromToken.address.toLowerCase() === Blockchains[route.blockchain].currency.address.toLowerCase() ||
+          route.blockchain === 'solana'
+        ){
+          route.approvalRequired = false
+        } else if (allowances[index] != undefined) {
+          if(allowances[index][0]) {
+            route.currentRouterAllowance = ethers.BigNumber.from(allowances[index][0])
+          }
+          if(allowances[index][1]) {
+            route.currentPermit2Allowance = ethers.BigNumber.from(allowances[index][1])
+          }
+          route.approvalRequired = ![
+            routes[index].currentRouterAllowance,
+            routes[index].currentPermit2Allowance
+          ].filter(Boolean).some((amount)=>{
+            return amount.gte(routes[index].fromAmount)
+          })
         }
+        return route
       })
       return routes
     },
@@ -380,7 +418,7 @@ let addApproval = (routes) => {
 let addDirectTransferStatus = ({ routes }) => {
   return routes.map((route)=>{
     if(supported.evm.includes(route.blockchain)) {
-      route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && route.fee == undefined
+      route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && route.fee == undefined && route.fee2 == undefined
     } else if (route.blockchain === 'solana') {
       route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase()
     }
@@ -392,6 +430,8 @@ let calculateAmounts = ({ paymentRoute, exchangeRoute })=>{
   let fromAmount
   let toAmount
   let feeAmount
+  let feeAmount2
+  let protocolFeeAmount
   if(exchangeRoute) {
     if(exchangeRoute && exchangeRoute.exchange.wrapper) {
       fromAmount = exchangeRoute.amountIn.toString()
@@ -405,27 +445,34 @@ let calculateAmounts = ({ paymentRoute, exchangeRoute })=>{
     toAmount = subtractFee({ amount: paymentRoute.fromAmount, paymentRoute })
   }
   if(paymentRoute.fee){
-    feeAmount = getFeeAmount({ paymentRoute })
+    feeAmount = getFeeAmount({ paymentRoute, amount: paymentRoute?.fee?.amount })
   }
-  return { fromAmount, toAmount, feeAmount }
+  if(paymentRoute.fee2){
+    feeAmount2 = getFeeAmount({ paymentRoute, amount: paymentRoute?.fee2?.amount })
+  }
+  if(paymentRoute.protocolFee){
+    protocolFeeAmount = getFeeAmount({ paymentRoute, amount: paymentRoute?.protocolFee })
+  }
+  return { fromAmount, toAmount, feeAmount, feeAmount2, protocolFeeAmount }
 }
 
 let subtractFee = ({ amount, paymentRoute })=> {
-  if(paymentRoute.fee) {
-    let feeAmount = getFeeAmount({ paymentRoute })
-    return ethers.BigNumber.from(amount).sub(feeAmount).toString()
-  } else {
-    return amount
-  }
+  if(!paymentRoute.fee && !paymentRoute.fee2 && !paymentRoute.protocolFee) { return amount }
+  let feeAmount = getFeeAmount({ paymentRoute, amount: paymentRoute?.fee?.amount })
+  let feeAmount2 = getFeeAmount({ paymentRoute, amount: paymentRoute?.fee2?.amount })
+  let protocolFee = getFeeAmount({ paymentRoute, amount: paymentRoute?.protocolFee })
+  return ethers.BigNumber.from(amount).sub(feeAmount).sub(feeAmount2).sub(protocolFee).toString()
 }
 
-let getFeeAmount = ({ paymentRoute })=> {
-  if(typeof paymentRoute.fee.amount == 'string' && paymentRoute.fee.amount.match('%')) {
-    return ethers.BigNumber.from(paymentRoute.toAmount).mul(parseFloat(paymentRoute.fee.amount)*10).div(1000).toString()
-  } else if(typeof paymentRoute.fee.amount == 'string') {
-    return paymentRoute.fee.amount
-  } else if(typeof paymentRoute.fee.amount == 'number') {
-    return ethers.utils.parseUnits(paymentRoute.fee.amount.toString(), paymentRoute.toDecimals).toString()
+let getFeeAmount = ({ paymentRoute, amount })=> {
+  if(amount == undefined) {
+    return '0'
+  } else if(typeof amount == 'string' && amount.match('%')) {
+    return ethers.BigNumber.from(paymentRoute.toAmount).mul(parseFloat(amount)*10).div(1000).toString()
+  } else if(typeof amount == 'string') {
+    return amount
+  } else if(typeof amount == 'number') {
+    return ethers.utils.parseUnits(amount.toString(), paymentRoute.toDecimals).toString()
   } else {
     throw('Unknown fee amount type!')
   }
@@ -436,29 +483,35 @@ let addRouteAmounts = ({ routes })=> {
 
     if(supported.evm.includes(route.blockchain)) {
 
-      if(route.directTransfer && !route.fee) {
+      if(route.directTransfer && !route.fee && !route.fee2) {
         route.fromAmount = route.toAmount
       } else {
-        let { fromAmount, toAmount, feeAmount, protocolAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0] })
+        let { fromAmount, toAmount, feeAmount, feeAmount2, protocolFeeAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0] })
         route.fromAmount = fromAmount
         route.toAmount = toAmount
         if(route.fee){
           route.feeAmount = feeAmount
         }
-        if(route.protocol){
-          route.protocolAmount = protocolAmount
+        if(route.fee2){
+          route.feeAmount2 = feeAmount2
+        }
+        if(route.protocolFee){
+          route.protocolFeeAmount = protocolFeeAmount
         }
       }
-    } else if (supported.solana.includes(route.blockchain)) {
+    } else if (supported.svm.includes(route.blockchain)) {
 
-      let { fromAmount, toAmount, feeAmount, protocolAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0] })
+      let { fromAmount, toAmount, feeAmount, feeAmount2, protocolFeeAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0] })
       route.fromAmount = fromAmount
       route.toAmount = toAmount
       if(route.fee){
         route.feeAmount = feeAmount
       }
-      if(route.protocol){
-        route.protocolAmount = protocolAmount
+      if(route.fee2){
+        route.feeAmount2 = feeAmount2
+      }
+      if(route.protocolFee){
+        route.protocolFeeAmount = protocolFeeAmount
       }
     }
     
@@ -503,10 +556,11 @@ let sortPaymentRoutes = (routes) => {
     }
 
     // requiring approval is less cost-efficient
-    if (a.currentRouterAllowance.lt(b.currentRouterAllowance) || a.currentPermit2Allowance.lt(b.currentPermit2Allowance)) {
+    // requiring approval is less cost efficient
+    if (a.approvalRequired && !b.approvalRequired) {
       return bWins
     }
-    if (a.currentRouterAllowance.gt(b.currentRouterAllowance) || a.currentPermit2Allowance.gt(b.currentPermit2Allowance)) {
+    if (b.approvalRequired && !a.approvalRequired) {
       return aWins
     }
 

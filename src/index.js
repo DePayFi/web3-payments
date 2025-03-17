@@ -1,10 +1,10 @@
-import { getTransaction as getSolanaTransaction } from './platforms/solana/transaction'
+import { getTransaction as getSVMTransaction } from './platforms/svm/transaction'
 import route from './route'
 import routers from './routers'
 
 const getTransaction = (paymentRoute)=>{
   if(paymentRoute.blockchain === 'solana') {
-    return getSolanaTransaction({ paymentRoute })
+    return getSVMTransaction({ paymentRoute })
   }
 }
 
