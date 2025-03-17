@@ -3,8 +3,8 @@
   "moduleName": "Web3Payments",
   "version": "14.0.0",
   "description": "JavaScript library to scan crypto wallets for liquefiable assets and perform cost-effective, auto-converted payments on-chain.",
-  "main": "dist/umd/index.solana.js",
-  "module": "dist/esm/index.solana.js",
+  "main": "dist/umd/index.svm.js",
+  "module": "dist/esm/index.svm.js",
   "files": [
     "dist"
   ],

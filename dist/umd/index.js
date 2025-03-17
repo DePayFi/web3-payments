@@ -684,10 +684,17 @@
               referrer: "",
               referrerPolicy: "no-referrer",
               body: JSON.stringify({ method: 'getIdentity', id: 1, jsonrpc: '2.0' }),
+<<<<<<< HEAD
               signal: _optionalChain$2$1([AbortSignal, 'optionalAccess', _ => _.timeout]) ? AbortSignal.timeout(60000) : undefined  // 60-second timeout
             });
           } catch (e) {}
           if(!_optionalChain$2$1([response, 'optionalAccess', _2 => _2.ok])) { return resolve(999) }
+=======
+              signal: _optionalChain$2([AbortSignal, 'optionalAccess', _ => _.timeout]) ? AbortSignal.timeout(60000) : undefined  // 60-second timeout
+            });
+          } catch (e) {}
+          if(!_optionalChain$2([response, 'optionalAccess', _2 => _2.ok])) { return resolve(999) }
+>>>>>>> master
           let after = new Date().getTime();
           resolve(after-before);
         })

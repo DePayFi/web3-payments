@@ -52945,6 +52945,11 @@
           layout: struct$1([
             u64$3("anchorDiscriminator"),
             u64$3("amountIn"),
+<<<<<<< HEAD
+=======
+            u128("sqrtPriceLimit"),
+            bool$1("amountSpecifiedIsInput"),
+>>>>>>> master
             bool$1("aToB"),
             u64$3("paymentAmount"),
             u64$3("feeAmount"),
@@ -52958,6 +52963,11 @@
           layout: struct$1([
             u64$3("anchorDiscriminator"),
             u64$3("amountIn"),
+<<<<<<< HEAD
+=======
+            u128("sqrtPriceLimit"),
+            bool$1("amountSpecifiedIsInput"),
+>>>>>>> master
             bool$1("aToB"),
             u64$3("paymentAmount"),
             u64$3("feeAmount"),
@@ -52970,10 +52980,20 @@
           anchorDiscriminator: new BN("15695720599845325801"),
           layout: struct$1([
             u64$3("anchorDiscriminator"),
+<<<<<<< HEAD
             u64$3("amountInOne"),
             u64$3("amountInTwo"),
             bool$1("aToBOne"),
             bool$1("aToBTwo"),
+=======
+            u64$3("nonce"),
+            u64$3("amountIn"),
+            bool$1("amountSpecifiedIsInput"),
+            bool$1("aToBOne"),
+            bool$1("aToBTwo"),
+            u128("sqrtPriceLimitOne"),
+            u128("sqrtPriceLimitTwo"),
+>>>>>>> master
             u64$3("paymentAmount"),
             u64$3("feeAmount"),
             u64$3("feeAmount2"),
@@ -52985,10 +53005,20 @@
           anchorDiscriminator: new BN("15074061855608091530"),
           layout: struct$1([
             u64$3("anchorDiscriminator"),
+<<<<<<< HEAD
             u64$3("amountInOne"),
             u64$3("amountInTwo"),
             bool$1("aToBOne"),
             bool$1("aToBTwo"),
+=======
+            u64$3("nonce"),
+            u64$3("amountIn"),
+            bool$1("amountSpecifiedIsInput"),
+            bool$1("aToBOne"),
+            bool$1("aToBTwo"),
+            u128("sqrtPriceLimitOne"),
+            u128("sqrtPriceLimitTwo"),
+>>>>>>> master
             u64$3("paymentAmount"),
             u64$3("feeAmount"),
             u64$3("feeAmount2"),
@@ -53570,10 +53600,17 @@
               referrer: "",
               referrerPolicy: "no-referrer",
               body: JSON.stringify({ method: 'getIdentity', id: 1, jsonrpc: '2.0' }),
+<<<<<<< HEAD
               signal: _optionalChain$2$3([AbortSignal, 'optionalAccess', _ => _.timeout]) ? AbortSignal.timeout(60000) : undefined  // 60-second timeout
             });
           } catch (e) {}
           if(!_optionalChain$2$3([response, 'optionalAccess', _2 => _2.ok])) { return resolve(999) }
+=======
+              signal: _optionalChain$2$2([AbortSignal, 'optionalAccess', _ => _.timeout]) ? AbortSignal.timeout(60000) : undefined  // 60-second timeout
+            });
+          } catch (e) {}
+          if(!_optionalChain$2$2([response, 'optionalAccess', _2 => _2.ok])) { return resolve(999) }
+>>>>>>> master
           let after = new Date().getTime();
           resolve(after-before);
         })
@@ -56352,13 +56389,21 @@
             method: 'POST',
             body: JSON.stringify(batch),
             headers: { 'Content-Type': 'application/json' },
+<<<<<<< HEAD
             signal: _optionalChain$2$1([AbortSignal, 'optionalAccess', _ => _.timeout]) ? AbortSignal.timeout(10000) : undefined  // 10-second timeout
+=======
+            signal: _optionalChain$2([AbortSignal, 'optionalAccess', _ => _.timeout]) ? AbortSignal.timeout(10000) : undefined  // 10-second timeout
+>>>>>>> master
           }
         ).then((response)=>{
           if(response.ok) {
             response.json().then((parsedJson)=>{
               if(parsedJson.find((entry)=>{
+<<<<<<< HEAD
                 return _optionalChain$2$1([entry, 'optionalAccess', _2 => _2.error]) && [-32062,-32016].includes(_optionalChain$2$1([entry, 'optionalAccess', _3 => _3.error, 'optionalAccess', _4 => _4.code]))
+=======
+                return _optionalChain$2([entry, 'optionalAccess', _2 => _2.error]) && [-32062,-32016].includes(_optionalChain$2([entry, 'optionalAccess', _3 => _3.error, 'optionalAccess', _4 => _4.code]))
+>>>>>>> master
               })) {
                 if(attempt < MAX_RETRY) {
                   reject('Error in batch found!');
@@ -56387,12 +56432,20 @@
             // on whether it was a success or error
             chunk.forEach((inflightRequest, index) => {
               const payload = result[index];
+<<<<<<< HEAD
               if (_optionalChain$2$1([payload, 'optionalAccess', _5 => _5.error])) {
+=======
+              if (_optionalChain$2([payload, 'optionalAccess', _5 => _5.error])) {
+>>>>>>> master
                 const error = new Error(payload.error.message);
                 error.code = payload.error.code;
                 error.data = payload.error.data;
                 inflightRequest.reject(error);
+<<<<<<< HEAD
               } else if(_optionalChain$2$1([payload, 'optionalAccess', _6 => _6.result])) {
+=======
+              } else if(_optionalChain$2([payload, 'optionalAccess', _6 => _6.result])) {
+>>>>>>> master
                 inflightRequest.resolve(payload.result);
               } else {
                 inflightRequest.reject();
@@ -57123,6 +57176,11 @@
   let supported = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
   supported.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
   supported.svm = [];
+<<<<<<< HEAD
+=======
+
+  let solanaGetTransaction = ()=>{};
+>>>>>>> master
 
   const getTransaction$1 = ({ paymentRoute, fee, options })=>{
     if(supported.evm.includes(paymentRoute.blockchain)) {

@@ -70,7 +70,7 @@
     "@depay/web3-wallets": "^18.0.0",
     "@depay/web3-wallets-evm": "^18.0.0",
     "@depay/web3-wallets-svm": "^18.0.0",
-    "@depay/worldcoin-precompiled": "^0.0.33",
+    "@depay/worldcoin-precompiled": "^1.2.0",
     "@rollup/plugin-commonjs": "^18.0.0",
     "@rollup/plugin-node-resolve": "^11.2.1",
     "@rollup/plugin-replace": "^2.4.2",

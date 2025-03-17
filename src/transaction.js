@@ -1,7 +1,7 @@
 /*#if _EVM
 
 import { getTransaction as evmGetTransaction } from './platforms/evm/transaction'
-let solanaGetTransaction = ()=>{}
+let svmGetTransaction = ()=>{}
 
 /*#elif _SVM
 
