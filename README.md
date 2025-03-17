@@ -66,7 +66,7 @@ This library supports the following blockchains:
 
 In case you want to use and package only specific platforms, use the platform-specific package:
 
-### EVM platform specific packaging
+### EVM (Ethereum Virtual Machine) platform specific packaging
 
 ```javascript
 import { route } from '@depay/web3-payments-evm'
@@ -84,22 +84,22 @@ or if you use npm
 npm i @depay/web3-blockchains @depay/web3-assets-evm @depay/web3-exchanges-evm @depay/web3-tokens-evm ethers decimal.js
 ```
 
-### Solana platform specific packaging
+### SVM (Solana Virtual Machine) platform specific packaging
 
 ```javascript
-import { route } from '@depay/web3-payments-solana'
+import { route } from '@depay/web3-payments-svm'
 ```
 
 Make sure you install all required dependencies for solana specific packaging too:
 
 ```
-yarn add @depay/web3-blockchains @depay/web3-assets-solana @depay/web3-exchanges-solana @depay/web3-tokens-solana @depay/solana-web3.js
+yarn add @depay/web3-blockchains @depay/web3-assets-svm @depay/web3-exchanges-svm @depay/web3-tokens-svm @depay/solana-web3.js
 ```
 
 or if you use npm
 
 ```
-npm i @depay/web3-blockchains @depay/web3-assets-solana @depay/web3-exchanges-solana @depay/web3-tokens-solana @depay/solana-web3.js
+npm i @depay/web3-blockchains @depay/web3-assets-svm @depay/web3-exchanges-svm @depay/web3-tokens-svm @depay/solana-web3.js
 ```
 
 ## Functionalities

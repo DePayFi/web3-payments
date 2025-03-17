@@ -3,16 +3,16 @@
 import { getTransaction as evmGetTransaction } from './platforms/evm/transaction'
 let solanaGetTransaction = ()=>{}
 
-/*#elif _SOLANA
+/*#elif _SVM
 
 let evmGetTransaction = ()=>{}
 let evmGetTransactionAmounts = ()=>{}
-import { getTransaction as solanaGetTransaction} from './platforms/solana/transaction'
+import { getTransaction as solanaGetTransaction} from './platforms/svm/transaction'
 
 //#else */
 
 import { getTransaction as evmGetTransaction } from './platforms/evm/transaction'
-import { getTransaction as solanaGetTransaction} from './platforms/solana/transaction'
+import { getTransaction as solanaGetTransaction} from './platforms/svm/transaction'
 
 //#endif
 

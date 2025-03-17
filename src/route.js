@@ -4,11 +4,11 @@ import { dripAssets } from '@depay/web3-assets-evm'
 import Exchanges from '@depay/web3-exchanges-evm'
 import Token from '@depay/web3-tokens-evm'
 
-/*#elif _SOLANA
+/*#elif _SVM
 
-import { dripAssets } from '@depay/web3-assets-solana'
-import Exchanges from '@depay/web3-exchanges-solana'
-import Token from '@depay/web3-tokens-solana'
+import { dripAssets } from '@depay/web3-assets-svm'
+import Exchanges from '@depay/web3-exchanges-svm'
+import Token from '@depay/web3-tokens-svm'
 
 //#else */
 

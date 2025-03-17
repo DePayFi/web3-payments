@@ -3,7 +3,7 @@
 import evmRouters from './platforms/evm/routers'
 let solanaRouters = {}
 
-/*#elif _SOLANA
+/*#elif _SVM
 
 let evmRouters = {}
 import solanaRouters from './platforms/evm/routers'
@@ -11,7 +11,7 @@ import solanaRouters from './platforms/evm/routers'
 //#else */
 
 import evmRouters from './platforms/evm/routers'
-import solanaRouters from './platforms/solana/routers'
+import solanaRouters from './platforms/svm/routers'
 
 //#endif
 

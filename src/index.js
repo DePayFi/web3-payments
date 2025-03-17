@@ -1,4 +1,4 @@
-import { getTransaction as getSolanaTransaction } from './platforms/solana/transaction'
+import { getTransaction as getSolanaTransaction } from './platforms/svm/transaction'
 import route from './route'
 import routers from './routers'
 

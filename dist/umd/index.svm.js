@@ -1,8 +1,8 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@depay/web3-blockchains'), require('@depay/solana-web3.js'), require('ethers'), require('@depay/web3-assets-solana'), require('@depay/web3-exchanges-solana'), require('@depay/web3-tokens-solana')) :
-  typeof define === 'function' && define.amd ? define(['exports', '@depay/web3-blockchains', '@depay/solana-web3.js', 'ethers', '@depay/web3-assets-solana', '@depay/web3-exchanges-solana', '@depay/web3-tokens-solana'], factory) :
+  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@depay/web3-blockchains'), require('@depay/solana-web3.js'), require('ethers'), require('@depay/web3-assets-svm'), require('@depay/web3-exchanges-svm'), require('@depay/web3-tokens-svm')) :
+  typeof define === 'function' && define.amd ? define(['exports', '@depay/web3-blockchains', '@depay/solana-web3.js', 'ethers', '@depay/web3-assets-svm', '@depay/web3-exchanges-svm', '@depay/web3-tokens-svm'], factory) :
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.Web3Payments = {}, global.Web3Blockchains, global.SolanaWeb3js, global.ethers, global.Web3Assets, global.Web3Exchanges, global.Web3Tokens));
-})(this, (function (exports, Blockchains, solanaWeb3_js, ethers, web3AssetsSolana, Exchanges, Token$1) { 'use strict';
+})(this, (function (exports, Blockchains, solanaWeb3_js, ethers, web3AssetsSvm, Exchanges, Token$1) { 'use strict';
 
   function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
@@ -181,13 +181,13 @@
             method: 'POST',
             body: JSON.stringify(batch),
             headers: { 'Content-Type': 'application/json' },
-            signal: AbortSignal.timeout(10000)  // 10-second timeout
+            signal: _optionalChain$5$1([AbortSignal, 'optionalAccess', _ => _.timeout]) ? AbortSignal.timeout(10000) : undefined  // 10-second timeout
           }
         ).then((response)=>{
           if(response.ok) {
             response.json().then((parsedJson)=>{
               if(parsedJson.find((entry)=>{
-                return _optionalChain$5$1([entry, 'optionalAccess', _ => _.error]) && [-32062,-32016].includes(_optionalChain$5$1([entry, 'optionalAccess', _2 => _2.error, 'optionalAccess', _3 => _3.code]))
+                return _optionalChain$5$1([entry, 'optionalAccess', _2 => _2.error]) && [-32062,-32016].includes(_optionalChain$5$1([entry, 'optionalAccess', _3 => _3.error, 'optionalAccess', _4 => _4.code]))
               })) {
                 if(attempt < MAX_RETRY$1) {
                   reject('Error in batch found!');
@@ -216,12 +216,12 @@
             // on whether it was a success or error
             chunk.forEach((inflightRequest, index) => {
               const payload = result[index];
-              if (_optionalChain$5$1([payload, 'optionalAccess', _4 => _4.error])) {
+              if (_optionalChain$5$1([payload, 'optionalAccess', _5 => _5.error])) {
                 const error = new Error(payload.error.message);
                 error.code = payload.error.code;
                 error.data = payload.error.data;
                 inflightRequest.reject(error);
-              } else if(_optionalChain$5$1([payload, 'optionalAccess', _5 => _5.result])) {
+              } else if(_optionalChain$5$1([payload, 'optionalAccess', _6 => _6.result])) {
                 inflightRequest.resolve(payload.result);
               } else {
                 inflightRequest.reject();
@@ -337,10 +337,10 @@
               referrer: "",
               referrerPolicy: "no-referrer",
               body: JSON.stringify({ method: 'net_version', id: 1, jsonrpc: '2.0' }),
-              signal: AbortSignal.timeout(10000)  // 10-second timeout
+              signal: _optionalChain$4$1([AbortSignal, 'optionalAccess', _ => _.timeout]) ? AbortSignal.timeout(10000) : undefined  // 10-second timeout
             });
           } catch (e) {}
-          if(!_optionalChain$4$1([response, 'optionalAccess', _ => _.ok])) { return resolve(999) }
+          if(!_optionalChain$4$1([response, 'optionalAccess', _2 => _2.ok])) { return resolve(999) }
           let after = new Date().getTime();
           resolve(after-before);
         })
@@ -440,12 +440,12 @@
             method: 'POST',
             body: JSON.stringify(batch),
             headers: { 'Content-Type': 'application/json' },
-            signal: AbortSignal.timeout(10000)  // 10-second timeout
+            signal: _optionalChain$3$1([AbortSignal, 'optionalAccess', _ => _.timeout]) ? AbortSignal.timeout(60000) : undefined  // 60-second timeout
           }
         ).then((response)=>{
           if(response.ok) {
             response.json().then((parsedJson)=>{
-              if(parsedJson.find((entry)=>_optionalChain$3$1([entry, 'optionalAccess', _ => _.error]))) {
+              if(parsedJson.find((entry)=>_optionalChain$3$1([entry, 'optionalAccess', _2 => _2.error]))) {
                 if(attempt < MAX_RETRY) {
                   reject('Error in batch found!');
                 } else {
@@ -471,7 +471,7 @@
           .then((result) => {
             chunk.forEach((inflightRequest, index) => {
               const payload = result[index];
-              if (_optionalChain$3$1([payload, 'optionalAccess', _2 => _2.error])) {
+              if (_optionalChain$3$1([payload, 'optionalAccess', _3 => _3.error])) {
                 const error = new Error(payload.error.message);
                 error.code = payload.error.code;
                 error.data = payload.error.data;
@@ -586,10 +586,10 @@
               referrer: "",
               referrerPolicy: "no-referrer",
               body: JSON.stringify({ method: 'getIdentity', id: 1, jsonrpc: '2.0' }),
-              signal: AbortSignal.timeout(10000)  // 10-second timeout
+              signal: _optionalChain$2$1([AbortSignal, 'optionalAccess', _ => _.timeout]) ? AbortSignal.timeout(60000) : undefined  // 60-second timeout
             });
           } catch (e) {}
-          if(!_optionalChain$2$1([response, 'optionalAccess', _ => _.ok])) { return resolve(999) }
+          if(!_optionalChain$2$1([response, 'optionalAccess', _2 => _2.ok])) { return resolve(999) }
           let after = new Date().getTime();
           resolve(after-before);
         })
@@ -646,7 +646,7 @@
 
   let supported$2 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
   supported$2.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
-  supported$2.solana = ['solana'];
+  supported$2.svm = ['solana'];
 
   function _optionalChain$1$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
   let getCacheStore = () => {
@@ -754,7 +754,7 @@
       return await EVM.getProvider(blockchain)
 
 
-    } else if(supported$2.solana.includes(blockchain)) {
+    } else if(supported$2.svm.includes(blockchain)) {
 
 
       return await Solana.getProvider(blockchain)
@@ -923,7 +923,7 @@
         })
       });
       
-      const timeoutPromise = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout || 10000));
+      const timeoutPromise = new Promise((_, reject)=>setTimeout(()=>{ reject(new Error("Web3ClientTimeout")); }, timeout || 60000)); // 60s default timeout
 
       allRequestsFailed = Promise.all(allRequestsFailed.map((request)=>{
         return new Promise((resolve)=>{ request.catch(resolve); })
@@ -987,7 +987,7 @@
           return await requestEVM({ blockchain, address, api, method, params, block, strategy, timeout })
 
 
-        } else if(supported$2.solana.includes(blockchain)) {
+        } else if(supported$2.svm.includes(blockchain)) {
 
 
           return await requestSolana({ blockchain, address, api, method, params, block, strategy, timeout })
@@ -2087,7 +2087,7 @@
 
   let supported$1 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
   supported$1.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
-  supported$1.solana = ['solana'];
+  supported$1.svm = ['solana'];
 
   function _optionalChain$5(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 
@@ -2097,7 +2097,7 @@
       this.blockchain = blockchain;
       if(supported$1.evm.includes(this.blockchain)) {
         this.address = ethers.ethers.utils.getAddress(address);
-      } else if(supported$1.solana.includes(this.blockchain)) {
+      } else if(supported$1.svm.includes(this.blockchain)) {
         this.address = address;
       }
     }
@@ -2112,7 +2112,7 @@
 
           decimals = await decimalsOnEVM({ blockchain: this.blockchain, address: this.address, api: Token[this.blockchain].DEFAULT });
 
-        } else if(supported$1.solana.includes(this.blockchain)) {
+        } else if(supported$1.svm.includes(this.blockchain)) {
 
           decimals = await decimalsOnSolana({ blockchain: this.blockchain, address: this.address });
 
@@ -2130,7 +2130,7 @@
 
         return await symbolOnEVM({ blockchain: this.blockchain, address: this.address, api: Token[this.blockchain].DEFAULT })
 
-      } else if(supported$1.solana.includes(this.blockchain)) {
+      } else if(supported$1.svm.includes(this.blockchain)) {
 
         return await symbolOnSolana({ blockchain: this.blockchain, address: this.address })
 
@@ -2145,7 +2145,7 @@
 
         return await nameOnEVM({ blockchain: this.blockchain, address: this.address, api: Token[this.blockchain].DEFAULT, id: _optionalChain$5([args, 'optionalAccess', _ => _.id]) })
 
-      } else if(supported$1.solana.includes(this.blockchain)) {
+      } else if(supported$1.svm.includes(this.blockchain)) {
 
         return await nameOnSolana({ blockchain: this.blockchain, address: this.address })
 
@@ -2157,7 +2157,7 @@
 
         return await balanceOnEVM({ blockchain: this.blockchain, account, address: this.address, api: id ? Token[this.blockchain][1155] : Token[this.blockchain].DEFAULT, id })
 
-      } else if(supported$1.solana.includes(this.blockchain)) {
+      } else if(supported$1.svm.includes(this.blockchain)) {
 
         return await balanceOnSolana({ blockchain: this.blockchain, account, address: this.address, api: Token[this.blockchain].DEFAULT })
 
@@ -2172,15 +2172,25 @@
 
         return await allowanceOnEVM({ blockchain: this.blockchain, address: this.address, api: Token[this.blockchain].DEFAULT, owner, spender })
 
-      } else if(supported$1.solana.includes(this.blockchain)) {
+      } else if(supported$1.svm.includes(this.blockchain)) {
         return ethers.ethers.BigNumber.from(Blockchains__default["default"].findByName(this.blockchain).maxInt)
       } 
     }
 
     async BigNumber(amount) {
-      let decimals = await this.decimals();
+      const decimals = await this.decimals();
+      if(typeof(amount) != 'string') {
+        amount = amount.toString();
+      }
+      if(amount.match('e')) {
+        amount = parseFloat(amount).toFixed(decimals).toString();
+      }
+      const decimalsMatched = amount.match(/\.(\d+)/);
+      if(decimalsMatched && decimalsMatched[1] && decimalsMatched[1].length > decimals) {
+        amount = parseFloat(amount).toFixed(decimals).toString();
+      }
       return ethers.ethers.utils.parseUnits(
-        Token.safeAmount({ amount: parseFloat(amount), decimals }).toString(),
+        amount,
         decimals
       )
     }
@@ -2201,10 +2211,6 @@
   Token.readable = async ({ amount, blockchain, address }) => {
     let token = new Token({ blockchain, address });
     return token.readable(amount)
-  };
-
-  Token.safeAmount = ({ amount, decimals }) => {
-    return parseFloat(amount.toFixed(decimals))
   };
 
 
@@ -3365,7 +3371,7 @@
 
   let supported = ['solana'];
   supported.evm = [];
-  supported.solana = ['solana'];
+  supported.svm = ['solana'];
 
   let evmGetTransaction = ()=>{};
 
@@ -3598,7 +3604,7 @@
         } catch (e) {}
       };
 
-      const allAssets = await web3AssetsSolana.dripAssets({
+      const allAssets = await web3AssetsSvm.dripAssets({
         accounts: from,
         priority,
         only: whitelist,
