@@ -7,7 +7,7 @@ let routes = await Web3Payments.route({
       blockchain: 'gnosis',
       token: '0x4ECaBa5870353805a9F068101A40E0f32ed605C6',
       amount: 1,
-      toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
+      receiver: '0x08B277154218CCF3380CAE48d630DA13462E3950'
     }
   ],
   from: {
@@ -31,7 +31,7 @@ let routes = await Web3Payments.route({
       blockchain: 'gnosis',
       token: Web3Blockchains.gnosis.wrapped.address,
       amount: 0.001,
-      toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
+      receiver: '0x08B277154218CCF3380CAE48d630DA13462E3950'
     }
   ],
   from: {
@@ -53,7 +53,7 @@ let routes = await Web3Payments.route({
       blockchain: 'gnosis',
       token: Web3Blockchains.gnosis.currency.address,
       amount: 0.001,
-      toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
+      receiver: '0x08B277154218CCF3380CAE48d630DA13462E3950'
     }
   ],
   from: {

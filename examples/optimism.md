@@ -1,5 +1,7 @@
 # via Uniswap v3
 
+https://optimistic.etherscan.io/tx/0xeb713e999145ce9f098578cec76a6e32317563a61ca549a68d0101bf7172d339
+
 ```javascript
 let routes = await Web3Payments.route({
   accept: [
@@ -7,7 +9,7 @@ let routes = await Web3Payments.route({
       blockchain: 'optimism',
       token: '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1',
       amount: 0.01,
-      toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
+      receiver: '0x08B277154218CCF3380CAE48d630DA13462E3950',
     }
   ],
   from: {
@@ -31,7 +33,7 @@ let routes = await Web3Payments.route({
       blockchain: 'optimism',
       token: '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1',
       amount: 0.01,
-      toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
+      receiver: '0x08B277154218CCF3380CAE48d630DA13462E3950'
     }
   ],
   from: {
@@ -68,7 +70,7 @@ let routes = await Web3Payments.route({
       blockchain: 'optimism',
       token: '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1',
       amount: 0.01,
-      toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950',
+      receiver: '0x08B277154218CCF3380CAE48d630DA13462E3950',
       fee: {
         amount: '1%',
         receiver: '0x08B277154218CCF3380CAE48d630DA13462E3950'
@@ -101,7 +103,7 @@ let routes = await Web3Payments.route({
       blockchain: 'optimism',
       token: Web3Blockchains.optimism.wrapped.address,
       amount: 0.001,
-      toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
+      receiver: '0x08B277154218CCF3380CAE48d630DA13462E3950'
     }
   ],
   from: {

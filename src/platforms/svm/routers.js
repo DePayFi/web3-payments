@@ -70,6 +70,19 @@ export default {
           i64("deadline"),
         ])
       },
+      routeOrcaSwapSolIn: {
+        anchorDiscriminator: new BN("16115018480206947614"),
+        layout: struct([
+          u64("anchorDiscriminator"),
+          u64("amountIn"),
+          bool("aToB"),
+          u64("paymentAmount"),
+          u64("feeAmount"),
+          u64("feeAmount2"),
+          u64("protocolAmount"),
+          i64("deadline"),
+        ])
+      },
       routeOrcaTwoHopSwap: {
         anchorDiscriminator: new BN("15695720599845325801"),
         layout: struct([
@@ -100,6 +113,21 @@ export default {
           i64("deadline"),
         ])
       },
+      routeOrcaTwoHopSwapSolIn: {
+        anchorDiscriminator: new BN("2678451299937372540"),
+        layout: struct([
+          u64("anchorDiscriminator"),
+          u64("amountInOne"),
+          u64("amountInTwo"),
+          bool("aToBOne"),
+          bool("aToBTwo"),
+          u64("paymentAmount"),
+          u64("feeAmount"),
+          u64("feeAmount2"),
+          u64("protocolAmount"),
+          i64("deadline"),
+        ])
+      },
       routeRaydiumClSwap: {
         anchorDiscriminator: new BN("2954182973248174268"),
         layout: struct([
@@ -114,6 +142,18 @@ export default {
       },
       routeRaydiumClSwapSolOut: {
         anchorDiscriminator: new BN("18389700643710627390"),
+        layout: struct([
+          u64("anchorDiscriminator"),
+          u64("amountIn"),
+          u64("paymentAmount"),
+          u64("feeAmount"),
+          u64("feeAmount2"),
+          u64("protocolAmount"),
+          i64("deadline"),
+        ])
+      },
+      routeRaydiumClSwapSolIn: {
+        anchorDiscriminator: new BN("564150378912976829"),
         layout: struct([
           u64("anchorDiscriminator"),
           u64("amountIn"),
@@ -152,6 +192,20 @@ export default {
           u8("remainingAccountsSplit"),
         ])
       },
+      routeRaydiumClTwoHopSwapSolIn: {
+        anchorDiscriminator: new BN("1635173573630140652"),
+        layout: struct([
+          u64("anchorDiscriminator"),
+          u64("amountInOne"),
+          u64("amountInTwo"),
+          u64("paymentAmount"),
+          u64("feeAmount"),
+          u64("feeAmount2"),
+          u64("protocolAmount"),
+          i64("deadline"),
+          u8("remainingAccountsSplit"),
+        ])
+      },
       routeRaydiumCpSwap: {
         anchorDiscriminator: new BN("7437765211943645137"),
         layout: struct([
@@ -166,6 +220,18 @@ export default {
       },
       routeRaydiumCpSwapSolOut: {
         anchorDiscriminator: new BN("9045257739866411286"),
+        layout: struct([
+          u64("anchorDiscriminator"),
+          u64("amountIn"),
+          u64("paymentAmount"),
+          u64("feeAmount"),
+          u64("feeAmount2"),
+          u64("protocolAmount"),
+          i64("deadline"),
+        ])
+      },
+      routeRaydiumCpSwapSolIn: {
+        anchorDiscriminator: new BN("432305509198797158"),
         layout: struct([
           u64("anchorDiscriminator"),
           u64("amountIn"),
@@ -191,6 +257,19 @@ export default {
       },
       routeRaydiumCpTwoHopSwapSolOut: {
         anchorDiscriminator: new BN("18428464202744806632"),
+        layout: struct([
+          u64("anchorDiscriminator"),
+          u64("amountInOne"),
+          u64("amountInTwo"),
+          u64("paymentAmount"),
+          u64("feeAmount"),
+          u64("feeAmount2"),
+          u64("protocolAmount"),
+          i64("deadline"),
+        ])
+      },
+      routeRaydiumCpTwoHopSwapSolIn: {
+        anchorDiscriminator: new BN("16266677464406446072"),
         layout: struct([
           u64("anchorDiscriminator"),
           u64("amountInOne"),

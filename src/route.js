@@ -281,7 +281,7 @@ function route({ accept, from, whitelist, blacklist, drip }) {
       } catch {}
     }
 
-    const allAssets = await dripAssets({
+    let allAssets = await dripAssets({
       accounts: from,
       priority,
       only: whitelist,
@@ -292,6 +292,14 @@ function route({ accept, from, whitelist, blacklist, drip }) {
             dripRoute(routes[0])
           }
         })
+      }
+    })
+
+    allAssets = allAssets.filter((route)=>{
+      if(route.blockchain != 'solana') {
+        return true
+      } else {
+        return Blockchains.solana.tokens.find((token)=>token.address == route.address)
       }
     })
 
@@ -321,29 +329,26 @@ let addExchangeRoutes = async (routes) => {
   return await Promise.all(
     routes.map((route) => {
       if(route.directTransfer) { return [] }
-      if(route.toToken && route.toAmount) {
-        return Exchanges.route({
-          blockchain: route.blockchain,
-          tokenIn: route.fromToken.address,
-          tokenOut: route.toToken.address,
-          amountOutMin: route.toAmount,
-          fromAddress: route.fromAddress,
-          toAddress: route.toAddress
-        })
-      } else if(route.fromToken && route.fromAmount) {
-        return Exchanges.route({
-          blockchain: route.blockchain,
-          tokenIn: route.fromToken.address,
-          tokenOut: route.toToken.address,
-          amountIn: route.fromAmount,
-          fromAddress: route.fromAddress,
-          toAddress: route.toAddress
-        })
-      }
+      return Promise.all([Exchanges.solana.raydium_cp.route({
+        blockchain: route.blockchain,
+        tokenIn: route.fromToken.address,
+        tokenOut: route.toToken.address,
+        amountOutMin: route.toAmount,
+        fromAddress: route.fromAddress,
+        toAddress: route.toAddress
+      })])
+      // return Exchanges.route({
+      //   blockchain: route.blockchain,
+      //   tokenIn: route.fromToken.address,
+      //   tokenOut: route.toToken.address,
+      //   amountOutMin: route.toAmount,
+      //   fromAddress: route.fromAddress,
+      //   toAddress: route.toAddress
+      // })
     }),
   ).then((exchangeRoutes) => {
     return routes.map((route, index) => {
-      route.exchangeRoutes = exchangeRoutes[index]
+      route.exchangeRoutes = exchangeRoutes[index].filter(Boolean)
       return route
     })
   })

@@ -1238,20 +1238,20 @@
   resolved "https://registry.yarnpkg.com/@depay/web3-client/-/web3-client-11.0.1.tgz#fdb7f2eca85f52bd7c8a5814c2a7d48461d5808a"
   integrity sha512-moynGSJuZ+T44wOjIIbPWQVDs7TxKgJowxlGVNi0fWusL+EgCRuia+Tdf3MJRZyIkyHj03MzWahhu8JGgvDqzw==
 
-"@depay/web3-exchanges-evm@^15.0.0":
-  version "15.0.0"
-  resolved "https://registry.yarnpkg.com/@depay/web3-exchanges-evm/-/web3-exchanges-evm-15.0.0.tgz#c0cfc1cda36a47246e062413a78595cf44238eee"
-  integrity sha512-JICjZ8AWkaHZCO7uDi2O9okeCMIAHZxUdK53a4lZ5Jfu5awnS2YQz9B+7gYvb2AgFBNRq1GEmYjt5ozfh2mudQ==
+"@depay/web3-exchanges-evm@^15.1.2":
+  version "15.1.2"
+  resolved "https://registry.yarnpkg.com/@depay/web3-exchanges-evm/-/web3-exchanges-evm-15.1.2.tgz#4d170212f0af3e17b84e1ac5b0d109af7ed480c7"
+  integrity sha512-sVa26QFb9Ufryimon8SAC/jkkFKkC9mN94oqpsvig6DaWKpPbsdUUtmwzxYGiuJkitvap0YB813ywj9wawRwFw==
 
-"@depay/web3-exchanges-svm@^15.0.0":
-  version "15.0.0"
-  resolved "https://registry.yarnpkg.com/@depay/web3-exchanges-svm/-/web3-exchanges-svm-15.0.0.tgz#429db4b8e07d1a472a37e50cbf2c328ebb9583a7"
-  integrity sha512-46wV4tguNBS7MsuQ+Q5Vf++5yoqIfyVWd+YVAepS25+MRiPnaKjYrhOAN46ZmcW677gOmLVdiFF13//XPvHa6w==
+"@depay/web3-exchanges-svm@^15.1.2":
+  version "15.1.2"
+  resolved "https://registry.yarnpkg.com/@depay/web3-exchanges-svm/-/web3-exchanges-svm-15.1.2.tgz#3f17e9cd2f0447d04347d4d139bfa82a818bad02"
+  integrity sha512-gcbpA0xIANKqYynjj1yaPBJzp0YW+FL5C3+5edJgvlWvqTeIJvrFfdtGpX33tFB7PlHfEdZUUw3kcY5T1NXn7Q==
 
-"@depay/web3-exchanges@^15.0.0":
-  version "15.0.0"
-  resolved "https://registry.yarnpkg.com/@depay/web3-exchanges/-/web3-exchanges-15.0.0.tgz#70454119eb66955ce82809d1f4d484d201dc772a"
-  integrity sha512-ST1cjKk+MPKC8fsZRGaI3X+8DqTrX6dUHeSbHilTnschWh2z/TPovVV48y8fsGPBShfyUu+UdUllUMp2PpftdA==
+"@depay/web3-exchanges@^15.1.2":
+  version "15.1.2"
+  resolved "https://registry.yarnpkg.com/@depay/web3-exchanges/-/web3-exchanges-15.1.2.tgz#306e3563edc6afd44ce02fc12bb5830bcd82f25f"
+  integrity sha512-3OEagJBGsA6zgIRNUqBcRPHsPc/IbdrIBZFSos5FxG1j/RsWWWqVtZL0pWZFjNk2NcqDzu6lpBA1ZgXZicscZg==
 
 "@depay/web3-mock@^15.1.1":
   version "15.1.1"

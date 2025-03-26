@@ -7,7 +7,7 @@ let routes = await Web3Payments.route({
       blockchain: 'bsc',
       token: '0x55d398326f99059fF775485246999027B3197955',
       amount: 1,
-      toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
+      receiver: '0x08B277154218CCF3380CAE48d630DA13462E3950'
     }
   ],
   from: {
@@ -31,7 +31,7 @@ let routes = await Web3Payments.route({
       blockchain: 'bsc',
       token: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
       amount: 0.0001,
-      toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
+      receiver: '0x08B277154218CCF3380CAE48d630DA13462E3950'
     }
   ],
   from: {
@@ -55,7 +55,7 @@ let routes = await Web3Payments.route({
       blockchain: 'bsc',
       token: '0xb0b195aefa3650a6908f15cdac7d92f8a5791b0b',
       amount: 0.01,
-      toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
+      receiver: '0x08B277154218CCF3380CAE48d630DA13462E3950'
     }
   ],
   from: {
@@ -79,7 +79,7 @@ let routes = await Web3Payments.route({
       blockchain: 'bsc',
       token: '0x2fa5daf6fe0708fbd63b1a7d1592577284f52256',
       amount: 1,
-      toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
+      receiver: '0x08B277154218CCF3380CAE48d630DA13462E3950'
     }
   ],
   from: {
@@ -103,7 +103,7 @@ let routes = await Web3Payments.route({
       blockchain: 'bsc',
       token: Web3Blockchains.bsc.wrapped.address,
       amount: 0.001,
-      toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
+      receiver: '0x08B277154218CCF3380CAE48d630DA13462E3950'
     }
   ],
   from: {

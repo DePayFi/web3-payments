@@ -7,7 +7,7 @@ let routes = await Web3Payments.route({
       blockchain: 'worldchain',
       token: '0x79A02482A880bCE3F13e09Da970dC34db4CD24d1',
       amount: 0.01,
-      toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
+      receiver: '0x08B277154218CCF3380CAE48d630DA13462E3950'
     }
   ],
   from: {

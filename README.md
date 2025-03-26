@@ -31,12 +31,12 @@ let paymentRoutes = await route({
       blockchain: 'ethereum',
       token: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
       amount: 20,
-      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
+      receiver: '0xb0252f13850a4823706607524de0b146820F2240'
     },{
       blockchain: 'solana',
       token: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
       amount: 20,
-      toAddress: '3Hrw6AsNyJAp71Nkgo4tzJwvGM47DzqMdAtf8ojptkXk'
+      receiver: '3Hrw6AsNyJAp71Nkgo4tzJwvGM47DzqMdAtf8ojptkXk'
     }
   ],
   from: {
@@ -54,7 +54,6 @@ This library supports the following blockchains:
 - [BNB Smart Chain](https://www.binance.org/smartChain)
 - [Polygon](https://polygon.technology)
 - [Solana](https://solana.com)
-- [Fantom](https://fantom.foundation)
 - [Arbitrum](https://arbitrum.io)
 - [Avalanche](https://www.avax.network)
 - [Gnosis](https://gnosis.io)
@@ -116,7 +115,7 @@ let paymentRoutes = await route({
     blockchain: 'ethereum',
     token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
     amount: 20,
-    toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
+    receiver: '0xb0252f13850a4823706607524de0b146820F2240'
   }],
   from: {
     ethereum: '0x5Af489c8786A018EC4814194dC8048be1007e390',
@@ -135,12 +134,12 @@ let paymentRoutes = await route({
       blockchain: 'ethereum',
       token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
       amount: 20,
-      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
+      receiver: '0xb0252f13850a4823706607524de0b146820F2240'
     },{
       blockchain: 'bsc',
       token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
       amount: 20,
-      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
+      receiver: '0xb0252f13850a4823706607524de0b146820F2240'
     }
   ],
   from: {
@@ -161,29 +160,6 @@ let paymentRoutes = await route({
   drip: (route)=> {
     // yields every single route
   }
-})
-```
-
-#### fromToken + fromAmount + toToken
-
-In cases where you want to set the `fromToken` and `fromAmount` (instead of the target token and the target amount) when calculating payment routes you can pass `fromToken`, `fromAmount` + `toToken`.
-
-Make sure to NOT pass `token` nor `amount` if you use that option!
-
-```javascript
-import { route } from '@depay/web3-payments'
-
-let paymentRoutes = await route({
-  accept: [
-    {
-      blockchain: 'bsc',
-      fromAmount: 1,
-      fromToken: '0xe9e7cea3dedca5984780bafc599bd69add087d56',
-      toToken: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
-      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
-    }
-  ],
-  from: { bsc: '0x5Af489c8786A018EC4814194dC8048be1007e390' }
 })
 ```
 

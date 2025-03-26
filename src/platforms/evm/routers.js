@@ -3,37 +3,32 @@ const API = [{"inputs":[{"internalType":"address","name":"_PERMIT2","type":"addr
 export default {
 
   ethereum: {
-    address: '0x47e06F93D35De5241C49693f4CB0890320c6D500',
+    address: '0x365f7B56D2fB16C8Af89D7d33b420E4e013461e8',
     api: API
   },
 
   bsc: {
-    address: '0xD7274986A3F6F9A4c8a506999B3C427E04408391',
+    address: '0x5F565EDfB9C446976a9F9910631cfeDb6A87220c',
     api: API
   },
 
   polygon: {
-    address: '0x6DFf786D6AAb5A49594fe10c991270A71DA83b31',
-    api: API
-  },
-
-  fantom: {
-    address: '0x558302715e3011Be6695605c11A65526D2ba2245',
+    address: '0xe04b08Dfc6CaA0F4Ec523a3Ae283Ece7efE00019',
     api: API
   },
 
   avalanche: {
-    address: '0x328FE8bbd30487BB7b5A8eEb909f892E9E229271',
+    address: '0x39E7C98BF4ac3E4C394dD600397f5f7Ee3779BE8',
     api: API
   },
 
   gnosis: {
-    address: '0x8C69bAcfe665d9f5e8BCF8F6B8DE4FD41226930F',
+    address: '0x328FE8bbd30487BB7b5A8eEb909f892E9E229271',
     api: API
   },
 
   arbitrum: {
-    address: '0x8C69bAcfe665d9f5e8BCF8F6B8DE4FD41226930F',
+    address: '0x328FE8bbd30487BB7b5A8eEb909f892E9E229271',
     api: API
   },
 
@@ -43,12 +38,12 @@ export default {
   },
 
   base: {
-    address: '0x8B62F604499c1204573664447D445690E0A0011b',
+    address: '0x48825133EF08327535D0b24d73779E82BE6Ea4d9',
     api: API
   },
 
   worldchain: {
-    address: '0x0Dfb7137bC64b63F7a0de7Cb9CDa178702666220',
+    address: '0x886eb82a7e5E7310F66A0E83748662A17E391eb0',
     api: API
   },
 
