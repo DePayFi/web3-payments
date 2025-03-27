@@ -9,7 +9,7 @@ import { resetCache, getProvider } from '@depay/web3-client-evm'
 import { route, routers } from 'dist/esm/index.evm'
 import Token from '@depay/web3-tokens-evm'
 
-describe('route', ()=> {
+describe('route (evm)', ()=> {
 
   let provider
   const blockchain = 'ethereum'

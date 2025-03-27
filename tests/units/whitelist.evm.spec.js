@@ -7,7 +7,7 @@ import { resetCache, getProvider } from '@depay/web3-client-evm'
 import { route, plugins, routers } from 'dist/esm/index.evm'
 import Token from '@depay/web3-tokens-evm'
 
-describe('whitelist', ()=> {
+describe('whitelist (evm)', ()=> {
 
   let provider
   const blockchain = 'ethereum'
