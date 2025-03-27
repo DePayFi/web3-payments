@@ -11,7 +11,7 @@ const createComputeInstruction = async ({ paymentRoute })=> {
     getFixedPath(paymentRoute.exchangeRoutes[0].path).length > 2 &&
     paymentRoute.exchangeRoutes[0].exchange.name == 'raydium_cl'
   ) {
-    return ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 })
+    return ComputeBudgetProgram.setComputeUnitLimit({ units: 300000 })
   }
 }
 
