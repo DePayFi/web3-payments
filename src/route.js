@@ -393,14 +393,14 @@ let addApproval = (routes) => {
           route.approvalRequired = false
         } else if (allowances[index] != undefined) {
           if(allowances[index][0]) {
-            route.currentRouterAllowance = ethers.BigNumber.from(allowances[index][0])
+            route.currentRouterAllowance = allowances[index][0]
           }
           if(allowances[index][1]) {
-            route.currentPermit2Allowance = ethers.BigNumber.from(allowances[index][1])
+            route.currentPermit2Allowance = allowances[index][1]
           }
           route.approvalRequired = ![
-            routes[index].currentRouterAllowance,
-            routes[index].currentPermit2Allowance
+            routes[index].currentRouterAllowance ? ethers.BigNumber.from(routes[index].currentRouterAllowance) : undefined,
+            routes[index].currentPermit2Allowance ? ethers.BigNumber.from(routes[index].currentPermit2Allowance): undefined
           ].filter(Boolean).some((amount)=>{
             return amount.gte(routes[index].fromAmount)
           })

@@ -11,7 +11,7 @@ import Token from '@depay/web3-tokens-evm'
 
 describe('fee (evm)', ()=> {
 
-let provider
+  let provider
   const blockchain = 'ethereum'
   const accounts = ['0xd8da6bf26964af9d7eed9e03e53415d37aa96045']
   beforeEach(resetMocks)
@@ -113,10 +113,10 @@ let provider
 
       let routes = await route({
         accept: [{
-          toAddress,
           blockchain,
           token: toToken,
           amount: tokenAmountOut,
+          receiver: toAddress,
           fee: {
             receiver: feeReceiver,
             amount: '9%'
@@ -163,7 +163,7 @@ let provider
 
       let routes = await route({
         accept: [{
-          toAddress,
+          receiver: toAddress,
           blockchain,
           token: toToken,
           amount: tokenAmountOut,
@@ -234,7 +234,7 @@ let provider
 
       let routes = await route({
         accept: [{
-          toAddress,
+          receiver: toAddress,
           blockchain,
           token: toToken,
           amount: tokenAmountOut,
@@ -261,7 +261,7 @@ let provider
       expect(()=>{
         route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -277,7 +277,7 @@ let provider
       expect(()=>{
         route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -293,7 +293,7 @@ let provider
       expect(()=>{
         route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -309,7 +309,7 @@ let provider
       expect(()=>{
         route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -325,7 +325,7 @@ let provider
       expect(()=>{
         route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -341,7 +341,7 @@ let provider
       expect(()=>{
         route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -354,7 +354,7 @@ let provider
       expect(()=>{
         route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -370,7 +370,7 @@ let provider
       expect(()=>{
         route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -386,7 +386,7 @@ let provider
       expect(()=>{
         route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -404,7 +404,7 @@ let provider
 
       let routes = await route({
         accept: [{
-          toAddress,
+          receiver: toAddress,
           blockchain,
           token: toToken,
           amount: tokenAmountOut,
@@ -454,7 +454,7 @@ let provider
 
       let routes = await route({
         accept: [{
-          toAddress,
+          receiver: toAddress,
           blockchain,
           token: toToken,
           amount: tokenAmountOut,
@@ -503,7 +503,7 @@ let provider
 
         let routes = await route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -564,7 +564,7 @@ let provider
 
         let routes = await route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -625,7 +625,7 @@ let provider
 
         let routes = await route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -687,7 +687,7 @@ let provider
 
         let routes = await route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,

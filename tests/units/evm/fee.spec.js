@@ -114,10 +114,10 @@ describe('fee', ()=> {
 
       let routes = await route({
         accept: [{
-          toAddress,
           blockchain,
           token: toToken,
           amount: tokenAmountOut,
+          receiver: toAddress,
           fee: {
             receiver: feeReceiver,
             amount: '9%'
@@ -164,7 +164,7 @@ describe('fee', ()=> {
 
       let routes = await route({
         accept: [{
-          toAddress,
+          receiver: toAddress,
           blockchain,
           token: toToken,
           amount: tokenAmountOut,
@@ -235,7 +235,7 @@ describe('fee', ()=> {
 
       let routes = await route({
         accept: [{
-          toAddress,
+          receiver: toAddress,
           blockchain,
           token: toToken,
           amount: tokenAmountOut,
@@ -262,7 +262,7 @@ describe('fee', ()=> {
       expect(()=>{
         route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -278,7 +278,7 @@ describe('fee', ()=> {
       expect(()=>{
         route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -294,7 +294,7 @@ describe('fee', ()=> {
       expect(()=>{
         route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -310,7 +310,7 @@ describe('fee', ()=> {
       expect(()=>{
         route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -326,7 +326,7 @@ describe('fee', ()=> {
       expect(()=>{
         route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -342,7 +342,7 @@ describe('fee', ()=> {
       expect(()=>{
         route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -355,7 +355,7 @@ describe('fee', ()=> {
       expect(()=>{
         route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -371,7 +371,7 @@ describe('fee', ()=> {
       expect(()=>{
         route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -387,7 +387,7 @@ describe('fee', ()=> {
       expect(()=>{
         route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -405,7 +405,7 @@ describe('fee', ()=> {
 
       let routes = await route({
         accept: [{
-          toAddress,
+          receiver: toAddress,
           blockchain,
           token: toToken,
           amount: tokenAmountOut,
@@ -455,7 +455,7 @@ describe('fee', ()=> {
 
       let routes = await route({
         accept: [{
-          toAddress,
+          receiver: toAddress,
           blockchain,
           token: toToken,
           amount: tokenAmountOut,
@@ -504,7 +504,7 @@ describe('fee', ()=> {
 
         let routes = await route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -565,7 +565,7 @@ describe('fee', ()=> {
 
         let routes = await route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -626,7 +626,7 @@ describe('fee', ()=> {
 
         let routes = await route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
@@ -688,7 +688,7 @@ describe('fee', ()=> {
 
         let routes = await route({
           accept: [{
-            toAddress,
+            receiver: toAddress,
             blockchain,
             token: toToken,
             amount: tokenAmountOut,

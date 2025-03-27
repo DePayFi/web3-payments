@@ -63,7 +63,7 @@ describe('routeOrcaSwap', ()=> {
         blockchain,
         token: toToken,
         amount: tokenAmountOut,
-        toAddress,
+        receiver: toAddress,
       }],
       from: { [blockchain]: fromAddress }
     })
@@ -161,7 +161,7 @@ describe('routeOrcaSwap', ()=> {
         blockchain,
         token: toToken,
         amount: tokenAmountOut,
-        toAddress,
+        receiver: toAddress,
         fee: {
           amount: '1%',
           receiver: feeReceiverAddress
@@ -276,7 +276,7 @@ describe('routeOrcaSwap', ()=> {
         blockchain,
         token: toToken,
         amount: tokenAmountOut,
-        toAddress,
+        receiver: toAddress,
         fee: {
           amount: '1%',
           receiver: feeReceiverAddress

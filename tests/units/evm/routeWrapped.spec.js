@@ -49,7 +49,7 @@ describe('route wrapped', ()=> {
         blockchain,
         token: WRAPPED,
         amount: tokenAmountOut,
-        toAddress,
+        receiver: toAddress,
       }],
       from: { [blockchain]: fromAddress }
     })
@@ -90,7 +90,7 @@ describe('route wrapped', ()=> {
         blockchain,
         token: NATIVE,
         amount: tokenAmountOut,
-        toAddress,
+        receiver: toAddress,
       }],
       from: { [blockchain]: fromAddress }
     })

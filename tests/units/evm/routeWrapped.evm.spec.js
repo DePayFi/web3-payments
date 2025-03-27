@@ -8,7 +8,7 @@ import { resetCache, getProvider } from '@depay/web3-client-evm'
 import { route, plugins, routers } from 'dist/esm/index.evm'
 import Token from '@depay/web3-tokens-evm'
 
-describe('route wrapped', ()=> {
+describe('route wrapped (evm)', ()=> {
 
   const blockchain = 'ethereum'
   const accounts = ['0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045']

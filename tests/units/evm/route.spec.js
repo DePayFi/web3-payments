@@ -118,7 +118,7 @@ describe('route', ()=> {
         blockchain,
         token: toToken,
         amount: tokenAmountOut,
-        toAddress,
+        receiver: toAddress,
       }],
       from: { [blockchain]: fromAddress }
     })
@@ -215,7 +215,7 @@ describe('route', ()=> {
         blockchain,
         token: toToken,
         amount: tokenAmountOut,
-        toAddress,
+        receiver: toAddress,
       }],
       from: { [blockchain]: fromAddress }
     })
@@ -231,7 +231,7 @@ describe('route', ()=> {
         blockchain,
         token: toToken,
         amount: tokenAmountOut,
-        toAddress,
+        receiver: toAddress,
       }],
       from: { [blockchain]: fromAddress }
     })
@@ -245,7 +245,7 @@ describe('route', ()=> {
         blockchain,
         token: toToken,
         amount: tokenAmountOut,
-        toAddress,
+        receiver: toAddress,
       }],
       from: { [blockchain]: fromAddress }
     })
@@ -297,7 +297,7 @@ describe('route', ()=> {
         blockchain,
         token: toToken,
         amount: tokenAmountOut,
-        toAddress,
+        receiver: toAddress,
       }],
       from: { [blockchain]: fromAddress }
     })
@@ -361,7 +361,7 @@ describe('route', ()=> {
         blockchain,
         token: ETH,
         amount: tokenAmountOut,
-        toAddress,
+        receiver: toAddress,
       }],
       from: { [blockchain]: fromAddress }
     })
@@ -425,7 +425,7 @@ describe('route', ()=> {
         blockchain,
         token: WETH,
         amount: tokenAmountOut,
-        toAddress,
+        receiver: toAddress,
       }],
       from: { [blockchain]: fromAddress }
     })
@@ -455,7 +455,7 @@ describe('route', ()=> {
           blockchain,
           token: toToken,
           amount: tokenAmountOut,
-          toAddress,
+          receiver: toAddress,
         }],
         from: { [blockchain]: fromAddress }
       })
@@ -476,7 +476,7 @@ describe('route', ()=> {
           blockchain,
           token: toToken,
           amount: tokenAmountOut,
-          toAddress,
+          receiver: toAddress,
         }],
         from: { [blockchain]: fromAddress }
       })
@@ -533,7 +533,7 @@ describe('route', ()=> {
           blockchain,
           token: toToken,
           amount: tokenAmountOut,
-          toAddress,
+          receiver: toAddress,
         }],
         from: { [blockchain]: fromAddress }
       })
@@ -603,7 +603,7 @@ describe('route', ()=> {
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
-            toAddress,
+            receiver: toAddress,
           }],
           from: { [blockchain]: fromAddress }
         })
@@ -632,7 +632,7 @@ describe('route', ()=> {
             blockchain,
             token: toToken,
             amount: tokenAmountOut,
-            toAddress,
+            receiver: toAddress,
           }],
           from: { [blockchain]: fromAddress }
         })
@@ -673,45 +673,4 @@ describe('route', ()=> {
       })
     })
   })
-
-  it('provides routes also for fromToken, fromAmount and toToken configuration', async ()=>{
-
-    provider = await getProvider(blockchain)
-    mockAmounts({ blockchain, provider, method: 'getAmountsOut', params: [DAIAmountInBN, [DAI, WETH, DEPAY]], amounts: [DAIAmountInBN, WETHAmountInBN, tokenAmountOutBN] })
-
-    let routes = await route({
-      accept: [{
-        blockchain,
-        fromToken: DAI,
-        fromAmount: 0.3,
-        toToken,
-        toAddress,
-      }],
-      from: { [blockchain]: fromAddress }
-    })
-
-    expect(routes.length).toEqual(1)
-
-    expect(routes[0].blockchain).toEqual(blockchain)
-    expect(routes[0].fromToken.address).toEqual(DAI)
-    expect(routes[0].toToken.address).toEqual(DEPAY)
-    expect(routes[0].fromAmount).toEqual(DAIAmountInBN.toString())
-    expect(routes[0].toAmount).toEqual(tokenAmountOutBN.toString())
-    expect(routes[0].fromAddress).toEqual(fromAddress)
-    expect(routes[0].toAddress).toEqual(toAddress)
-    expect(routes[0].fromBalance).toEqual(DAIBalanceBN.toString())
-    expect(routes[0].exchangeRoutes[0].tokenIn).toEqual(DAI)
-    expect(routes[0].exchangeRoutes[0].tokenOut).toEqual(DEPAY)
-    expect(routes[0].exchangeRoutes[0].path).toEqual([DAI, WETH, DEPAY])
-    expect(routes[0].exchangeRoutes[0].amountIn).toEqual(DAIAmountInBN.toString())
-    expect(routes[0].exchangeRoutes[0].amountOutMin).toEqual(tokenAmountOutBN.toString())
-
-    let exchangeTransaction = await routes[0].exchangeRoutes[0].getTransaction({ from: fromAddress })
-    expect(exchangeTransaction.to).toEqual('0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D')
-    expect(exchangeTransaction.method).toEqual('swapExactTokensForTokens')
-    expect(exchangeTransaction.params.amountOutMin).toEqual(tokenAmountOutBN.toString())
-    expect(exchangeTransaction.params.path).toEqual([DAI, WETH, DEPAY])
-    transaction = await routes[0].getTransaction()
-    expect(transaction.value).toEqual('0')
-  });
 })

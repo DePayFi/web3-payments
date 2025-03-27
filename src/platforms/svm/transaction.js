@@ -468,7 +468,6 @@ const createEscrowMiddleTokenAccount = async({ paymentRoute })=> {
     { pubkey: new PublicKey(getFixedPath(paymentRoute.exchangeRoutes[0].path)[1]), isSigner: false, isWritable: true },
     { pubkey: await getEscrowMiddleAccountPublicKey({ paymentRoute }), isSigner: false, isWritable: true },
   ]
-  console.log('keys', keys)
 
   const data = Buffer.alloc(routers.solana.api.createEscrowTokenAccount.layout.span)
   routers.solana.api.createEscrowTokenAccount.layout.encode({
@@ -1790,7 +1789,7 @@ const getTransaction = async({ paymentRoute })=> {
     alts: [routers.solana.alt]
   }
 
-  debug(transaction, paymentRoute)
+  // debug(transaction, paymentRoute)
 
   transaction.deadline = deadline
 
