@@ -329,22 +329,14 @@ let addExchangeRoutes = async (routes) => {
   return await Promise.all(
     routes.map((route) => {
       if(route.directTransfer) { return [] }
-      return Promise.all([Exchanges.solana.raydium_cp.route({
+      return Exchanges.route({
         blockchain: route.blockchain,
         tokenIn: route.fromToken.address,
         tokenOut: route.toToken.address,
         amountOutMin: route.toAmount,
         fromAddress: route.fromAddress,
         toAddress: route.toAddress
-      })])
-      // return Exchanges.route({
-      //   blockchain: route.blockchain,
-      //   tokenIn: route.fromToken.address,
-      //   tokenOut: route.toToken.address,
-      //   amountOutMin: route.toAmount,
-      //   fromAddress: route.fromAddress,
-      //   toAddress: route.toAddress
-      // })
+      })
     }),
   ).then((exchangeRoutes) => {
     return routes.map((route, index) => {

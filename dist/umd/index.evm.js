@@ -58471,22 +58471,14 @@
     return await Promise.all(
       routes.map((route) => {
         if(route.directTransfer) { return [] }
-        return Promise.all([Exchanges__default["default"].solana.raydium_cp.route({
+        return Exchanges__default["default"].route({
           blockchain: route.blockchain,
           tokenIn: route.fromToken.address,
           tokenOut: route.toToken.address,
           amountOutMin: route.toAmount,
           fromAddress: route.fromAddress,
           toAddress: route.toAddress
-        })])
-        // return Exchanges.route({
-        //   blockchain: route.blockchain,
-        //   tokenIn: route.fromToken.address,
-        //   tokenOut: route.toToken.address,
-        //   amountOutMin: route.toAmount,
-        //   fromAddress: route.fromAddress,
-        //   toAddress: route.toAddress
-        // })
+        })
       }),
     ).then((exchangeRoutes) => {
       return routes.map((route, index) => {

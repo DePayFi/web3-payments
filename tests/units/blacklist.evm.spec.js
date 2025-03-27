@@ -9,7 +9,7 @@ import { resetCache, getProvider } from '@depay/web3-client-evm'
 import { route, plugins, routers } from 'dist/esm/index.evm'
 import Token from '@depay/web3-tokens-evm'
 
-describe('blacklist', ()=> {
+describe('blacklist (evm)', ()=> {
 
   let provider
   const accounts = ['0xd8da6bf26964af9d7eed9e03e53415d37aa96045']
