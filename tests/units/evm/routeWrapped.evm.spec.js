@@ -48,7 +48,7 @@ describe('route wrapped (evm)', ()=> {
         blockchain,
         token: WRAPPED,
         amount: tokenAmountOut,
-        toAddress,
+        receiver: toAddress,
       }],
       from: { [blockchain]: fromAddress }
     })
@@ -89,7 +89,7 @@ describe('route wrapped (evm)', ()=> {
         blockchain,
         token: NATIVE,
         amount: tokenAmountOut,
-        toAddress,
+        receiver: toAddress,
       }],
       from: { [blockchain]: fromAddress }
     })
