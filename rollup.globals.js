@@ -1,8 +1,5 @@
 export default {
   '@depay/solana-web3.js': 'SolanaWeb3js',
-  '@depay/web3-assets': 'Web3Assets',
-  '@depay/web3-assets-evm': 'Web3Assets',
-  '@depay/web3-assets-svm': 'Web3Assets',
   '@depay/web3-blockchains': 'Web3Blockchains',
   '@depay/web3-client': 'Web3Client',
   '@depay/web3-client-evm': 'Web3Client',

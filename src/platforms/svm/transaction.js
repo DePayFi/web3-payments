@@ -481,7 +481,10 @@ const createEscrowMiddleTokenAccount = async({ paymentRoute })=> {
   })
 }
 
-const getFixedPath = (path)=> path.filter((step)=>step!==Blockchains.solana.currency.address)
+// returns the actual path on the dex without including native currency
+const getFixedPath = (path)=> {
+  return path.map((step)=>step===Blockchains.solana.currency.address ? Blockchains.solana.wrapped.address : step).filter(Boolean)
+}
 
 const getPaymentMethod = ({ paymentRoute })=>{
 
@@ -844,7 +847,6 @@ const routeOrcaSwapSolIn = async({ paymentRoute, deadline }) =>{
 const routeOrcaSwapSolOut = async({ paymentRoute, deadline }) =>{
 
   const senderTokenAccountAddress = await getPaymentSenderTokenAccountAddress({ paymentRoute })
-  const escrowOutWsolPublicKey = await getEscrowInWSolAccountPublicKey()
   const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress })
   const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.orca)
 
@@ -886,7 +888,7 @@ const routeOrcaSwapSolOut = async({ paymentRoute, deadline }) =>{
     // escrow_out_mint
     { pubkey: new PublicKey(Blockchains.solana.wrapped.address), isSigner: false, isWritable: false },
     // escrow_out
-    { pubkey: escrowOutWsolPublicKey, isSigner: false, isWritable: true },
+    { pubkey: await getEscrowOutWSolAccountPublicKey(), isSigner: false, isWritable: true },
     // escrow_out_sol
     { pubkey: await getEscrowSolAccountPublicKey(), isSigner: false, isWritable: true },
     // payment_receiver
@@ -1008,6 +1010,101 @@ const routeOrcaTwoHopSwap = async({ paymentRoute, deadline }) =>{
   })
 }
 
+const routeOrcaTwoHopSwapSolIn = async({ paymentRoute, deadline }) =>{
+
+  const paymentReceiverTokenAccountPublicKey = new PublicKey(await getPaymentReceiverTokenAccountAddress({ paymentRoute }))
+  const feeReceiverTokenAccountPublicKey = paymentRoute.fee ? new PublicKey(await getFeeReceiverTokenAccountAddress({ paymentRoute })) : paymentReceiverTokenAccountPublicKey
+  const feeReceiver2TokenAccountPublicKey = paymentRoute.fee2 ? new PublicKey(await getFee2ReceiverTokenAccountAddress({ paymentRoute })) : paymentReceiverTokenAccountPublicKey
+  const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute })
+  const escrowMiddlePublicKey = await getEscrowMiddleAccountPublicKey({ paymentRoute })
+  const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress })
+  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.orca)
+  const senderTokenAccountPublicKey = new PublicKey(await getPaymentSenderTokenAccountAddress({ paymentRoute }))
+
+  const SWAP_LAYOUT = struct([
+    u64("anchorDiscriminator"),
+    u64("amount"),
+    u64("otherAmountThreshold"),
+    bool("amountSpecifiedIsInput"),
+    bool("aToBOne"),
+    bool("aToBTwo"),
+    u128("sqrtPriceLimitOne"),
+    u128("sqrtPriceLimitTwo"),
+  ])
+  const exchangeRouteSwapInstructionData = SWAP_LAYOUT.decode(exchangeRouteSwapInstruction.data)
+
+  const keys = [
+    // system_program
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    // token_program
+    { pubkey: new PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
+    // amm_program
+    { pubkey: new PublicKey(routers.solana.exchanges.orca), isSigner: false, isWritable: false },
+    // sender
+    { pubkey: new PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
+    // escrow_in
+    { pubkey: await getEscrowInWSolAccountPublicKey(), isSigner: false, isWritable: true },
+    // whirlpool_one
+    exchangeRouteSwapInstruction.keys[2],
+    // whirlpool_two
+    exchangeRouteSwapInstruction.keys[3],
+    // token_vault_one_a
+    exchangeRouteSwapInstruction.keys[5],
+    // token_vault_one_b
+    exchangeRouteSwapInstruction.keys[7],
+    // token_vault_two_a
+    exchangeRouteSwapInstruction.keys[9],
+    // token_vault_two_b
+    exchangeRouteSwapInstruction.keys[11],
+    // tick_array_one_0
+    exchangeRouteSwapInstruction.keys[12],
+    // tick_array_one_1
+    exchangeRouteSwapInstruction.keys[13],
+    // tick_array_one_2
+    exchangeRouteSwapInstruction.keys[14],
+    // tick_array_two_0
+    exchangeRouteSwapInstruction.keys[15],
+    // tick_array_two_1
+    exchangeRouteSwapInstruction.keys[16],
+    // tick_array_two_2
+    exchangeRouteSwapInstruction.keys[17],
+    // oracle_one
+    { pubkey: exchangeRouteSwapInstruction.keys[18].pubkey, isSigner: false, isWritable: true },
+    // oracle_two
+    { pubkey: exchangeRouteSwapInstruction.keys[19].pubkey, isSigner: false, isWritable: true },
+    // escrow_middle
+    { pubkey: escrowMiddlePublicKey, isSigner: false, isWritable: true },
+    // escrow_out
+    { pubkey: escrowOutPublicKey, isSigner: false, isWritable: true },
+    // payment_receiver
+    { pubkey: paymentReceiverTokenAccountPublicKey, isSigner: false, isWritable: true },
+    // fee_receiver
+    { pubkey: feeReceiverTokenAccountPublicKey, isSigner: false, isWritable: true },
+    // fee_receiver2
+    { pubkey: feeReceiver2TokenAccountPublicKey, isSigner: false, isWritable: true },
+  ]
+
+  const data = Buffer.alloc(routers.solana.api.routeOrcaTwoHopSwapSolIn.layout.span)
+  routers.solana.api.routeOrcaTwoHopSwapSolIn.layout.encode({
+    anchorDiscriminator: routers.solana.api.routeOrcaTwoHopSwapSolIn.anchorDiscriminator,
+    amountInOne: new BN(paymentRoute.exchangeRoutes[0].amounts[0].toString()),
+    amountInTwo: new BN(paymentRoute.exchangeRoutes[0].amounts[1].toString()),
+    aToBOne: exchangeRouteSwapInstructionData.aToBOne,
+    aToBTwo: exchangeRouteSwapInstructionData.aToBTwo,
+    paymentAmount: new BN(paymentRoute.toAmount.toString()),
+    feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
+    feeAmount2: new BN((paymentRoute.feeAmount2 || '0').toString()),
+    protocolAmount: new BN((paymentRoute.protocolFeeAmount || '0').toString()),
+    deadline: new BN(deadline),
+  }, data)
+
+  return new TransactionInstruction({ 
+    keys,
+    programId: new PublicKey(routers.solana.address),
+    data
+  })
+}
+
 const routeOrcaTwoHopSwapSolOut = async({ paymentRoute, deadline }) =>{
 
   const middleTokenAccountPublicKey = new PublicKey(await getMiddleTokenAccountAddress({ paymentRoute }))
@@ -1069,8 +1166,10 @@ const routeOrcaTwoHopSwapSolOut = async({ paymentRoute, deadline }) =>{
     { pubkey: exchangeRouteSwapInstruction.keys[19].pubkey, isSigner: false, isWritable: true },
     // escrow_middle
     { pubkey: escrowMiddlePublicKey, isSigner: false, isWritable: true },
+    // escrow_out_mint
+    { pubkey: new PublicKey(Blockchains.solana.wrapped.address), isSigner: false, isWritable: false },
     // escrow_out
-    { pubkey: await getEscrowInWSolAccountPublicKey(), isSigner: false, isWritable: true },
+    { pubkey: await getEscrowOutWSolAccountPublicKey(), isSigner: false, isWritable: true },
     // escrow_out_sol
     { pubkey: await getEscrowSolAccountPublicKey(), isSigner: false, isWritable: true },
     // payment_receiver
@@ -1165,10 +1264,73 @@ const routeRaydiumCpSwap = async({ paymentRoute, deadline }) =>{
   })
 }
 
+const routeRaydiumCpSwapSolIn = async({ paymentRoute, deadline }) =>{
+
+  const paymentReceiverTokenAccountAddress = await getPaymentReceiverTokenAccountAddress({ paymentRoute })
+  const feeReceiverTokenAccountAddress = paymentRoute.fee ? await getFeeReceiverTokenAccountAddress({ paymentRoute }) : paymentReceiverTokenAccountAddress
+  const fee2ReceiverTokenAccountAddress = paymentRoute.fee2 ? await getFee2ReceiverTokenAccountAddress({ paymentRoute }) : paymentReceiverTokenAccountAddress
+  const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute })
+  const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress })
+  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.raydiumCP)
+
+  const keys = [
+    // system_program
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    // token_program
+    { pubkey: new PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
+    // cp_swap_program
+    { pubkey: new PublicKey(routers.solana.exchanges.raydiumCP), isSigner: false, isWritable: false },
+    // sender
+    { pubkey: new PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
+    // authority
+    exchangeRouteSwapInstruction.keys[1],
+    // amm_config
+    exchangeRouteSwapInstruction.keys[2],
+    // pool_state
+    exchangeRouteSwapInstruction.keys[3],
+    // escrow_in
+    { pubkey: await getEscrowInWSolAccountPublicKey(), isSigner: false, isWritable: true },
+    // input_vault
+    exchangeRouteSwapInstruction.keys[6],
+    // output_vault
+    exchangeRouteSwapInstruction.keys[7],
+    // input_token_mint
+    exchangeRouteSwapInstruction.keys[10],
+    // output_token_mint
+    exchangeRouteSwapInstruction.keys[11],
+    // observation_state
+    exchangeRouteSwapInstruction.keys[12],
+    // escrow_out
+    { pubkey: escrowOutPublicKey, isSigner: false, isWritable: true },
+    // payment_receiver
+    { pubkey: new PublicKey(paymentReceiverTokenAccountAddress), isSigner: false, isWritable: true },
+    // fee_receiver
+    { pubkey: new PublicKey(feeReceiverTokenAccountAddress), isSigner: false, isWritable: true },
+    // fee_receiver2
+    { pubkey: new PublicKey(fee2ReceiverTokenAccountAddress), isSigner: false, isWritable: true },
+  ]
+
+  const data = Buffer.alloc(routers.solana.api.routeRaydiumCpSwapSolIn.layout.span)
+  routers.solana.api.routeRaydiumCpSwapSolIn.layout.encode({
+    anchorDiscriminator: routers.solana.api.routeRaydiumCpSwapSolIn.anchorDiscriminator,
+    amountIn: new BN(paymentRoute.fromAmount.toString()),
+    paymentAmount: new BN(paymentRoute.toAmount.toString()),
+    feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
+    feeAmount2: new BN((paymentRoute.feeAmount2 || '0').toString()),
+    protocolAmount: new BN((paymentRoute.protocolFeeAmount || '0').toString()),
+    deadline: new BN(deadline),
+  }, data)
+  
+  return new TransactionInstruction({ 
+    keys,
+    programId: new PublicKey(routers.solana.address),
+    data
+  })
+}
+
 const routeRaydiumCpSwapSolOut = async({ paymentRoute, deadline }) =>{
 
   const senderTokenAccountAddress = await getPaymentSenderTokenAccountAddress({ paymentRoute })
-  const escrowOutWsolPublicKey = await getEscrowInWSolAccountPublicKey()
   const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress })
   const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.raydiumCP)
 
@@ -1200,7 +1362,7 @@ const routeRaydiumCpSwapSolOut = async({ paymentRoute, deadline }) =>{
     // observation_state
     exchangeRouteSwapInstruction.keys[12],
     // escrow_out
-    { pubkey: escrowOutWsolPublicKey, isSigner: false, isWritable: true },
+    { pubkey: await getEscrowOutWSolAccountPublicKey(), isSigner: false, isWritable: true },
     // escrow_out_sol
     { pubkey: await getEscrowSolAccountPublicKey(), isSigner: false, isWritable: true },
     // payment_receiver
@@ -1222,7 +1384,7 @@ const routeRaydiumCpSwapSolOut = async({ paymentRoute, deadline }) =>{
     deadline: new BN(deadline),
   }, data)
   
-  return new TransactionInstruction({ 
+  return new TransactionInstruction({
     keys,
     programId: new PublicKey(routers.solana.address),
     data
@@ -1780,7 +1942,6 @@ const getTransaction = async({ paymentRoute })=> {
       payment({ paymentRoute, deadline }),
     ])
   )
-  console.log('instructions', instructions)
   instructions = instructions.filter(Boolean).flat()
 
   const transaction = {
@@ -1789,7 +1950,7 @@ const getTransaction = async({ paymentRoute })=> {
     alts: [routers.solana.alt]
   }
 
-  // debug(transaction, paymentRoute)
+  debug(transaction, paymentRoute)
 
   transaction.deadline = deadline
 

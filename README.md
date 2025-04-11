@@ -13,13 +13,13 @@ npm install --save @depay/web3-payments
 Make sure you install all required dependencies too:
 
 ```
-yarn add @depay/web3-assets @depay/web3-constants @depay/web3-exchanges @depay/web3-tokens ethers decimal.js
+yarn add @depay/web3-constants @depay/web3-exchanges @depay/web3-tokens ethers decimal.js
 ```
 
 or if you use npm
 
 ```
-npm i @depay/web3-assets @depay/web3-constants @depay/web3-exchanges @depay/web3-tokens ethers decimal.js
+npm i @depay/web3-constants @depay/web3-exchanges @depay/web3-tokens ethers decimal.js
 ```
 
 ```javascript
@@ -74,13 +74,13 @@ import { route } from '@depay/web3-payments-evm'
 Make sure you install all required dependencies for evm specific packaging too:
 
 ```
-yarn add @depay/web3-blockchains @depay/web3-assets-evm @depay/web3-exchanges-evm @depay/web3-tokens-evm ethers decimal.js
+yarn add @depay/web3-blockchains @depay/web3-exchanges-evm @depay/web3-tokens-evm ethers decimal.js
 ```
 
 or if you use npm
 
 ```
-npm i @depay/web3-blockchains @depay/web3-assets-evm @depay/web3-exchanges-evm @depay/web3-tokens-evm ethers decimal.js
+npm i @depay/web3-blockchains @depay/web3-exchanges-evm @depay/web3-tokens-evm ethers decimal.js
 ```
 
 ### SVM (Solana Virtual Machine) platform specific packaging
@@ -92,13 +92,13 @@ import { route } from '@depay/web3-payments-svm'
 Make sure you install all required dependencies for solana specific packaging too:
 
 ```
-yarn add @depay/web3-blockchains @depay/web3-assets-svm @depay/web3-exchanges-svm @depay/web3-tokens-svm @depay/solana-web3.js
+yarn add @depay/web3-blockchains @depay/web3-exchanges-svm @depay/web3-tokens-svm @depay/solana-web3.js
 ```
 
 or if you use npm
 
 ```
-npm i @depay/web3-blockchains @depay/web3-assets-svm @depay/web3-exchanges-svm @depay/web3-tokens-svm @depay/solana-web3.js
+npm i @depay/web3-blockchains @depay/web3-exchanges-svm @depay/web3-tokens-svm @depay/solana-web3.js
 ```
 
 ## Functionalities
@@ -163,14 +163,14 @@ let paymentRoutes = await route({
 })
 ```
 
-#### whitelist
+#### allow (list)
 
-Allows only fromTokens (from the sender) that are part of the whitelist:
+Allows only fromTokens (from the sender) that are part of the allow list:
 
 ```javacript
 let paymentRoutes = await route({
 
-  whitelist: {
+  allow: {
     ethereum: [
       '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // ETH
       '0xdac17f958d2ee523a2206206994597c13d831ec7', // USDT
@@ -186,14 +186,14 @@ let paymentRoutes = await route({
 
 ```
 
-#### blacklist
+#### deny (list)
 
 Filters fromTokens to not be used for payment routing:
 
 ```javacript
 let paymentRoutes = await route({
 
-  blacklist: {
+  deny: {
     ethereum: [
       '0x6b175474e89094c44da98b954eedeac495271d0f'  // DAI
     ],
@@ -340,7 +340,6 @@ Payment routes are provided in the following structure:
   protocolFee: String (e.g. '1.5%')
   protocolFeeAmount: BigNumber (e.g. <BigNumber '2100000000000000000'>)
   exchangeRoutes: Array (list of exchange routes offering to convert )
-  directTransfer: Boolean (e.g. true)
   currentRouterAllowance: BigNumber (e.g. <BigNumber '2100000000000000000'>)
   currentPermit2Allowance: BigNumber (e.g. <BigNumber '2100000000000000000'>)
   approvalRequired: Boolean (e.g. true)
@@ -350,8 +349,6 @@ Payment routes are provided in the following structure:
   getTransaction: async (options)=> Transaction (see @depay/web3-wallets for details), options can contain { wallet }
 }
 ```
-
-`directTransfer`: Indicates if the payment is a direct transfer and does not go through the DePay payment router smart contract.
 
 `currentRouterAllowance`: Provides the current set allowance for the payment router as BigNumber.
 
