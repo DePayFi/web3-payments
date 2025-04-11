@@ -411,7 +411,7 @@ wallet.sendTransaction(transaction)
 
 ## routeRaydiumCPTwoHopSwap (TOKEN<>TOKEN<>TOKEN)
 
-??? PENDING (to be added in web3-exchanges first)
+??? PENDING (no intermediary USDC/USDT to WSOL on CP yet, to be added in web3-exchanges first)
 
 ## routeRaydiumCPTwoHopSwapSolIn (SOL->WSOL<>TOKEN<>TOKEN)
 
@@ -423,7 +423,7 @@ wallet.sendTransaction(transaction)
 
 ## routeRaydiumCLSwap (TOKEN<>TOKEN)
 
-???
+https://solscan.io/tx/5jZShBn46yHQu8AdLJu1hJDtpLfH19dt1u2y8937F934J26mr9JpDSNiX9QjNaeV2ptaDADZzypmLFWxTHruzBX9
 
 ```javascript
 let paymentRoutes = await Web3Payments.route({
@@ -447,7 +447,7 @@ let paymentRoutes = await Web3Payments.route({
   }
 })
 
-let transaction = await paymentRoutes[3].getTransaction()
+let transaction = await paymentRoutes[4].getTransaction()
 
 let wallet = (await Web3Wallets.getWallets())[1]
 
@@ -460,13 +460,13 @@ wallet.sendTransaction(transaction)
 
 ## routeRaydiumCLSwapSolIn (SOL->WSOL<>TOKEN)
 
-???
+https://solscan.io/tx/4yGTbXzLvjym6xoKE7cqoB1MjJdZp9TsuDAHZVAPE43DcryVFG9kK2DUrcSZ99EzEq6w5AmkBP47NvshLo4ERRAs
 
 ```javascript
 let paymentRoutes = await Web3Payments.route({
   accept: [{
     blockchain: 'solana',
-    token: 'MEFNBXixkEbait3xn9bkm8WsJzXtVsaJEn4c8Sam21u',
+    token: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
     amount: 0.01,
     receiver: '3YrWvZAwNiBcMi6PigTRNHRuiTJ8jatwxgRYEx784oHW',
     fee: {
@@ -484,7 +484,7 @@ let paymentRoutes = await Web3Payments.route({
   }
 })
 
-let transaction = await paymentRoutes[0].getTransaction()
+let transaction = await paymentRoutes[1].getTransaction()
 
 let wallet = (await Web3Wallets.getWallets())[1]
 
@@ -497,7 +497,7 @@ wallet.sendTransaction(transaction)
 
 ## routeRaydiumCLSwapSolOut (TOKEN<>WSOL->SOL)
 
-???
+https://solscan.io/tx/2KKwrmAsiBMdjhKtRhPJLJqJQGxZASbCb6PTk1R6AriBhN5hAT1guMNJ43ZwmLLB6mrDeNHfbat7airctCW7p98s
 
 ```javascript
 let paymentRoutes = await Web3Payments.route({
@@ -521,7 +521,7 @@ let paymentRoutes = await Web3Payments.route({
   }
 })
 
-let transaction = await paymentRoutes[2].getTransaction()
+let transaction = await paymentRoutes[5].getTransaction()
 
 let wallet = (await Web3Wallets.getWallets())[1]
 
@@ -534,7 +534,7 @@ wallet.sendTransaction(transaction)
 
 ## routeRaydiumCLTwoHopSwap (TOKEN<>TOKEN<>TOKEN)
 
-???
+https://solscan.io/tx/4XprhzwNT2cxWStBZAamtEbaFLWZrrvYZVV94M87uGRG1QwNGG6YQVcD42VXT24BqvboPv7Svd5r3tNX6zsQRr5F
 
 ```javascript
 let paymentRoutes = await Web3Payments.route({
@@ -571,7 +571,7 @@ wallet.sendTransaction(transaction)
 
 ## routeRaydiumCLTwoHopSwapSolIn (SOL->WSOL<>TOKEN<>TOKEN)
 
-???
+https://solscan.io/tx/32t9zTEqULXR8qxY7HhNAadQDz2ECPusKDxCXGZppyTAegxoAm3riEGkHFuFjA4yQJP8yUBdgvEedEpy6dPuzVji
 
 ```javascript
 let paymentRoutes = await Web3Payments.route({
@@ -608,7 +608,7 @@ wallet.sendTransaction(transaction)
 
 ## routeRaydiumCLTwoHopSwapSolOut (TOKEN<>TOKEN<>WSOL->SOL)
 
-???
+https://solscan.io/tx/5441Pd21UA2CPk7oFV2buduDgX47V3Dj1rFuN6vSqCGdLid7mvXgpjvLqWapFrvsWpj8drB2ea85aDeWoke4GYUe
 
 ```javascript
 let paymentRoutes = await Web3Payments.route({
@@ -632,7 +632,7 @@ let paymentRoutes = await Web3Payments.route({
   }
 })
 
-let transaction = await paymentRoutes[2].getTransaction()
+let transaction = await paymentRoutes[3].getTransaction()
 
 let wallet = (await Web3Wallets.getWallets())[1]
 

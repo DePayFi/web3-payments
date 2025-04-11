@@ -1,8 +1,7 @@
 import Blockchains from '@depay/web3-blockchains';
-import { BN, struct, u64, i64, bool, u8, Connection, ACCOUNT_LAYOUT, PublicKey, ComputeBudgetProgram, SystemProgram, Buffer, TransactionInstruction, u128 } from '@depay/solana-web3.js';
+import { BN, struct, u64, i64, bool, u8, Connection, ACCOUNT_LAYOUT, PublicKey, TransactionMessage, VersionedTransaction, ComputeBudgetProgram, SystemProgram, Buffer, TransactionInstruction, u128 } from '@depay/solana-web3.js';
 import { ethers } from 'ethers';
 import Token from '@depay/web3-tokens';
-import { dripAssets } from '@depay/web3-assets';
 import Exchanges from '@depay/web3-exchanges';
 
 var svmRouters = {
@@ -1569,7 +1568,10 @@ const createEscrowMiddleTokenAccount = async({ paymentRoute })=> {
   })
 };
 
-const getFixedPath = (path)=> path.filter((step)=>step!==Blockchains.solana.currency.address);
+// returns the actual path on the dex without including native currency
+const getFixedPath = (path)=> {
+  return path.map((step)=>step===Blockchains.solana.currency.address ? Blockchains.solana.wrapped.address : step).filter(Boolean)
+};
 
 const getPaymentMethod = ({ paymentRoute })=>{
 
@@ -1932,7 +1934,6 @@ const routeOrcaSwapSolIn = async({ paymentRoute, deadline }) =>{
 const routeOrcaSwapSolOut = async({ paymentRoute, deadline }) =>{
 
   const senderTokenAccountAddress = await getPaymentSenderTokenAccountAddress({ paymentRoute });
-  const escrowOutWsolPublicKey = await getEscrowInWSolAccountPublicKey();
   const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
   const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === svmRouters.solana.exchanges.orca);
 
@@ -1974,7 +1975,7 @@ const routeOrcaSwapSolOut = async({ paymentRoute, deadline }) =>{
     // escrow_out_mint
     { pubkey: new PublicKey(Blockchains.solana.wrapped.address), isSigner: false, isWritable: false },
     // escrow_out
-    { pubkey: escrowOutWsolPublicKey, isSigner: false, isWritable: true },
+    { pubkey: await getEscrowOutWSolAccountPublicKey(), isSigner: false, isWritable: true },
     // escrow_out_sol
     { pubkey: await getEscrowSolAccountPublicKey(), isSigner: false, isWritable: true },
     // payment_receiver
@@ -2096,6 +2097,101 @@ const routeOrcaTwoHopSwap = async({ paymentRoute, deadline }) =>{
   })
 };
 
+const routeOrcaTwoHopSwapSolIn = async({ paymentRoute, deadline }) =>{
+
+  const paymentReceiverTokenAccountPublicKey = new PublicKey(await getPaymentReceiverTokenAccountAddress({ paymentRoute }));
+  const feeReceiverTokenAccountPublicKey = paymentRoute.fee ? new PublicKey(await getFeeReceiverTokenAccountAddress({ paymentRoute })) : paymentReceiverTokenAccountPublicKey;
+  const feeReceiver2TokenAccountPublicKey = paymentRoute.fee2 ? new PublicKey(await getFee2ReceiverTokenAccountAddress({ paymentRoute })) : paymentReceiverTokenAccountPublicKey;
+  const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
+  const escrowMiddlePublicKey = await getEscrowMiddleAccountPublicKey({ paymentRoute });
+  const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
+  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === svmRouters.solana.exchanges.orca);
+  new PublicKey(await getPaymentSenderTokenAccountAddress({ paymentRoute }));
+
+  const SWAP_LAYOUT = struct([
+    u64("anchorDiscriminator"),
+    u64("amount"),
+    u64("otherAmountThreshold"),
+    bool("amountSpecifiedIsInput"),
+    bool("aToBOne"),
+    bool("aToBTwo"),
+    u128("sqrtPriceLimitOne"),
+    u128("sqrtPriceLimitTwo"),
+  ]);
+  const exchangeRouteSwapInstructionData = SWAP_LAYOUT.decode(exchangeRouteSwapInstruction.data);
+
+  const keys = [
+    // system_program
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    // token_program
+    { pubkey: new PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
+    // amm_program
+    { pubkey: new PublicKey(svmRouters.solana.exchanges.orca), isSigner: false, isWritable: false },
+    // sender
+    { pubkey: new PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
+    // escrow_in
+    { pubkey: await getEscrowInWSolAccountPublicKey(), isSigner: false, isWritable: true },
+    // whirlpool_one
+    exchangeRouteSwapInstruction.keys[2],
+    // whirlpool_two
+    exchangeRouteSwapInstruction.keys[3],
+    // token_vault_one_a
+    exchangeRouteSwapInstruction.keys[5],
+    // token_vault_one_b
+    exchangeRouteSwapInstruction.keys[7],
+    // token_vault_two_a
+    exchangeRouteSwapInstruction.keys[9],
+    // token_vault_two_b
+    exchangeRouteSwapInstruction.keys[11],
+    // tick_array_one_0
+    exchangeRouteSwapInstruction.keys[12],
+    // tick_array_one_1
+    exchangeRouteSwapInstruction.keys[13],
+    // tick_array_one_2
+    exchangeRouteSwapInstruction.keys[14],
+    // tick_array_two_0
+    exchangeRouteSwapInstruction.keys[15],
+    // tick_array_two_1
+    exchangeRouteSwapInstruction.keys[16],
+    // tick_array_two_2
+    exchangeRouteSwapInstruction.keys[17],
+    // oracle_one
+    { pubkey: exchangeRouteSwapInstruction.keys[18].pubkey, isSigner: false, isWritable: true },
+    // oracle_two
+    { pubkey: exchangeRouteSwapInstruction.keys[19].pubkey, isSigner: false, isWritable: true },
+    // escrow_middle
+    { pubkey: escrowMiddlePublicKey, isSigner: false, isWritable: true },
+    // escrow_out
+    { pubkey: escrowOutPublicKey, isSigner: false, isWritable: true },
+    // payment_receiver
+    { pubkey: paymentReceiverTokenAccountPublicKey, isSigner: false, isWritable: true },
+    // fee_receiver
+    { pubkey: feeReceiverTokenAccountPublicKey, isSigner: false, isWritable: true },
+    // fee_receiver2
+    { pubkey: feeReceiver2TokenAccountPublicKey, isSigner: false, isWritable: true },
+  ];
+
+  const data = Buffer.alloc(svmRouters.solana.api.routeOrcaTwoHopSwapSolIn.layout.span);
+  svmRouters.solana.api.routeOrcaTwoHopSwapSolIn.layout.encode({
+    anchorDiscriminator: svmRouters.solana.api.routeOrcaTwoHopSwapSolIn.anchorDiscriminator,
+    amountInOne: new BN(paymentRoute.exchangeRoutes[0].amounts[0].toString()),
+    amountInTwo: new BN(paymentRoute.exchangeRoutes[0].amounts[1].toString()),
+    aToBOne: exchangeRouteSwapInstructionData.aToBOne,
+    aToBTwo: exchangeRouteSwapInstructionData.aToBTwo,
+    paymentAmount: new BN(paymentRoute.toAmount.toString()),
+    feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
+    feeAmount2: new BN((paymentRoute.feeAmount2 || '0').toString()),
+    protocolAmount: new BN((paymentRoute.protocolFeeAmount || '0').toString()),
+    deadline: new BN(deadline),
+  }, data);
+
+  return new TransactionInstruction({ 
+    keys,
+    programId: new PublicKey(svmRouters.solana.address),
+    data
+  })
+};
+
 const routeOrcaTwoHopSwapSolOut = async({ paymentRoute, deadline }) =>{
 
   new PublicKey(await getMiddleTokenAccountAddress({ paymentRoute }));
@@ -2157,8 +2253,10 @@ const routeOrcaTwoHopSwapSolOut = async({ paymentRoute, deadline }) =>{
     { pubkey: exchangeRouteSwapInstruction.keys[19].pubkey, isSigner: false, isWritable: true },
     // escrow_middle
     { pubkey: escrowMiddlePublicKey, isSigner: false, isWritable: true },
+    // escrow_out_mint
+    { pubkey: new PublicKey(Blockchains.solana.wrapped.address), isSigner: false, isWritable: false },
     // escrow_out
-    { pubkey: await getEscrowInWSolAccountPublicKey(), isSigner: false, isWritable: true },
+    { pubkey: await getEscrowOutWSolAccountPublicKey(), isSigner: false, isWritable: true },
     // escrow_out_sol
     { pubkey: await getEscrowSolAccountPublicKey(), isSigner: false, isWritable: true },
     // payment_receiver
@@ -2253,10 +2351,73 @@ const routeRaydiumCpSwap = async({ paymentRoute, deadline }) =>{
   })
 };
 
+const routeRaydiumCpSwapSolIn = async({ paymentRoute, deadline }) =>{
+
+  const paymentReceiverTokenAccountAddress = await getPaymentReceiverTokenAccountAddress({ paymentRoute });
+  const feeReceiverTokenAccountAddress = paymentRoute.fee ? await getFeeReceiverTokenAccountAddress({ paymentRoute }) : paymentReceiverTokenAccountAddress;
+  const fee2ReceiverTokenAccountAddress = paymentRoute.fee2 ? await getFee2ReceiverTokenAccountAddress({ paymentRoute }) : paymentReceiverTokenAccountAddress;
+  const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
+  const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
+  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === svmRouters.solana.exchanges.raydiumCP);
+
+  const keys = [
+    // system_program
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    // token_program
+    { pubkey: new PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
+    // cp_swap_program
+    { pubkey: new PublicKey(svmRouters.solana.exchanges.raydiumCP), isSigner: false, isWritable: false },
+    // sender
+    { pubkey: new PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
+    // authority
+    exchangeRouteSwapInstruction.keys[1],
+    // amm_config
+    exchangeRouteSwapInstruction.keys[2],
+    // pool_state
+    exchangeRouteSwapInstruction.keys[3],
+    // escrow_in
+    { pubkey: await getEscrowInWSolAccountPublicKey(), isSigner: false, isWritable: true },
+    // input_vault
+    exchangeRouteSwapInstruction.keys[6],
+    // output_vault
+    exchangeRouteSwapInstruction.keys[7],
+    // input_token_mint
+    exchangeRouteSwapInstruction.keys[10],
+    // output_token_mint
+    exchangeRouteSwapInstruction.keys[11],
+    // observation_state
+    exchangeRouteSwapInstruction.keys[12],
+    // escrow_out
+    { pubkey: escrowOutPublicKey, isSigner: false, isWritable: true },
+    // payment_receiver
+    { pubkey: new PublicKey(paymentReceiverTokenAccountAddress), isSigner: false, isWritable: true },
+    // fee_receiver
+    { pubkey: new PublicKey(feeReceiverTokenAccountAddress), isSigner: false, isWritable: true },
+    // fee_receiver2
+    { pubkey: new PublicKey(fee2ReceiverTokenAccountAddress), isSigner: false, isWritable: true },
+  ];
+
+  const data = Buffer.alloc(svmRouters.solana.api.routeRaydiumCpSwapSolIn.layout.span);
+  svmRouters.solana.api.routeRaydiumCpSwapSolIn.layout.encode({
+    anchorDiscriminator: svmRouters.solana.api.routeRaydiumCpSwapSolIn.anchorDiscriminator,
+    amountIn: new BN(paymentRoute.fromAmount.toString()),
+    paymentAmount: new BN(paymentRoute.toAmount.toString()),
+    feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
+    feeAmount2: new BN((paymentRoute.feeAmount2 || '0').toString()),
+    protocolAmount: new BN((paymentRoute.protocolFeeAmount || '0').toString()),
+    deadline: new BN(deadline),
+  }, data);
+  
+  return new TransactionInstruction({ 
+    keys,
+    programId: new PublicKey(svmRouters.solana.address),
+    data
+  })
+};
+
 const routeRaydiumCpSwapSolOut = async({ paymentRoute, deadline }) =>{
 
   const senderTokenAccountAddress = await getPaymentSenderTokenAccountAddress({ paymentRoute });
-  const escrowOutWsolPublicKey = await getEscrowInWSolAccountPublicKey();
   const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
   const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === svmRouters.solana.exchanges.raydiumCP);
 
@@ -2288,7 +2449,7 @@ const routeRaydiumCpSwapSolOut = async({ paymentRoute, deadline }) =>{
     // observation_state
     exchangeRouteSwapInstruction.keys[12],
     // escrow_out
-    { pubkey: escrowOutWsolPublicKey, isSigner: false, isWritable: true },
+    { pubkey: await getEscrowOutWSolAccountPublicKey(), isSigner: false, isWritable: true },
     // escrow_out_sol
     { pubkey: await getEscrowSolAccountPublicKey(), isSigner: false, isWritable: true },
     // payment_receiver
@@ -2310,7 +2471,7 @@ const routeRaydiumCpSwapSolOut = async({ paymentRoute, deadline }) =>{
     deadline: new BN(deadline),
   }, data);
   
-  return new TransactionInstruction({ 
+  return new TransactionInstruction({
     keys,
     programId: new PublicKey(svmRouters.solana.address),
     data
@@ -2868,7 +3029,6 @@ const getTransaction$3 = async({ paymentRoute })=> {
       payment({ paymentRoute, deadline }),
     ])
   );
-  console.log('instructions', instructions);
   instructions = instructions.filter(Boolean).flat();
 
   const transaction = {
@@ -2877,11 +3037,37 @@ const getTransaction$3 = async({ paymentRoute })=> {
     alts: [svmRouters.solana.alt]
   };
 
-  // debug(transaction, paymentRoute)
+  debug(transaction, paymentRoute);
 
   transaction.deadline = deadline;
 
   return transaction
+};
+
+const debug = async(transaction, paymentRoute)=>{
+  console.log('transaction.instructions.length', transaction.instructions.length);
+  transaction.instructions.forEach((instruction)=>{
+    console.log('------');
+    console.log(instruction.keys.map((key)=>key.pubkey.toString()));
+  });
+  const provider = await getProvider('solana');
+  let recentBlockhash = (await provider.getLatestBlockhash()).blockhash;
+  console.log('transaction.alts', transaction.alts.map((alt)=>alt.toString()));
+  const messageV0 = new TransactionMessage({
+    payerKey: new PublicKey(paymentRoute.fromAddress),
+    recentBlockhash,
+    instructions: transaction.instructions,
+  }).compileToV0Message(
+    transaction.alts ? await Promise.all(transaction.alts.map(async(alt)=>{
+      return provider.getAddressLookupTable(new PublicKey(alt)).then((res) => res.value)
+    })) : undefined
+  );
+  const tx = new VersionedTransaction(messageV0);
+
+  let result;
+  try{ result = await provider.simulateTransaction(tx); } catch(e) { console.log('error', e); }
+  console.log('SIMULATE');
+  console.log('SIMULATION RESULT', result);
 };
 
 const API = [{"inputs":[{"internalType":"address","name":"_PERMIT2","type":"address"},{"internalType":"address","name":"_FORWARDER","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"ExchangeCallFailed","type":"error"},{"inputs":[],"name":"ExchangeCallMissing","type":"error"},{"inputs":[],"name":"ExchangeNotApproved","type":"error"},{"inputs":[],"name":"ForwardingPaymentFailed","type":"error"},{"inputs":[],"name":"InsufficientBalanceInAfterPayment","type":"error"},{"inputs":[],"name":"InsufficientBalanceOutAfterPayment","type":"error"},{"inputs":[],"name":"InsufficientProtocolAmount","type":"error"},{"inputs":[],"name":"NativeFeePaymentFailed","type":"error"},{"inputs":[],"name":"NativePaymentFailed","type":"error"},{"inputs":[],"name":"PaymentDeadlineReached","type":"error"},{"inputs":[],"name":"PaymentToZeroAddressNotAllowed","type":"error"},{"inputs":[],"name":"WrongAmountPaidIn","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"exchange","type":"address"}],"name":"Disabled","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"exchange","type":"address"}],"name":"Enabled","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferStarted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":true,"internalType":"uint256","name":"deadline","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"amountIn","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"feeAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"feeAmount2","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"protocolAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"slippageInAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"slippageOutAmount","type":"uint256"},{"indexed":false,"internalType":"address","name":"tokenInAddress","type":"address"},{"indexed":false,"internalType":"address","name":"tokenOutAddress","type":"address"},{"indexed":false,"internalType":"address","name":"feeReceiverAddress","type":"address"},{"indexed":false,"internalType":"address","name":"feeReceiverAddress2","type":"address"}],"name":"Payment","type":"event"},{"inputs":[],"name":"FORWARDER","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PERMIT2","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"acceptOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"exchange","type":"address"},{"internalType":"bool","name":"enabled","type":"bool"}],"name":"enable","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"exchanges","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"components":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount2","type":"uint256"},{"internalType":"uint256","name":"protocolAmount","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"address","name":"tokenInAddress","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"address","name":"tokenOutAddress","type":"address"},{"internalType":"address","name":"paymentReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress2","type":"address"},{"internalType":"uint8","name":"exchangeType","type":"uint8"},{"internalType":"uint8","name":"receiverType","type":"uint8"},{"internalType":"bool","name":"permit2","type":"bool"},{"internalType":"bytes","name":"exchangeCallData","type":"bytes"},{"internalType":"bytes","name":"receiverCallData","type":"bytes"}],"internalType":"struct IDePayRouterV3.Payment","name":"payment","type":"tuple"},{"components":[{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"internalType":"struct IPermit2.TokenPermissions","name":"permitted","type":"tuple"},{"internalType":"uint256","name":"nonce","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"internalType":"struct IPermit2.PermitTransferFrom","name":"permitTransferFrom","type":"tuple"},{"internalType":"bytes","name":"signature","type":"bytes"}],"internalType":"struct IDePayRouterV3.PermitTransferFromAndSignature","name":"permitTransferFromAndSignature","type":"tuple"}],"name":"pay","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"components":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount2","type":"uint256"},{"internalType":"uint256","name":"protocolAmount","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"address","name":"tokenInAddress","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"address","name":"tokenOutAddress","type":"address"},{"internalType":"address","name":"paymentReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress2","type":"address"},{"internalType":"uint8","name":"exchangeType","type":"uint8"},{"internalType":"uint8","name":"receiverType","type":"uint8"},{"internalType":"bool","name":"permit2","type":"bool"},{"internalType":"bytes","name":"exchangeCallData","type":"bytes"},{"internalType":"bytes","name":"receiverCallData","type":"bytes"}],"internalType":"struct IDePayRouterV3.Payment","name":"payment","type":"tuple"}],"name":"pay","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"components":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount2","type":"uint256"},{"internalType":"uint256","name":"protocolAmount","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"address","name":"tokenInAddress","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"address","name":"tokenOutAddress","type":"address"},{"internalType":"address","name":"paymentReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress2","type":"address"},{"internalType":"uint8","name":"exchangeType","type":"uint8"},{"internalType":"uint8","name":"receiverType","type":"uint8"},{"internalType":"bool","name":"permit2","type":"bool"},{"internalType":"bytes","name":"exchangeCallData","type":"bytes"},{"internalType":"bytes","name":"receiverCallData","type":"bytes"}],"internalType":"struct IDePayRouterV3.Payment","name":"payment","type":"tuple"},{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"uint48","name":"expiration","type":"uint48"},{"internalType":"uint48","name":"nonce","type":"uint48"}],"internalType":"struct IPermit2.PermitDetails","name":"details","type":"tuple"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"sigDeadline","type":"uint256"}],"internalType":"struct IPermit2.PermitSingle","name":"permitSingle","type":"tuple"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"pay","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"pendingOwner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdraw","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}];
@@ -2936,64 +3122,6 @@ var routers$1 = {
 };
 
 var routers = {... routers$1, ...svmRouters};
-
-var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
-
-/** Detect free variable `global` from Node.js. */
-
-var freeGlobal = typeof commonjsGlobal == 'object' && commonjsGlobal && commonjsGlobal.Object === Object && commonjsGlobal;
-
-var _freeGlobal = freeGlobal;
-
-/** Detect free variable `self`. */
-var freeSelf = typeof self == 'object' && self && self.Object === Object && self;
-
-/** Used as a reference to the global object. */
-var root = _freeGlobal || freeSelf || Function('return this')();
-
-var _root = root;
-
-/** Built-in value references. */
-var Symbol = _root.Symbol;
-
-var _Symbol = Symbol;
-
-/** Built-in value references. */
-_Symbol ? _Symbol.toStringTag : undefined;
-
-/** Built-in value references. */
-_Symbol ? _Symbol.toStringTag : undefined;
-
-// lower blockchain cost is better
-const getBlockchainCost = (blockchain) => {
-  // in $USD
-  switch(blockchain) {
-    case 'solana':
-      return 0.0097
-    case 'worldchain':
-      return 0.0032
-    case 'gnosis':
-      return 0.00033
-    case 'base':
-      return 0.0033
-    case 'optimism':
-      return 0.03
-    case 'polygon':
-      return 0.011
-    case 'fantom':
-      return 0.0017
-    case 'avalanche':
-      return 0.18
-    case 'arbitrum':
-      return 0.03
-    case 'bsc':
-      return 0.39
-    case 'ethereum':
-      return 10.0
-    default:
-      return 100
-  }
-};
 
 function _optionalChain$2(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 
@@ -3438,7 +3566,6 @@ class PaymentRoute {
     protocolFee,
     protocolFeeAmount,
     exchangeRoutes,
-    directTransfer,
     approvalRequired,
     currentRouterAllowance,
     currentPermit2Allowance,
@@ -3460,7 +3587,6 @@ class PaymentRoute {
     this.protocolFee = protocolFee;
     this.protocolFeeAmount = protocolFeeAmount;
     this.exchangeRoutes = exchangeRoutes || [];
-    this.directTransfer = directTransfer;
     this.approvalRequired = approvalRequired;
     this.currentRouterAllowance = currentRouterAllowance;
     this.currentPermit2Allowance = currentPermit2Allowance;
@@ -3477,70 +3603,6 @@ class PaymentRoute {
       return await getTransaction$1({ paymentRoute: this, options })
     };
   }
-}
-
-function convertToRoutes({ assets, accept, from }) {
-  return Promise.all(assets.map(async (asset)=>{
-    let relevantConfigurations = accept.filter((configuration)=>(configuration.blockchain == asset.blockchain));
-    let fromToken = new Token(asset);
-    return Promise.all(relevantConfigurations.map(async (configuration)=>{
-      if(configuration.token && configuration.amount) {
-        let blockchain = configuration.blockchain;
-        let fromDecimals = asset.decimals;
-        let toToken = new Token({ blockchain, address: configuration.token });
-        let toDecimals = await toToken.decimals();
-        let toAmount = (await toToken.BigNumber(configuration.amount)).toString();
-
-        return new PaymentRoute({
-          blockchain,
-          fromToken,
-          fromDecimals,
-          toToken,
-          toAmount,
-          toDecimals,
-          fromBalance: asset.balance,
-          fromAddress: from[configuration.blockchain],
-          toAddress: configuration.receiver,
-          fee: configuration.fee,
-          fee2: configuration.fee2,
-          protocolFee: configuration.protocolFee,
-        })
-      } else if(configuration.fromToken && configuration.fromAmount && fromToken.address.toLowerCase() == configuration.fromToken.toLowerCase()) {
-        let blockchain = configuration.blockchain;
-        let fromAmount = (await fromToken.BigNumber(configuration.fromAmount)).toString();
-        let fromDecimals = asset.decimals;
-        let toToken = new Token({ blockchain, address: configuration.toToken });
-        let toDecimals = await toToken.decimals();
-        
-        return new PaymentRoute({
-          blockchain,
-          fromToken,
-          fromDecimals,
-          fromAmount,
-          toToken,
-          toDecimals,
-          fromBalance: asset.balance,
-          fromAddress: from[configuration.blockchain],
-          toAddress: configuration.receiver,
-          fee: configuration.fee,
-        })
-      }
-    }))
-  })).then((routes)=> routes.flat().filter(el => el))
-}
-
-function assetsToRoutes({ assets, blacklist, accept, from }) {
-  return Promise.resolve(filterBlacklistedAssets({ assets, blacklist }))
-    .then((assets) => convertToRoutes({ assets, accept, from }))
-    .then((routes) => addDirectTransferStatus({ routes }))
-    .then(addExchangeRoutes)
-    .then(filterNotRoutable)
-    .then(filterInsufficientBalance)
-    .then((routes)=>addRouteAmounts({ routes }))
-    .then(addApproval)
-    .then(sortPaymentRoutes)
-    .then(filterDuplicateFromTokens)
-    .then((routes)=>routes.map((route)=>new PaymentRoute(route)))
 }
 
 function feeSanityCheck(accept, attribute) {
@@ -3563,256 +3625,193 @@ function feeSanityCheck(accept, attribute) {
   });
 }
 
-function route({ accept, from, whitelist, blacklist, drip }) {
+async function remoteRouteToPaymentRoute({ remoteRoute, from, accept }) {
+  const fromToken = new Token({ blockchain: remoteRoute['blockchain'], address: remoteRoute['fromToken'] });
+  const toToken = remoteRoute['fromToken'] == remoteRoute['toToken'] ? fromToken : new Token({ blockchain: remoteRoute['blockchain'], address: remoteRoute['toToken'] });
+  const fromAddress = from[remoteRoute['blockchain']];
+  const toAmount = ethers.BigNumber.from(remoteRoute['toAmount']);
+
+  const configuration = accept.find((configuration)=>{
+    return configuration.blockchain == remoteRoute['blockchain'] &&
+      configuration.token.toLowerCase() == remoteRoute['toToken'].toLowerCase()
+  });
+
+  if(!configuration){ throw('Remote route not found in accept!') }
+
+  const toAddress = configuration.receiver;
+
+  const [
+    fromDecimals,
+    toDecimals,
+    fromBalance,
+    exchangeRoute,
+  ] = await Promise.all([
+    remoteRoute['fromDecimals'] ? Promise.resolve(remoteRoute['fromDecimals']) : fromToken.decimals(),
+    remoteRoute['toDecimals'] ? Promise.resolve(remoteRoute['toDecimals']) : toToken.decimals(),
+    fromToken.balance(fromAddress),
+    remoteRoute.pairsData ?
+      Exchanges[ remoteRoute.pairsData[0]['exchange'] ].route({
+        blockchain: remoteRoute['blockchain'],
+        tokenIn: fromToken.address,
+        tokenOut: toToken.address,
+        amountOutMin: toAmount.toString(),
+        fromAddress: fromAddress,
+        toAddress: toAddress,
+        pairsData: remoteRoute.pairsData
+      }) : Promise.resolve(undefined),
+  ]);
+
+  if(fromToken.address != toToken.address && exchangeRoute == undefined) { return }
+
+  let fromAmount;
+  if(exchangeRoute) {
+    fromAmount = exchangeRoute.amountIn;
+  } else {
+    fromAmount = toAmount;
+  }
+
+  let paymentRoute = new PaymentRoute({
+    blockchain: remoteRoute['blockchain'],
+    fromAddress,
+    fromToken,
+    fromBalance,
+    fromDecimals,
+    fromAmount,
+    toToken,
+    toAmount,
+    toDecimals,
+    toAddress,
+    fee: configuration.fee,
+    fee2: configuration.fee2,
+    exchangeRoutes: [exchangeRoute].filter(Boolean),
+    protocolFee: configuration.protocolFee,
+  });
+
+  paymentRoute = addRouteAmounts(paymentRoute);
+  paymentRoute = await addApproval(paymentRoute);
+
+  return paymentRoute
+}
+
+function route({ accept, from, allow, deny, best }) {
   ['fee', 'fee2', 'protocolFee'].forEach((attribute)=>feeSanityCheck(accept, attribute));
 
   return new Promise(async (resolveAll, rejectAll)=>{
 
-    let priority = [];
-    let blockchains = [];
-    if(whitelist) {
-      for (const blockchain in whitelist) {
-        (whitelist[blockchain] || []).forEach((address)=>{
-          blockchains.push(blockchain);
-          priority.push({ blockchain, address });
-        });
-      }
-    } else {
-      accept.forEach((accepted)=>{
-        blockchains.push(accepted.blockchain);
-        priority.push({ blockchain: accepted.blockchain, address: accepted.token || accepted.toToken });
-      });
-    }
-
-    // add native currency as priority if does not exist already
-    [...new Set(blockchains)].forEach((blockchain)=>{
-      if(
-        !priority.find((priority)=>priority.blockchain === blockchain && priority.address === Blockchains[blockchain].currency.address) &&
-        (!whitelist || (whitelist && whitelist[blockchain] && whitelist[blockchain].includes(Blockchains[blockchain].currency.address)))
-      ) {
-        priority.push({ blockchain, address: Blockchains[blockchain].currency.address });
-      }
-    });
-
-    priority.sort((a,b)=>{
-
-      // cheaper blockchains are more cost efficient
-      if (getBlockchainCost(a.blockchain) < getBlockchainCost(b.blockchain)) {
-        return -1 // a wins
-      }
-      if (getBlockchainCost(b.blockchain) < getBlockchainCost(a.blockchain)) {
-        return 1 // b wins
-      }
-
-      // NATIVE input token is more cost efficient
-      if (a.address.toLowerCase() === Blockchains[a.blockchain].currency.address.toLowerCase()) {
-        return -1 // a wins
-      }
-      if (b.address.toLowerCase() === Blockchains[b.blockchain].currency.address.toLowerCase()) {
-        return 1 // b wins
-      }
-
-      return 0
-    });
-
-    const sortPriorities = (priorities, a,b)=>{
-      if(!priorities || priorities.length === 0) { return 0 }
-      let priorityIndexOfA = priorities.indexOf([a.blockchain, a.address.toLowerCase()].join(''));
-      let priorityIndexOfB = priorities.indexOf([b.blockchain, b.address.toLowerCase()].join(''));
-      
-      if(priorityIndexOfA !== -1 && priorityIndexOfB === -1) {
-        return -1 // a wins
-      }
-      if(priorityIndexOfB !== -1 && priorityIndexOfA === -1) {
-        return 1 // b wins
-      }
-
-      if(priorityIndexOfA < priorityIndexOfB) {
-        return -1 // a wins
-      }
-      if(priorityIndexOfB < priorityIndexOfA) {
-        return 1 // b wins
-      }
-      return 0
+    const fail = (text, error)=>{
+      rejectAll(text);
+      throw(error)
     };
 
-    let drippedIndex = 0;
-    const dripQueue = [];
-    const dripped = [];
-    const priorities = priority.map((priority)=>[priority.blockchain, priority.address.toLowerCase()].join(''));
-    const thresholdToFirstDripIfNo1PriorityWasNotFirst = 3000;
-    const now = ()=>Math.ceil(new Date());
-    const time = now();
-    setTimeout(()=>{
-      dripQueue.forEach((asset)=>dripRoute(route, false));
-    }, thresholdToFirstDripIfNo1PriorityWasNotFirst);
-    const dripRoute = (route, recursive = true)=>{
-      try {
-        const asset = { blockchain: route.blockchain, address: route.fromToken.address };
-        const assetAsKey = [asset.blockchain, asset.address.toLowerCase()].join('');
-        const timeThresholdReached = now()-time > thresholdToFirstDripIfNo1PriorityWasNotFirst;
-        if(dripped.indexOf(assetAsKey) > -1) { return }
-        if(priorities.indexOf(assetAsKey) === drippedIndex) {
-          dripped.push(assetAsKey);
-          drip(route);
-          drippedIndex += 1;
-          if(!recursive){ return }
-          dripQueue.forEach((asset)=>dripRoute(route, false));
-        } else if(drippedIndex >= priorities.length || timeThresholdReached) {
-          if(priorities.indexOf(assetAsKey) === -1) {
-            dripped.push(assetAsKey);
-            drip(route);
-          } else if (drippedIndex >= priorities.length || timeThresholdReached) {
-            dripped.push(assetAsKey);
-            drip(route);
-          }
-        } else if(!dripQueue.find((queued)=>queued.blockchain === asset.blockchain && queued.address.toLowerCase() === asset.address.toLowerCase())) {
-          dripQueue.push(asset);
-          dripQueue.sort((a,b)=>sortPriorities(priorities, a, b));
+    const reducedAccept = accept.map((configuration)=>{
+      return({
+        blockchain: configuration.blockchain,
+        token: configuration.token,
+        amount: configuration.amount,
+        receiver: configuration.receiver,
+      })
+    });
+
+    const fetchBestController = new AbortController();
+    setTimeout(()=>fetchBestController.abort(), 10000);
+
+    fetch(
+      `https://public.depay.com/routes/best`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          accounts: from,
+          accept: reducedAccept,
+          allow,
+          deny,
+        }),
+        headers: { "Content-Type": "application/json" },
+        signal: fetchBestController.signal
+      }
+    )
+    .catch((error)=>{ fail('Best route could not be loaded!', error); })
+    .then(async(bestRouteResponse)=>{
+      if(bestRouteResponse.status == 404) { return resolveAll([]) }
+      if(!bestRouteResponse.ok) { fail('Best route could not be loaded!'); }
+      bestRouteResponse.json()
+      .then(async(bestRoute)=>{
+        bestRoute = await remoteRouteToPaymentRoute({ remoteRoute: bestRoute, from, accept })
+          .catch((error)=>{ fail('Best route could not be loaded!', error); });
+        if(typeof best == 'function') {
+          best(bestRoute);
         }
-      } catch (e) {}
-    };
-
-    let allAssets = await dripAssets({
-      accounts: from,
-      priority,
-      only: whitelist,
-      exclude: blacklist,
-      drip: !drip ? undefined : (asset)=>{
-        assetsToRoutes({ assets: [asset], blacklist, accept, from }).then((routes)=>{
-          if(_optionalChain([routes, 'optionalAccess', _5 => _5.length])) {
-            dripRoute(routes[0]);
+        const fetchAllController = new AbortController();
+        setTimeout(()=>fetchAllController.abort(), 10000);
+        fetch(
+          `https://public.depay.com/routes/all`,
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              accounts: from,
+              accept: reducedAccept,
+              allow,
+              deny,
+            }),
+            headers: { "Content-Type": "application/json" },
+            signal: fetchAllController.signal
           }
-        });
-      }
+        )
+        .then((allRoutesResponse)=>{
+          if(!allRoutesResponse.ok) { fail('All routes could not be loaded!'); }
+          allRoutesResponse.json()
+          .then(async (allRoutes)=>{
+            allRoutes = await Promise.all(allRoutes.map((remoteRoute)=>{
+              return remoteRouteToPaymentRoute({ remoteRoute, from, accept })
+            })).catch((error)=>{ fail('All routes could not be loaded!', error); });
+            resolveAll(allRoutes.filter(Boolean));
+          })
+          .catch((error)=>{ fail('All routes could not be loaded!', error); });
+        })
+        .catch((error)=>{ fail('Best route could not be loaded!', error); });
+      })
+      .catch((error)=> {
+        fail('Best route could not be loaded!', error);
+      });
     });
-
-    allAssets = allAssets.filter((route)=>{
-      if(route.blockchain != 'solana') {
-        return true
-      } else {
-        return Blockchains.solana.tokens.find((token)=>token.address == route.address)
-      }
-    });
-
-    let allPaymentRoutes = (await assetsToRoutes({ assets: allAssets, blacklist, accept, from }) || []);
-    allPaymentRoutes.assets = allAssets;
-    resolveAll(allPaymentRoutes);
   })
 }
 
-let filterBlacklistedAssets = ({ assets, blacklist }) => {
-  if(blacklist == undefined) {
-    return assets
+let addApproval = async (route) => {
+
+  let allowances;
+  if(route.blockchain === 'solana') {
+    allowances = [
+      Promise.resolve(Blockchains.solana.maxInt),
+      Promise.resolve(Blockchains.solana.maxInt)
+    ];
   } else {
-    return assets.filter((asset)=> {
-      if(blacklist[asset.blockchain] == undefined) {
-        return true
-      } else {
-        return !blacklist[asset.blockchain].find((blacklistedAddress)=>{
-          return blacklistedAddress.toLowerCase() == asset.address.toLowerCase()
-        })
-      }
-    })
+    allowances = await Promise.all([
+      route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address).catch(()=>{}),
+      route.fromToken.allowance(route.fromAddress, Blockchains[route.blockchain].permit2).catch(()=>{})
+    ]);
   }
-};
 
-let addExchangeRoutes = async (routes) => {
-  return await Promise.all(
-    routes.map((route) => {
-      if(route.directTransfer) { return [] }
-      return Exchanges.route({
-        blockchain: route.blockchain,
-        tokenIn: route.fromToken.address,
-        tokenOut: route.toToken.address,
-        amountOutMin: route.toAmount,
-        fromAddress: route.fromAddress,
-        toAddress: route.toAddress
-      })
-    }),
-  ).then((exchangeRoutes) => {
-    return routes.map((route, index) => {
-      route.exchangeRoutes = exchangeRoutes[index].filter(Boolean);
-      return route
-    })
-  })
-};
-
-let filterNotRoutable = (routes) => {
-  return routes.filter((route) => {
-    return (
-      route.exchangeRoutes.length != 0 ||
-      route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() // direct transfer always possible
-    )
-  })
-};
-
-let filterInsufficientBalance = async(routes) => {
-  return routes.filter((route) => {
-    if (route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase()) {
-      return ethers.BigNumber.from(route.fromBalance).gte(ethers.BigNumber.from(route.toAmount))
-    } else if(route.fromAmount && route.toAmount) {
-      return ethers.BigNumber.from(route.fromBalance).gte(ethers.BigNumber.from(route.exchangeRoutes[0].amountInMax))
-    } else if(route.exchangeRoutes[0] && route.exchangeRoutes[0].amountIn) {
-      return ethers.BigNumber.from(route.fromBalance).gte(ethers.BigNumber.from(route.exchangeRoutes[0].amountIn))
+  if(
+    route.fromToken.address.toLowerCase() === Blockchains[route.blockchain].currency.address.toLowerCase() ||
+    route.blockchain === 'solana'
+  ){
+    route.approvalRequired = false;
+  } else if (allowances != undefined) {
+    if(allowances[0]) {
+      route.currentRouterAllowance = allowances[0];
     }
-  })
-};
-
-let addApproval = (routes) => {
-  return Promise.all(routes.map(
-    (route) => {
-      if(route.blockchain === 'solana') {
-        return [
-          Promise.resolve(Blockchains.solana.maxInt),
-          Promise.resolve(Blockchains.solana.maxInt)
-        ]
-      } else {
-        return Promise.all([
-          route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address).catch(()=>{}),
-          route.fromToken.allowance(route.fromAddress, Blockchains[route.blockchain].permit2).catch(()=>{})
-        ])
-      }
+    if(allowances[1]) {
+      route.currentPermit2Allowance = allowances[1];
     }
-  )).then(
-    (allowances) => {
-      routes = routes.map((route, index) => {
-        if(
-          route.directTransfer ||
-          route.fromToken.address.toLowerCase() === Blockchains[route.blockchain].currency.address.toLowerCase() ||
-          route.blockchain === 'solana'
-        ){
-          route.approvalRequired = false;
-        } else if (allowances[index] != undefined) {
-          if(allowances[index][0]) {
-            route.currentRouterAllowance = allowances[index][0];
-          }
-          if(allowances[index][1]) {
-            route.currentPermit2Allowance = allowances[index][1];
-          }
-          route.approvalRequired = ![
-            routes[index].currentRouterAllowance ? ethers.BigNumber.from(routes[index].currentRouterAllowance) : undefined,
-            routes[index].currentPermit2Allowance ? ethers.BigNumber.from(routes[index].currentPermit2Allowance): undefined
-          ].filter(Boolean).some((amount)=>{
-            return amount.gte(routes[index].fromAmount)
-          });
-        }
-        return route
-      });
-      return routes
-    },
-  )
-};
+    route.approvalRequired = ![
+      routes[index].currentRouterAllowance ? ethers.BigNumber.from(routes[index].currentRouterAllowance) : undefined,
+      routes[index].currentPermit2Allowance ? ethers.BigNumber.from(routes[index].currentPermit2Allowance): undefined
+    ].filter(Boolean).some((amount)=>{
+      return amount.gte(routes[index].fromAmount)
+    });
+  }
 
-let addDirectTransferStatus = ({ routes }) => {
-  return routes.map((route)=>{
-    if(supported.evm.includes(route.blockchain)) {
-      route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase() && route.fee == undefined && route.fee2 == undefined;
-    } else if (route.blockchain === 'solana') {
-      route.directTransfer = route.fromToken.address.toLowerCase() == route.toToken.address.toLowerCase();
-    }
-    return route
-  })
+  return route
 };
 
 let calculateAmounts = ({ paymentRoute, exchangeRoute })=>{
@@ -3834,22 +3833,22 @@ let calculateAmounts = ({ paymentRoute, exchangeRoute })=>{
     toAmount = subtractFee({ amount: paymentRoute.fromAmount, paymentRoute });
   }
   if(paymentRoute.fee){
-    feeAmount = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _6 => _6.fee, 'optionalAccess', _7 => _7.amount]) });
+    feeAmount = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _5 => _5.fee, 'optionalAccess', _6 => _6.amount]) });
   }
   if(paymentRoute.fee2){
-    feeAmount2 = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _8 => _8.fee2, 'optionalAccess', _9 => _9.amount]) });
+    feeAmount2 = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _7 => _7.fee2, 'optionalAccess', _8 => _8.amount]) });
   }
   if(paymentRoute.protocolFee){
-    protocolFeeAmount = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _10 => _10.protocolFee]) });
+    protocolFeeAmount = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _9 => _9.protocolFee]) });
   }
   return { fromAmount, toAmount, feeAmount, feeAmount2, protocolFeeAmount }
 };
 
 let subtractFee = ({ amount, paymentRoute })=> {
   if(!paymentRoute.fee && !paymentRoute.fee2 && !paymentRoute.protocolFee) { return amount }
-  let feeAmount = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _11 => _11.fee, 'optionalAccess', _12 => _12.amount]) });
-  let feeAmount2 = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _13 => _13.fee2, 'optionalAccess', _14 => _14.amount]) });
-  let protocolFee = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _15 => _15.protocolFee]) });
+  let feeAmount = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _10 => _10.fee, 'optionalAccess', _11 => _11.amount]) });
+  let feeAmount2 = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _12 => _12.fee2, 'optionalAccess', _13 => _13.amount]) });
+  let protocolFee = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _14 => _14.protocolFee]) });
   return ethers.BigNumber.from(amount).sub(feeAmount).sub(feeAmount2).sub(protocolFee).toString()
 };
 
@@ -3867,29 +3866,13 @@ let getFeeAmount = ({ paymentRoute, amount })=> {
   }
 };
 
-let addRouteAmounts = ({ routes })=> {
-  return routes.map((route)=>{
+let addRouteAmounts = (route)=> {
 
-    if(supported.evm.includes(route.blockchain)) {
+  if(supported.evm.includes(route.blockchain)) {
 
-      if(route.directTransfer && !route.fee && !route.fee2) {
-        route.fromAmount = route.toAmount;
-      } else {
-        let { fromAmount, toAmount, feeAmount, feeAmount2, protocolFeeAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0] });
-        route.fromAmount = fromAmount;
-        route.toAmount = toAmount;
-        if(route.fee){
-          route.feeAmount = feeAmount;
-        }
-        if(route.fee2){
-          route.feeAmount2 = feeAmount2;
-        }
-        if(route.protocolFee){
-          route.protocolFeeAmount = protocolFeeAmount;
-        }
-      }
-    } else if (supported.svm.includes(route.blockchain)) {
-
+    if(route.directTransfer && !route.fee && !route.fee2) {
+      route.fromAmount = route.toAmount;
+    } else {
       let { fromAmount, toAmount, feeAmount, feeAmount2, protocolFeeAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0] });
       route.fromAmount = fromAmount;
       route.toAmount = toAmount;
@@ -3903,77 +3886,23 @@ let addRouteAmounts = ({ routes })=> {
         route.protocolFeeAmount = protocolFeeAmount;
       }
     }
-    
-    return route
-  })
-};
+  } else if (supported.svm.includes(route.blockchain)) {
 
-let filterDuplicateFromTokens = (routes) => {
-  return routes.filter((routeA, indexA)=>{
-    let otherMoreEfficientRoute = routes.find((routeB, indexB)=>{
-      if(routeA.fromToken.address != routeB.fromToken.address) { return false }
-      if(routeA.fromToken.blockchain != routeB.fromToken.blockchain) { return false }
-      if(routeB.directTransfer && !routeA.directTransfer) { return true }
-      if(ethers.BigNumber.from(routeB.fromAmount).lt(ethers.BigNumber.from(routeA.fromAmount)) && !routeA.directTransfer) { return true }
-      if(routeB.fromAmount == routeA.fromAmount && indexB < indexA) { return true }
-    });
-
-    return otherMoreEfficientRoute == undefined
-  })
-};
-
-let sortPaymentRoutes = (routes) => {
-  let aWins = -1;
-  let bWins = 1;
-  return routes.sort((a, b) => {
-
-    // cheaper blockchains are more cost-efficient
-    if (getBlockchainCost(a.fromToken.blockchain) < getBlockchainCost(b.fromToken.blockchain)) {
-      return aWins
+    let { fromAmount, toAmount, feeAmount, feeAmount2, protocolFeeAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0] });
+    route.fromAmount = fromAmount;
+    route.toAmount = toAmount;
+    if(route.fee){
+      route.feeAmount = feeAmount;
     }
-    if (getBlockchainCost(b.fromToken.blockchain) < getBlockchainCost(a.fromToken.blockchain)) {
-      return bWins
+    if(route.fee2){
+      route.feeAmount2 = feeAmount2;
     }
-
-    // direct transfer is always more cost-efficient
-    if (a.fromToken.address.toLowerCase() == a.toToken.address.toLowerCase()) {
-      return aWins
+    if(route.protocolFee){
+      route.protocolFeeAmount = protocolFeeAmount;
     }
-    if (b.fromToken.address.toLowerCase() == b.toToken.address.toLowerCase()) {
-      return bWins
-    }
-
-    // requiring approval is less cost-efficient
-    // requiring approval is less cost efficient
-    if (a.approvalRequired && !b.approvalRequired) {
-      return bWins
-    }
-    if (b.approvalRequired && !a.approvalRequired) {
-      return aWins
-    }
-
-    // NATIVE -> WRAPPED is more cost-efficient that swapping to another token
-    if (JSON.stringify([a.fromToken.address.toLowerCase(), a.toToken.address.toLowerCase()].sort()) == JSON.stringify([Blockchains[a.blockchain].currency.address.toLowerCase(), Blockchains[a.blockchain].wrapped.address.toLowerCase()].sort())) {
-      return aWins
-    }
-    if (JSON.stringify([b.fromToken.address.toLowerCase(), b.toToken.address.toLowerCase()].sort()) == JSON.stringify([Blockchains[b.blockchain].currency.address.toLowerCase(), Blockchains[b.blockchain].wrapped.address.toLowerCase()].sort())) {
-      return bWins
-    }
-
-    // NATIVE input token is more cost-efficient
-    if (a.fromToken.address.toLowerCase() == Blockchains[a.blockchain].currency.address.toLowerCase()) {
-      return aWins
-    }
-    if (b.fromToken.address.toLowerCase() == Blockchains[b.blockchain].currency.address.toLowerCase()) {
-      return bWins
-    }
-
-    if (a.fromToken.address < b.fromToken.address) {
-      return aWins
-    } else {
-      return bWins
-    }
-  })
+  }
+  
+  return route
 };
 
 const getTransaction = (paymentRoute)=>{
