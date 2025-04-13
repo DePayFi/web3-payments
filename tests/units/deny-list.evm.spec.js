@@ -11,7 +11,7 @@ import Token from '@depay/web3-tokens-evm'
 
 describe('deny list (evm)', ()=> {
 
-    let provider
+  let provider
   let accounts = ['0xd8da6bf26964af9d7eed9e03e53415d37aa96045']
   let fromAddress = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045'
   let fromAccounts = { ethereum: fromAddress, bsc: fromAddress }
@@ -97,10 +97,8 @@ describe('deny list (evm)', ()=> {
   beforeEach(resetCache)
   beforeEach(()=>fetchMock.reset())
   beforeEach(()=>{
-
     mockBestRoute({ fromAccounts, accept, deny, route: bestRoute })
     mockAllRoutes({ fromAccounts, accept, deny, routes: allRoutes })
-
   })
 
   it('denies fromTokens and only calculates routes for all the others', async ()=>{

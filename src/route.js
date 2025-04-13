@@ -50,7 +50,7 @@ class PaymentRoute {
     this.fromToken = fromToken
     this.fromAmount = (fromAmount || toAmount)?.toString()
     this.fromDecimals = fromDecimals
-    this.fromBalance = fromBalance
+    this.fromBalance = fromBalance?.toString()
     this.toToken = toToken
     this.toAmount = toAmount?.toString()
     this.toDecimals = toDecimals

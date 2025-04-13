@@ -98,10 +98,8 @@ describe('deny list', ()=> {
   beforeEach(resetCache)
   beforeEach(()=>fetchMock.reset())
   beforeEach(()=>{
-
     mockBestRoute({ fromAccounts, accept, deny, route: bestRoute })
     mockAllRoutes({ fromAccounts, accept, deny, routes: allRoutes })
-
   })
 
   it('denies fromTokens and only calculates routes for all the others', async ()=>{
