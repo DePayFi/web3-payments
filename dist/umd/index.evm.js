@@ -58528,10 +58528,10 @@
         route.currentPermit2Allowance = allowances[1];
       }
       route.approvalRequired = ![
-        routes[index].currentRouterAllowance ? ethers.ethers.BigNumber.from(routes[index].currentRouterAllowance) : undefined,
-        routes[index].currentPermit2Allowance ? ethers.ethers.BigNumber.from(routes[index].currentPermit2Allowance): undefined
+        route.currentRouterAllowance ? ethers.ethers.BigNumber.from(route.currentRouterAllowance) : undefined,
+        route.currentPermit2Allowance ? ethers.ethers.BigNumber.from(route.currentPermit2Allowance): undefined
       ].filter(Boolean).some((amount)=>{
-        return amount.gte(routes[index].fromAmount)
+        return amount.gte(route.fromAmount)
       });
     }
 
