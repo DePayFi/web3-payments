@@ -1,14 +1,45 @@
 import fetchMock from 'fetch-mock'
 
-let mockAssets = ({ blockchain, delay, account, assets })=>{
-  fetchMock.get({
-      url: `https://public.depay.com/accounts/${blockchain}/${account}/assets`,
-      overwriteRoutes: true,
+let mockBestRoute = ({ fromAccounts, accept, allow, deny, delay, route })=>{
+  
+  const body = {
+    accounts: fromAccounts,
+    accept,
+  }
+
+  if(allow){ body.allow = allow }
+  if(deny){ body.deny = deny }
+
+  fetchMock.post({
+      url: `https://public.depay.com/routes/best`,
+      body,
+      matchPartialBody: true,
       delay
-    }, assets
+    },
+    route
+  )
+}
+
+let mockAllRoutes = ({ fromAccounts, accept, allow, deny, delay, routes })=>{
+  const body = {
+    accounts: fromAccounts,
+    accept,
+  }
+
+  if(allow){ body.allow = allow }
+  if(deny){ body.deny = deny }
+
+  fetchMock.post({
+      url: `https://public.depay.com/routes/all`,
+      body,
+      matchPartialBody: true,
+      delay
+    },
+    routes
   )
 }
 
 export {
-  mockAssets
+  mockBestRoute,
+  mockAllRoutes,
 }

@@ -4634,7 +4634,7 @@
     return paymentRoute
   }
 
-  function route({ accept, from, allow, deny, best }) {
+  function route({ accept, from, allow, deny, best, blacklist, whitelist }) {
     ['fee', 'fee2', 'protocolFee'].forEach((attribute)=>feeSanityCheck(accept, attribute));
 
     return new Promise(async (resolveAll, rejectAll)=>{
@@ -4646,9 +4646,9 @@
 
       const reducedAccept = accept.map((configuration)=>{
         return({
+          amount: configuration.amount,
           blockchain: configuration.blockchain,
           token: configuration.token,
-          amount: configuration.amount,
           receiver: configuration.receiver,
         })
       });
@@ -4663,8 +4663,8 @@
           body: JSON.stringify({
             accounts: from,
             accept: reducedAccept,
-            allow,
-            deny,
+            allow: allow || whitelist,
+            deny: deny || blacklist,
           }),
           headers: { "Content-Type": "application/json" },
           signal: fetchBestController.signal
@@ -4690,8 +4690,8 @@
               body: JSON.stringify({
                 accounts: from,
                 accept: reducedAccept,
-                allow,
-                deny,
+                allow: allow || whitelist,
+                deny: deny || blacklist,
               }),
               headers: { "Content-Type": "application/json" },
               signal: fetchAllController.signal
