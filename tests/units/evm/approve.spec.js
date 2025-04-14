@@ -4,7 +4,7 @@ import routers from 'src/routers'
 import { ethers } from 'ethers'
 import { getWallets } from '@depay/web3-wallets'
 import { mock, resetMocks, anything } from '@depay/web3-mock'
-import { mockAssets } from 'tests/mocks/api'
+import { mockBestRoute, mockAllRoutes } from 'tests/mocks/api'
 import { mockBasics, mockDecimals, mockBalance, mockAllowance } from 'tests/mocks/tokens'
 import { mockPair, mockAmounts } from 'tests/mocks/UniswapV2'
 import { resetCache, getProvider } from '@depay/web3-client'
@@ -16,11 +16,6 @@ describe('approve', ()=> {
   let provider
   const blockchain = 'ethereum'
   const accounts = ['0xd8da6bf26964af9d7eed9e03e53415d37aa96045']
-  beforeEach(resetMocks)
-  beforeEach(()=>mock({ blockchain, accounts: { return: accounts } }))
-  beforeEach(resetCache)
-  beforeEach(()=>fetchMock.reset())
-
   let DAI = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
   let DEPAY = "0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb"
   let WETH = Blockchains[blockchain].wrapped.address
@@ -36,7 +31,16 @@ describe('approve', ()=> {
   let tokenOutDecimals
   let tokenAmountOutBN
   let fromAddress
+  let fromAccounts
   let toAddress
+  let bestRoute 
+  let allRoutes
+  let accept
+
+  beforeEach(resetMocks)
+  beforeEach(()=>mock({ blockchain, accounts: { return: accounts } }))
+  beforeEach(resetCache)
+  beforeEach(()=>fetchMock.reset())
 
   beforeEach(()=>{
     etherBalanceBN = ethers.BigNumber.from('18000000000000000000')
@@ -50,28 +54,57 @@ describe('approve', ()=> {
     tokenAmountOutBN = ethers.utils.parseUnits(tokenAmountOut.toString(), tokenOutDecimals)
     fromAddress = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045'
     toAddress = '0x65aBbdEd9B937E38480A50eca85A8E4D2c8350E4'
+
+    accept = [{ receiver: toAddress, blockchain, token: toToken, amount: tokenAmountOut }]
+
+    bestRoute = {
+      "blockchain": "ethereum",
+      "fromToken": DEPAY,
+      "fromAmount": tokenAmountOutBN.toString(),
+      "toToken": DEPAY,
+      "toAmount": tokenAmountOutBN.toString(),
+      "fromDecimals": 18,
+      "fromName": "DePay",
+      "fromSymbol": "DEPAY",
+      "toDecimals": 18,
+      "toName": "DePay",
+      "toSymbol": "DEPAY"
+    }
+    allRoutes = [
+      bestRoute,
+      {
+        "blockchain": "ethereum",
+        "fromToken": ETH,
+        "fromAmount": WETHAmountInBN.toString(),
+        "toToken": DEPAY,
+        "toAmount": tokenAmountOutBN.toString(),
+        "fromDecimals": 18,
+        "fromName": "Ether",
+        "fromSymbol": "ETH",
+        "toDecimals": 18,
+        "toName": "DePay",
+        "toSymbol": "DEPAY",
+        "pairsData": [{ "id": "0x", "exchange": "uniswap_v2" }]
+      },
+      {
+        "blockchain": "ethereum",
+        "fromToken": DAI,
+        "fromAmount": DAIAmountInBN.toString(),
+        "toToken": DEPAY,
+        "toAmount": tokenAmountOutBN.toString(),
+        "fromDecimals": 18,
+        "fromName": "DAI",
+        "fromSymbol": "DAI",
+        "toDecimals": 18,
+        "toName": "DePay",
+        "toSymbol": "DEPAY",
+        "pairsData": [{ "id": "0x", "exchange": "uniswap_v2" }]
+      },
+    ]
   })
 
   beforeEach(async()=>{
     mock(blockchain)
-    mockAssets({ blockchain, account: fromAddress, assets: [
-      {
-        "name": "Ether",
-        "symbol": "ETH",
-        "address": ETH,
-        "type": "NATIVE"
-      }, {
-        "name": "Dai Stablecoin",
-        "symbol": "DAI",
-        "address": DAI,
-        "type": "20"
-      }, {
-        "name": "DePay",
-        "symbol": "DEPAY",
-        "address": DEPAY,
-        "type": "20"
-      }
-    ]})
     
     provider = await getProvider(blockchain)
     Blockchains.findByName(blockchain).tokens.forEach((token)=>{
@@ -102,31 +135,28 @@ describe('approve', ()=> {
 
     mock({ provider, blockchain, balance: { for: fromAddress, return: etherBalanceBN } })
 
+    fromAccounts = { [blockchain]: fromAddress }
+
+    mockBestRoute({ fromAccounts, accept, route: bestRoute })
+    mockAllRoutes({ fromAccounts, accept, routes: allRoutes })
+
   })
 
   it('provides approvalRequired if approval is required, together with currentRouterAllowance and currentPermit2Allowance to allow to evaluate approval options for each payment', async ()=>{
     let routes = await route({
-      accept: [{
-        toAddress,
-        blockchain,
-        token: toToken,
-        amount: tokenAmountOut
-      }],
-      from: { [blockchain]: fromAddress }
+      accept,
+      from: fromAccounts
     })
 
     expect(routes[0].approvalRequired).toEqual(false) // DEPAY has max approval
-    expect(routes[0].directTransfer).toEqual(true)
-    expect(routes[0].currentRouterAllowance).toEqual(undefined)
-    expect(routes[0].currentPermit2Allowance).toEqual(undefined)
+    expect(routes[0].currentRouterAllowance).toEqual(MAXINTBN)
+    expect(routes[0].currentPermit2Allowance).toEqual(ethers.BigNumber.from('0'))
     
     expect(routes[1].approvalRequired).toEqual(false) // ETH does not require approval
-    expect(routes[1].directTransfer).toEqual(false)
     expect(routes[1].currentRouterAllowance).toEqual(undefined)
     expect(routes[1].currentPermit2Allowance).toEqual(undefined)
 
     expect(routes[2].approvalRequired).toEqual(true) // DAI would require an approval
-    expect(routes[2].directTransfer).toEqual(false)
     expect(routes[2].currentRouterAllowance).toEqual(ethers.BigNumber.from('1'))
     expect(routes[2].currentPermit2Allowance).toEqual(ethers.BigNumber.from('2'))
   })
@@ -145,13 +175,8 @@ describe('approve', ()=> {
     })
 
     let routes = await route({
-      accept: [{
-        toAddress,
-        blockchain,
-        token: toToken,
-        amount: tokenAmountOut
-      }],
-      from: { [blockchain]: fromAddress }
+      accept,
+      from: fromAccounts
     })
 
     let wallet = (await getWallets())[0]
@@ -172,13 +197,8 @@ describe('approve', ()=> {
     })
 
     let routes = await route({
-      accept: [{
-        toAddress,
-        blockchain,
-        token: toToken,
-        amount: tokenAmountOut
-      }],
-      from: { [blockchain]: fromAddress }
+      accept,
+      from: fromAccounts
     })
 
     let wallet = (await getWallets())[0]
@@ -188,13 +208,8 @@ describe('approve', ()=> {
   it('provides a getPermit2ApprovalSignature to move tokens with the router using permit2 signatures', async ()=>{
 
     let routes = await route({
-      accept: [{
-        toAddress,
-        blockchain,
-        token: toToken,
-        amount: tokenAmountOut
-      }],
-      from: { [blockchain]: fromAddress }
+      accept,
+      from: fromAccounts
     })
 
     mock({
