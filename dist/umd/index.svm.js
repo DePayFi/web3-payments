@@ -4580,7 +4580,7 @@
     if(!configuration){ throw('Remote route not found in accept!') }
 
     const toAddress = configuration.receiver;
-
+    
     const [
       fromDecimals,
       toDecimals,
