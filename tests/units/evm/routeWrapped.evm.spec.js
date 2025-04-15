@@ -2,13 +2,13 @@ import Blockchains from '@depay/web3-blockchains'
 import fetchMock from 'fetch-mock'
 import { ethers } from 'ethers'
 import { mock, resetMocks } from '@depay/web3-mock'
-import { mockAssets } from 'tests/mocks/api'
+import { mockBestRoute, mockAllRoutes } from 'tests/mocks/api'
 import { mockBasics, mockDecimals, mockBalance, mockAllowance } from 'tests/mocks/tokens'
 import { resetCache, getProvider } from '@depay/web3-client-evm'
 import { route, plugins, routers } from 'dist/esm/index.evm'
 import Token from '@depay/web3-tokens-evm'
 
-describe('route wrapped', ()=> {
+describe('route wrapped (evm)', ()=> {
 
   const blockchain = 'ethereum'
   const accounts = ['0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045']
@@ -17,7 +17,15 @@ describe('route wrapped', ()=> {
   const WRAPPED = Blockchains[blockchain].wrapped.address
   const NATIVE = Blockchains[blockchain].currency.address
 
-  let provider, balanceBN, tokenAmountOut, tokenAmountOutBN, transaction
+  let provider
+  let balanceBN
+  let tokenAmountOut
+  let tokenAmountOutBN
+  let transaction
+  let bestRoute 
+  let allRoutes
+  let accept
+  let fromAccounts
   
   beforeEach(async()=>{
     resetMocks()
@@ -28,14 +36,7 @@ describe('route wrapped', ()=> {
     balanceBN = '1000000000000000000000000'
     tokenAmountOut = 0.0001
     tokenAmountOutBN = ethers.utils.parseUnits(tokenAmountOut.toString())
-
-    Blockchains.findByName(blockchain).tokens.forEach((token)=>{
-      if(token.type == '20') {
-        mock({ request: { return: '0', to: token.address, api: Token[blockchain].DEFAULT, method: 'balanceOf', params: accounts[0] }, provider, blockchain })
-      }
-    })
-
-    mockAssets({ blockchain, account: fromAddress, assets: []})
+    fromAccounts = { [blockchain]: fromAddress }
 
     mockBasics({ provider, blockchain, api: Token[blockchain].DEFAULT, token: WRAPPED, decimals: 18, name: 'DePay', symbol: 'DEPAY' })
     mock({ provider, blockchain, balance: { for: fromAddress, return: balanceBN } })
@@ -43,12 +44,35 @@ describe('route wrapped', ()=> {
 
   it('provides payment route for NATIVE<>WRAPPED', async ()=>{
 
+    accept = [{ receiver: toAddress, blockchain, token: WRAPPED, amount: tokenAmountOut }]
+
+    bestRoute = {
+      "blockchain": "ethereum",
+      "fromToken": NATIVE,
+      "fromAmount": tokenAmountOutBN.toString(),
+      "toToken": WRAPPED,
+      "toAmount": tokenAmountOutBN.toString(),
+      "fromDecimals": 18,
+      "fromName": "Ether",
+      "fromSymbol": "ETH",
+      "toDecimals": 18,
+      "toName": "Ether",
+      "toSymbol": "ETH",
+      "pairsData": [{ "id": "0x", "exchange": "weth" }]
+    }
+    allRoutes = [
+      bestRoute,
+    ]
+
+    mockBestRoute({ fromAccounts, accept, route: bestRoute })
+    mockAllRoutes({ fromAccounts, accept, routes: allRoutes })
+
     let routes = await route({
       accept: [{
         blockchain,
         token: WRAPPED,
         amount: tokenAmountOut,
-        toAddress,
+        receiver: toAddress,
       }],
       from: { [blockchain]: fromAddress }
     })
@@ -75,10 +99,32 @@ describe('route wrapped', ()=> {
     expect(transaction.params.payment.paymentReceiverAddress).toEqual(toAddress)
     expect(routes[0].approvalRequired).toEqual(false)
     expect(routes[0].approvalTransaction).toEqual(undefined)
-    expect(routes[0].directTransfer).toEqual(false)
   });
 
   it('provides payment route for WRAPPED<>NATIVE', async ()=>{
+
+    accept = [{ receiver: toAddress, blockchain, token: NATIVE, amount: tokenAmountOut }]
+
+    bestRoute = {
+      "blockchain": "ethereum",
+      "fromToken": WRAPPED,
+      "fromAmount": tokenAmountOutBN.toString(),
+      "toToken": NATIVE,
+      "toAmount": tokenAmountOutBN.toString(),
+      "fromDecimals": 18,
+      "fromName": "Ether",
+      "fromSymbol": "ETH",
+      "toDecimals": 18,
+      "toName": "Ether",
+      "toSymbol": "ETH",
+      "pairsData": [{ "id": "0x", "exchange": "weth" }]
+    }
+    allRoutes = [
+      bestRoute,
+    ]
+
+    mockBestRoute({ fromAccounts, accept, route: bestRoute })
+    mockAllRoutes({ fromAccounts, accept, routes: allRoutes })
 
     mock({ request: { return: balanceBN.toString(), to: WRAPPED, api: Token[blockchain].DEFAULT, method: 'balanceOf', params: accounts[0] }, provider, blockchain })
     mockAllowance({ provider, blockchain, api: Token[blockchain].DEFAULT, token: WRAPPED, account: fromAddress, spender: routers[blockchain].address, allowance: '0' })
@@ -89,7 +135,7 @@ describe('route wrapped', ()=> {
         blockchain,
         token: NATIVE,
         amount: tokenAmountOut,
-        toAddress,
+        receiver: toAddress,
       }],
       from: { [blockchain]: fromAddress }
     })
@@ -114,10 +160,11 @@ describe('route wrapped', ()=> {
     expect(transaction.params.payment.amountIn).toEqual(tokenAmountOutBN.toString())
     expect(transaction.params.payment.paymentAmount).toEqual(tokenAmountOutBN.toString())
     expect(transaction.params.payment.paymentReceiverAddress).toEqual(toAddress)
-    expect(routes[0].directTransfer).toEqual(false)
     expect(routes[0].approvalRequired).toEqual(true)
-    expect(routes[0].approvalTransaction.to).toEqual(WRAPPED)
-    expect(routes[0].approvalTransaction.method).toEqual('approve')
-    expect(routes[0].approvalTransaction.params).toEqual([routers[blockchain].address, Blockchains[blockchain].maxInt])
+
+    let approvalTransaction = await routes[0].getRouterApprovalTransaction()
+    expect(approvalTransaction.to).toEqual(WRAPPED)
+    expect(approvalTransaction.method).toEqual('approve')
+    expect(approvalTransaction.params).toEqual([routers[blockchain].address, Blockchains[blockchain].maxInt])
   });
 })

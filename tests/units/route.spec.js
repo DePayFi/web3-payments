@@ -2,7 +2,7 @@ import fetchMock from 'fetch-mock'
 import Blockchains from '@depay/web3-blockchains'
 import { ethers } from 'ethers'
 import { mock, connect, resetMocks, mockJsonRpcProvider } from '@depay/web3-mock'
-import { mockAssets } from 'tests/mocks/api'
+import { mockBestRoute, mockAllRoutes } from 'tests/mocks/api'
 import { mockBasics, mockDecimals, mockBalance, mockAllowance } from 'tests/mocks/tokens'
 import { mockPair, mockAmounts } from 'tests/mocks/UniswapV2'
 import { resetCache, getProvider } from '@depay/web3-client'
@@ -14,12 +14,8 @@ describe('route', ()=> {
   let provider
   const blockchain = 'ethereum'
   const accounts = ['0xd8da6bf26964af9d7eed9e03e53415d37aa96045']
-  beforeEach(resetMocks)
-  beforeEach(()=>mock({ blockchain, accounts: { return: accounts } }))
-  beforeEach(resetCache)
-  beforeEach(()=>fetchMock.reset())
-
   let fromAddress = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045'
+  let fromAccounts = { ethereum: fromAddress, bsc: fromAddress }
   let toAddress = '0x65aBbdEd9B937E38480A50eca85A8E4D2c8350E4'
   let USDT_ethereum = '0xdAC17F958D2ee523a2206206994597C13D831ec7'
   let USDT_bsc = '0x55d398326f99059fF775485246999027B3197955'
@@ -47,24 +43,85 @@ describe('route', ()=> {
   let WETH_DAI_ethereum_amountInSlippage = '29251788203360'
   let DAI_ethereum_amountIn = '20163901534128454768'
   let transaction
+  let bestRoute = {
+    "blockchain": "bsc",
+    "fromToken": Blockchains.bsc.currency.address,
+    "fromAmount": ethers.BigNumber.from(WBNB_USDT_bsc_amountIn).add(ethers.BigNumber.from(WBNB_USDT_bsc_amountInSlippage)).toString(),
+    "toToken": USDT_bsc,
+    "toAmount": USDT_bsc_amount.toString(),
+    "fromDecimals": 18,
+    "fromName": "BNB",
+    "fromSymbol": "BNB",
+    "toDecimals": 18,
+    "toName": "Tether USD",
+    "toSymbol": "USDT",
+    "pairsData": [{ "id": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE", "exchange": "pancakeswap" }]
+  }
+  let allRoutes = [
+    bestRoute,
+    {
+      "blockchain": "bsc",
+      "fromToken": BUSD,
+      "fromAmount": ethers.BigNumber.from(BUSD_bsc_amountIn).add(ethers.BigNumber.from(BUSD_bsc_amountInSlippage)).toString(),
+      "toToken": USDT_bsc,
+      "toAmount": USDT_bsc_amount.toString(),
+      "fromDecimals": 18,
+      "fromName": "BNB",
+      "fromSymbol": "BNB",
+      "toDecimals": 18,
+      "toName": "Tether USD",
+      "toSymbol": "USDT",
+      "pairsData": [{ "id": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE", "exchange": "pancakeswap" }]
+    },
+    {
+      "blockchain": "ethereum",
+      "fromToken": DAI_ethereum,
+      "fromAmount": ethers.BigNumber.from(WETH_DAI_ethereum_amountIn).add(ethers.BigNumber.from(WETH_DAI_ethereum_amountInSlippage)).toString(),
+      "toToken": DAI_ethereum,
+      "toAmount": USDT_bsc_amount.toString(),
+      "fromDecimals": 18,
+      "fromName": "Ether",
+      "fromSymbol": "ETH",
+      "toDecimals": 18,
+      "toName": "DAI",
+      "toSymbol": "DAI",
+      "pairsData": [{ "id": "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11", "exchange": "uniswap_v2" }]
+    },
+    {
+      "blockchain": "ethereum",
+      "fromToken": Blockchains.ethereum.currency.address,
+      "fromAmount": ethers.BigNumber.from(WETH_DAI_ethereum_amountIn).add(ethers.BigNumber.from(WETH_DAI_ethereum_amountInSlippage)).toString(),
+      "toToken": DAI_ethereum,
+      "toAmount": DAI_ethereum_amount.toString(),
+      "fromDecimals": 18,
+      "fromName": "Ether",
+      "fromSymbol": "ETH",
+      "toDecimals": 18,
+      "toName": "DAI",
+      "toSymbol": "DAI",
+      "pairsData": [{ "id": "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11", "exchange": "uniswap_v2" }]
+    }
+  ]
+
+  const accept = [
+    { amount, blockchain: 'ethereum', token: USDT_ethereum, receiver: toAddress },
+    { amount, blockchain: 'ethereum', token: DAI_ethereum, receiver: toAddress },
+    { amount, blockchain: 'bsc', token: USDT_bsc, receiver: toAddress },
+    { amount, blockchain: 'bsc', token: DAI_bsc, receiver: toAddress }
+  ]
+
+  beforeEach(resetMocks)
+  beforeEach(()=>mock({ blockchain, accounts: { return: accounts } }))
+  beforeEach(resetCache)
+  beforeEach(()=>fetchMock.reset())
+  beforeEach(()=>{
+    mockBestRoute({ fromAccounts, accept, route: bestRoute })
+    mockAllRoutes({ fromAccounts, accept, routes: allRoutes })
+  })
 
   it('provides payment routes for multiple means of payments on multiple blockchains', async ()=>{
 
     mock('ethereum')
-
-    mockAssets({ blockchain: 'ethereum', account: fromAddress, assets: [
-      {
-        "name": "Ether",
-        "symbol": "ETH",
-        "address": Blockchains.ethereum.currency.address,
-        "type": "NATIVE"
-      }, {
-        "name": "Dai Stablecoin",
-        "symbol": "DAI",
-        "address": DAI_ethereum,
-        "type": "20"
-      }
-    ]})
 
     provider = await getProvider('ethereum')
     Blockchains.findByName('ethereum').tokens.forEach((token)=>{
@@ -91,19 +148,6 @@ describe('route', ()=> {
     mockBasics({ provider, blockchain: 'ethereum', api: Token['ethereum'].DEFAULT, token: DAI_ethereum, decimals: 18, name: 'DAI', symbol: 'DAI' })
 
     provider = await getProvider('bsc')
-    mockAssets({ provider, blockchain: 'bsc', account: fromAddress, assets: [
-      {
-        "name": "Binance Coin",
-        "symbol": "BNB",
-        "address": Blockchains.bsc.currency.address,
-        "type": "NATIVE"
-      }, {
-        "name": "BUSD",
-        "symbol": "BUSD",
-        "address": BUSD,
-        "type": "20"
-      }
-    ]})
 
     Blockchains.findByName('bsc').tokens.forEach((token)=>{
       if(token.type == '20') {
@@ -136,13 +180,8 @@ describe('route', ()=> {
     connect('ethereum')
 
     let routes = await route({
-      accept: [
-        { amount, blockchain: 'ethereum', token: USDT_ethereum, fromAddress, toAddress },
-        { amount, blockchain: 'ethereum', token: DAI_ethereum, fromAddress, toAddress },
-        { amount, blockchain: 'bsc', token: USDT_bsc, fromAddress, toAddress },
-        { amount, blockchain: 'bsc', token: DAI_bsc, fromAddress, toAddress }
-      ],
-      from: { ethereum: fromAddress, bsc: fromAddress }
+      accept,
+      from: fromAccounts
     })
 
     expect(routes[0].blockchain).toEqual('bsc')
@@ -155,7 +194,6 @@ describe('route', ()=> {
     expect(transaction.to).toEqual(routers.bsc.address)
     expect(routes[0].approvalRequired).toEqual(false)
     expect(routes[0].approvalTransaction).toEqual(undefined)
-    expect(routes[0].directTransfer).toEqual(false)
     expect(routes[0].fromAmount).toEqual(
       ethers.BigNumber.from(WBNB_USDT_bsc_amountIn).add(ethers.BigNumber.from(WBNB_USDT_bsc_amountInSlippage)).toString()
     )
@@ -172,7 +210,6 @@ describe('route', ()=> {
     expect(transaction.to).toEqual(routers.bsc.address)
     expect(routes[1].approvalRequired).toEqual(false)
     expect(routes[1].approvalTransaction).toEqual(undefined)
-    expect(routes[1].directTransfer).toEqual(false)
     expect(routes[1].fromAmount).toEqual(
       ethers.BigNumber.from(BUSD_bsc_amountIn).add(ethers.BigNumber.from(BUSD_bsc_amountInSlippage)).toString()
     )
@@ -186,11 +223,10 @@ describe('route', ()=> {
     expect(routes[2].toAmount).toEqual(USDT_bsc_amount.toString())
     transaction = await routes[2].getTransaction()
     expect(transaction.blockchain).toEqual('ethereum')
-    expect(transaction.to).toEqual(DAI_ethereum)
+    expect(transaction.to).toEqual(routers.ethereum.address)
     expect(transaction.value).toEqual('0')
     expect(routes[2].approvalRequired).toEqual(false)
     expect(routes[2].approvalTransaction).toEqual(undefined)
-    expect(routes[2].directTransfer).toEqual(true)
     expect(routes[2].fromAmount).toEqual(DAI_ethereum_amount.toString())
     expect(routes[2].toDecimals).toEqual(18)
     expect(routes[2].fromDecimals).toEqual(18)
@@ -205,7 +241,6 @@ describe('route', ()=> {
     expect(transaction.to).toEqual(routers.ethereum.address)
     expect(routes[3].approvalRequired).toEqual(false)
     expect(routes[3].approvalTransaction).toEqual(undefined)
-    expect(routes[3].directTransfer).toEqual(false)
     expect(routes[3].fromAmount).toEqual(
       ethers.BigNumber.from(WETH_DAI_ethereum_amountIn).add(ethers.BigNumber.from(WETH_DAI_ethereum_amountInSlippage)).toString()
     )

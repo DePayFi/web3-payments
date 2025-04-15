@@ -13,13 +13,13 @@ npm install --save @depay/web3-payments
 Make sure you install all required dependencies too:
 
 ```
-yarn add @depay/web3-assets @depay/web3-constants @depay/web3-exchanges @depay/web3-tokens ethers decimal.js
+yarn add @depay/web3-constants @depay/web3-exchanges @depay/web3-tokens ethers decimal.js
 ```
 
 or if you use npm
 
 ```
-npm i @depay/web3-assets @depay/web3-constants @depay/web3-exchanges @depay/web3-tokens ethers decimal.js
+npm i @depay/web3-constants @depay/web3-exchanges @depay/web3-tokens ethers decimal.js
 ```
 
 ```javascript
@@ -31,12 +31,12 @@ let paymentRoutes = await route({
       blockchain: 'ethereum',
       token: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
       amount: 20,
-      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
+      receiver: '0xb0252f13850a4823706607524de0b146820F2240'
     },{
       blockchain: 'solana',
       token: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
       amount: 20,
-      toAddress: '3Hrw6AsNyJAp71Nkgo4tzJwvGM47DzqMdAtf8ojptkXk'
+      receiver: '3Hrw6AsNyJAp71Nkgo4tzJwvGM47DzqMdAtf8ojptkXk'
     }
   ],
   from: {
@@ -54,7 +54,6 @@ This library supports the following blockchains:
 - [BNB Smart Chain](https://www.binance.org/smartChain)
 - [Polygon](https://polygon.technology)
 - [Solana](https://solana.com)
-- [Fantom](https://fantom.foundation)
 - [Arbitrum](https://arbitrum.io)
 - [Avalanche](https://www.avax.network)
 - [Gnosis](https://gnosis.io)
@@ -75,13 +74,13 @@ import { route } from '@depay/web3-payments-evm'
 Make sure you install all required dependencies for evm specific packaging too:
 
 ```
-yarn add @depay/web3-blockchains @depay/web3-assets-evm @depay/web3-exchanges-evm @depay/web3-tokens-evm ethers decimal.js
+yarn add @depay/web3-blockchains @depay/web3-exchanges-evm @depay/web3-tokens-evm ethers decimal.js
 ```
 
 or if you use npm
 
 ```
-npm i @depay/web3-blockchains @depay/web3-assets-evm @depay/web3-exchanges-evm @depay/web3-tokens-evm ethers decimal.js
+npm i @depay/web3-blockchains @depay/web3-exchanges-evm @depay/web3-tokens-evm ethers decimal.js
 ```
 
 ### SVM (Solana Virtual Machine) platform specific packaging
@@ -93,13 +92,13 @@ import { route } from '@depay/web3-payments-svm'
 Make sure you install all required dependencies for solana specific packaging too:
 
 ```
-yarn add @depay/web3-blockchains @depay/web3-assets-svm @depay/web3-exchanges-svm @depay/web3-tokens-svm @depay/solana-web3.js
+yarn add @depay/web3-blockchains @depay/web3-exchanges-svm @depay/web3-tokens-svm @depay/solana-web3.js
 ```
 
 or if you use npm
 
 ```
-npm i @depay/web3-blockchains @depay/web3-assets-svm @depay/web3-exchanges-svm @depay/web3-tokens-svm @depay/solana-web3.js
+npm i @depay/web3-blockchains @depay/web3-exchanges-svm @depay/web3-tokens-svm @depay/solana-web3.js
 ```
 
 ## Functionalities
@@ -116,7 +115,7 @@ let paymentRoutes = await route({
     blockchain: 'ethereum',
     token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
     amount: 20,
-    toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
+    receiver: '0xb0252f13850a4823706607524de0b146820F2240'
   }],
   from: {
     ethereum: '0x5Af489c8786A018EC4814194dC8048be1007e390',
@@ -135,12 +134,12 @@ let paymentRoutes = await route({
       blockchain: 'ethereum',
       token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
       amount: 20,
-      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
+      receiver: '0xb0252f13850a4823706607524de0b146820F2240'
     },{
       blockchain: 'bsc',
       token: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
       amount: 20,
-      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
+      receiver: '0xb0252f13850a4823706607524de0b146820F2240'
     }
   ],
   from: {
@@ -164,37 +163,14 @@ let paymentRoutes = await route({
 })
 ```
 
-#### fromToken + fromAmount + toToken
+#### allow (list)
 
-In cases where you want to set the `fromToken` and `fromAmount` (instead of the target token and the target amount) when calculating payment routes you can pass `fromToken`, `fromAmount` + `toToken`.
-
-Make sure to NOT pass `token` nor `amount` if you use that option!
-
-```javascript
-import { route } from '@depay/web3-payments'
-
-let paymentRoutes = await route({
-  accept: [
-    {
-      blockchain: 'bsc',
-      fromAmount: 1,
-      fromToken: '0xe9e7cea3dedca5984780bafc599bd69add087d56',
-      toToken: '0xa0bEd124a09ac2Bd941b10349d8d224fe3c955eb',
-      toAddress: '0xb0252f13850a4823706607524de0b146820F2240'
-    }
-  ],
-  from: { bsc: '0x5Af489c8786A018EC4814194dC8048be1007e390' }
-})
-```
-
-#### whitelist
-
-Allows only fromTokens (from the sender) that are part of the whitelist:
+Allows only fromTokens (from the sender) that are part of the allow list:
 
 ```javacript
 let paymentRoutes = await route({
 
-  whitelist: {
+  allow: {
     ethereum: [
       '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // ETH
       '0xdac17f958d2ee523a2206206994597c13d831ec7', // USDT
@@ -210,14 +186,14 @@ let paymentRoutes = await route({
 
 ```
 
-#### blacklist
+#### deny (list)
 
 Filters fromTokens to not be used for payment routing:
 
 ```javacript
 let paymentRoutes = await route({
 
-  blacklist: {
+  deny: {
     ethereum: [
       '0x6b175474e89094c44da98b954eedeac495271d0f'  // DAI
     ],
@@ -231,7 +207,7 @@ let paymentRoutes = await route({
 
 #### fee
 
-`route` allows you also to configure a `fee` that is taken from the payment amount and is sent to another receiver (the fee receiver):
+`route` allows you to configure a `fee` that is taken from the payment amount and is sent to another receiver (the fee receiver):
 
 ```javascript
 let paymentRoutes = await route({
@@ -245,7 +221,23 @@ let paymentRoutes = await route({
   }]
 })
 
-// splits 0.3 of the amount paid and sends it to the feeReceiver
+// splits 3% of the amount paid and sends it to the feeReceiver
+```
+
+You can define up to max. 2 fees and separate fee receivers:
+
+```javascript
+let paymentRoutes = await route({
+  
+  accept: [{
+    //...
+    fee: { amount: '3%', receiver: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'},
+    fee2: { amount: '1%', receiver: '0x1dCf54C768352d5A5be0F08891262fd0E53A37ce'},
+  }]
+})
+
+// splits 3% of the amount paid and sends it to the feeReceiver 1: 0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B
+// splits 1% of the amount paid and sends it to the feeReceiver 2: 0x1dCf54C768352d5A5be0F08891262fd0E53A37ce
 ```
 
 `fee.amount` can be passed as percentage (String with ending %) or as a BigNumber string or as a pure number/decimal
@@ -261,7 +253,7 @@ let paymentRoutes = await route({
     }
   }]
 })
-// splits 0.3 of the amount paid and sends it to the feeReceiver
+// splits '300000000000000000' (BigNumber) of the amount paid and sends it to the feeReceiver
 ```
 
 ```javascript
@@ -276,6 +268,21 @@ let paymentRoutes = await route({
   }]
 })
 // splits 0.3 of the amount paid and sends it to the feeReceiver
+```
+
+#### protocolFee
+
+`route` allows you to configure a `protocolFee` that is taken from the payment to pay the protocol:
+
+```javascript
+let paymentRoutes = await route({
+  
+  //...
+  protocolFee: '1.5%'
+
+})
+
+// leaves 1.5% of the outToken to the protocol when payment has been performed
 ```
 
 ### routers
@@ -328,20 +335,33 @@ Payment routes are provided in the following structure:
   toAddress: String (e.g. '0x65aBbdEd9B937E38480A50eca85A8E4D2c8350E4')
   fee: Object (e.g. undefined or fee object)
   feeAmount: BigNumber (e.g. <BigNumber '2100000000000000000'>)
+  fee2: Object (e.g. undefined or fee object)
+  feeAmount2: BigNumber (e.g. <BigNumber '1100000000000000000'>)
+  protocolFee: String (e.g. '1.5%')
+  protocolFeeAmount: BigNumber (e.g. <BigNumber '2100000000000000000'>)
   exchangeRoutes: Array (list of exchange routes offering to convert )
-  currentAllowance: BigNumber (e.g. <BigNumber '2100000000000000000'>)
+  currentRouterAllowance: BigNumber (e.g. <BigNumber '2100000000000000000'>)
+  currentPermit2Allowance: BigNumber (e.g. <BigNumber '2100000000000000000'>)
   approvalRequired: Boolean (e.g. true)
-  approvalTransaction: Transaction (to approve the fromToken being used from the payment router to perform the payment)
-  directTransfer: Boolean (e.g. true)
+  getRouterApprovalTransaction: async (options)=> Transaction (see @depay/web3-wallets)
+  getPermit2ApprovalTransaction: async (options)=> Transaction (see @depay/web3-wallets)
+  getPermit2ApprovalSignature: async ()=> SignatureTransferSignature
   getTransaction: async (options)=> Transaction (see @depay/web3-wallets for details), options can contain { wallet }
 }
 ```
 
-`approvalRequired`: indicates if a upfront token approval is required in order to perform the payment, make sure you execute `approve` before executing the payment transaction itself.
+`currentRouterAllowance`: Provides the current set allowance for the payment router as BigNumber.
 
-`currentAllowance`: provides the current set allowance as BigNumber.
+`currentPermit2Allowance`: Provides the current set allowance for permit2 as BigNumber.
 
-`directTransfer`: indicates if the payment does not require any swapping/exchanging.
+`approvalRequired`: Payment requires an approval (e.g. token transfers on EVM without any pre-approval).
+
+`getRouterApprovalTransaction`: Transaction to approve the fromToken being used from the payment router to perform the payment. Setting options to `{ limited: true }` only approves the amount required instead of a max. approval.
+
+`getPermit2ApprovalTransaction`: Transaction to approve the fromToken being used from the payment router using permit2 to perform the payment.
+
+`getPermit2ApprovalSignature`: Receive the permit2 signature transfer signature that can be passed to getTransaction({ signature }). Requires prior getPermit2ApprovalTransaction.
+
 
 See [@depay/web3-wallets](https://github.com/DePayFi/web3-wallets#sendtransaction) for details about the transaction format.
 

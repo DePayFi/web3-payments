@@ -7,7 +7,7 @@ let routes = await Web3Payments.route({
       blockchain: 'polygon',
       token: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
       amount: 0.01,
-      toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
+      receiver: '0x08B277154218CCF3380CAE48d630DA13462E3950'
     }
   ],
   from: {
@@ -31,7 +31,7 @@ let routes = await Web3Payments.route({
       blockchain: 'polygon',
       token: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
       amount: 1,
-      toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
+      receiver: '0x08B277154218CCF3380CAE48d630DA13462E3950'
     }
   ],
   from: {
@@ -55,7 +55,7 @@ let routes = await Web3Payments.route({
       blockchain: 'polygon',
       token: Web3Blockchains.polygon.wrapped.address,
       amount: 0.001,
-      toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
+      receiver: '0x08B277154218CCF3380CAE48d630DA13462E3950'
     }
   ],
   from: {

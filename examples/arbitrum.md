@@ -7,7 +7,7 @@ let routes = await Web3Payments.route({
       blockchain: 'arbitrum',
       token: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
       amount: 1,
-      toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
+      receiver: '0x08B277154218CCF3380CAE48d630DA13462E3950'
     }
   ],
   from: {
@@ -31,7 +31,7 @@ let routes = await Web3Payments.route({
       blockchain: 'arbitrum',
       token: Web3Blockchains.arbitrum.wrapped.address,
       amount: 0.001,
-      toAddress: '0x08B277154218CCF3380CAE48d630DA13462E3950'
+      receiver: '0x08B277154218CCF3380CAE48d630DA13462E3950'
     }
   ],
   from: {

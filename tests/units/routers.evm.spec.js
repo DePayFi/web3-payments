@@ -1,34 +1,34 @@
 import { routers } from 'dist/esm/index.evm'
 
-describe('routers', ()=> {
+describe('routers (evm)', ()=> {
 
   it('exports the payment routers', async ()=>{
     
-    expect(routers.ethereum.address).toEqual('0x6466F27B169C908Ba8174d80aEfa7173CbC3D0c7')
+    expect(routers.ethereum.address).toEqual('0x365f7B56D2fB16C8Af89D7d33b420E4e013461e8')
     expect(typeof routers.ethereum.api === 'object').toEqual(true)
 
-    expect(routers.bsc.address).toEqual('0x7ea09401db4692a8AEF4111b75bD32AE758f552A')
+    expect(routers.bsc.address).toEqual('0x5F565EDfB9C446976a9F9910631cfeDb6A87220c')
     expect(typeof routers.bsc.api === 'object').toEqual(true)
 
-    expect(routers.polygon.address).toEqual('0x50CFAB577623B1359602E11514a9482B061A941e')
+    expect(routers.polygon.address).toEqual('0xe04b08Dfc6CaA0F4Ec523a3Ae283Ece7efE00019')
     expect(typeof routers.polygon.api === 'object').toEqual(true)
 
-    expect(routers.fantom.address).toEqual('0xFee05C41195985909DDfc9127Db1f94559c46db3')
-    expect(typeof routers.fantom.api === 'object').toEqual(true)
-
-    expect(routers.avalanche.address).toEqual('0xFee05C41195985909DDfc9127Db1f94559c46db3')
+    expect(routers.avalanche.address).toEqual('0x39E7C98BF4ac3E4C394dD600397f5f7Ee3779BE8')
     expect(typeof routers.avalanche.api === 'object').toEqual(true)
 
-    expect(routers.gnosis.address).toEqual('0xFee05C41195985909DDfc9127Db1f94559c46db3')
+    expect(routers.gnosis.address).toEqual('0x328FE8bbd30487BB7b5A8eEb909f892E9E229271')
     expect(typeof routers.gnosis.api === 'object').toEqual(true)
 
-    expect(routers.arbitrum.address).toEqual('0xA1cfbeeF344A52e18f748fd6a126f9426A40fbc7')
+    expect(routers.arbitrum.address).toEqual('0x328FE8bbd30487BB7b5A8eEb909f892E9E229271')
     expect(typeof routers.arbitrum.api === 'object').toEqual(true)
 
-    expect(routers.optimism.address).toEqual('0x8698E529E9867eEbcC68b4792daC627cd8870736')
+    expect(routers.optimism.address).toEqual('0x558302715e3011Be6695605c11A65526D2ba2245')
     expect(typeof routers.optimism.api === 'object').toEqual(true)
 
-    expect(routers.base.address).toEqual('0x8B127D169D232D5F3ebE1C3D06CE343FD7C1AA11')
+    expect(routers.base.address).toEqual('0x48825133EF08327535D0b24d73779E82BE6Ea4d9')
+    expect(typeof routers.base.api === 'object').toEqual(true)
+
+    expect(routers.worldchain.address).toEqual('0x886eb82a7e5E7310F66A0E83748662A17E391eb0')
     expect(typeof routers.base.api === 'object').toEqual(true)
   })
 })
