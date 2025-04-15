@@ -4540,6 +4540,9 @@ class PaymentRoute {
   }
 }
 
+const aWins = -1;
+const bWins = 1;
+
 function feeSanityCheck(accept, attribute) {
   if(!accept) { return }
 
@@ -4698,7 +4701,16 @@ function route({ accept, from, allow, deny, best, blacklist, whitelist }) {
             allRoutes = await Promise.all(allRoutes.map((remoteRoute)=>{
               return remoteRouteToPaymentRoute({ remoteRoute, from, accept })
             })).catch((error)=>{ fail('All routes could not be loaded!', error); });
-            resolveAll(allRoutes.filter(Boolean));
+            resolveAll(allRoutes.filter(Boolean).sort((a, b)=>{
+              // requiring approval is less cost efficient
+              if (a.approvalRequired && !b.approvalRequired) {
+                return bWins
+              }
+              if (b.approvalRequired && !a.approvalRequired) {
+                return aWins
+              }
+              return 0
+            }));
           })
           .catch((error)=>{ fail('All routes could not be loaded!', error); });
         })
