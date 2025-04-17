@@ -292,7 +292,6 @@ let addApproval = async (route) => {
     }
     route.approvalRequired = ![
       route.currentRouterAllowance ? ethers.BigNumber.from(route.currentRouterAllowance) : undefined,
-      route.currentPermit2Allowance ? ethers.BigNumber.from(route.currentPermit2Allowance): undefined
     ].filter(Boolean).some((amount)=>{
       return amount.gte(route.fromAmount)
     })
