@@ -104,8 +104,8 @@ function feeSanityCheck(accept, attribute) {
 }
 
 async function remoteRouteToPaymentRoute({ remoteRoute, from, accept }) {
-  const fromToken = new Token({ blockchain: remoteRoute['blockchain'], address: remoteRoute['fromToken'] })
-  const toToken = remoteRoute['fromToken'] == remoteRoute['toToken'] ? fromToken : new Token({ blockchain: remoteRoute['blockchain'], address: remoteRoute['toToken'] })
+  const fromToken = new Token({ blockchain: remoteRoute['blockchain'], address: remoteRoute['fromToken'], name: remoteRoute['fromName'], symbol: remoteRoute['fromSymbol'], decimals: remoteRoute['fromDecimals'] })
+  const toToken = remoteRoute['fromToken'] == remoteRoute['toToken'] ? fromToken : new Token({ blockchain: remoteRoute['blockchain'], address: remoteRoute['toToken'], name: remoteRoute['toName'], symbol: remoteRoute['toSymbol'], decimals: remoteRoute['toDecimals'] })
   const fromAddress = from[remoteRoute['blockchain']]
   const toAmount = ethers.BigNumber.from(remoteRoute['toAmount'])
 
