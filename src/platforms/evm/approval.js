@@ -22,7 +22,7 @@ const getRouterApprovalTransaction = async({ paymentRoute, options })=> {
     to: paymentRoute.fromToken.address,
     api: Token[paymentRoute.blockchain].DEFAULT,
     method: 'approve',
-    params: [routers[paymentRoute.blockchain].address, Blockchains[paymentRoute.blockchain].maxInt]
+    params: [routers[paymentRoute.blockchain].address, (options?.amount || Blockchains[paymentRoute.blockchain].maxInt)]
   })
 }
 
@@ -32,7 +32,7 @@ const getPermit2ApprovalTransaction = async({ paymentRoute, options })=> {
     to: paymentRoute.fromToken.address,
     api: Token[paymentRoute.blockchain].DEFAULT,
     method: 'approve',
-    params: [Blockchains[paymentRoute.blockchain].permit2, Blockchains[paymentRoute.blockchain].maxInt]
+    params: [Blockchains[paymentRoute.blockchain].permit2, (options?.amount || Blockchains[paymentRoute.blockchain].maxInt)]
   })
 }
 
