@@ -1,7 +1,7 @@
 {
   "name": "@depay/web3-payments-svm",
   "moduleName": "Web3Payments",
-  "version": "15.1.0",
+  "version": "15.1.1",
   "description": "JavaScript library to scan crypto wallets for liquefiable assets and perform cost-effective, auto-converted payments on-chain.",
   "main": "dist/umd/index.svm.js",
   "module": "dist/esm/index.svm.js",

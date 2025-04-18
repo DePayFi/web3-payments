@@ -1950,7 +1950,7 @@ const getTransaction = async({ paymentRoute })=> {
     alts: [routers.solana.alt]
   }
 
-  debug(transaction, paymentRoute)
+  // debug(transaction, paymentRoute)
 
   transaction.deadline = deadline
 
