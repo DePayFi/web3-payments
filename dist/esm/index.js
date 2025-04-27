@@ -1718,7 +1718,7 @@ const getPaymentMethod = ({ paymentRoute })=>{
 };
 
 const getDeadline = ()=>{
-  return Math.ceil(new Date().getTime())+(10*60*1000) // in milliseconds
+  return Math.ceil(new Date().getTime())+(5 *60*1000) // 5 minutes in milliseconds
 };
 
 const routeSol = async({ paymentRoute, deadline }) =>{
