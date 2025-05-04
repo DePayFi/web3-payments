@@ -110,7 +110,8 @@ wallet.sendTransaction(transaction)
 
 ## routeOrcaSwapSolIn (SOL->WSOL<>TOKEN)
 
-https://solscan.io/tx/2iA2scWi8VuXZfsXw2U7LnHbkQmfqcsBKro1uqwcskE6LZV9WYe4HkNV9NpLX9MQ9pe1WGVsSJJmrgCqWDHMXh5P
+https://solscan.io/tx/3jHP99jQvpSLFkLJai71aYx3a3BszeJM1QK46DBcH6h2kBCYYL5TsMonZTaahaV89bNbexhxzqY9oqyuQdcM6As6
+
 
 ```javascript
 
@@ -148,7 +149,7 @@ wallet.sendTransaction(transaction)
 
 ## routeOrcaSwapSolOut (TOKEN<>WSOL->SOL)
 
-https://solscan.io/tx/2YbDCqhrkdPZpmBJ9YJaaa9byd92ZnC3qRR99JDAX4Xb9J2cQUraTwSEpmbv2thswvEH253uMHMtzAEkG5ZUAAAg
+https://solscan.io/tx/2MEukCUZXxpKmWo7NWXg6jt2sWHV9UqcK9rpSB7mXa2KbUzJijwWaF9dse4MQS7RbscZSWDXjAWAr8JVKkboC6jr
 
 ```javascript
 

@@ -3253,6 +3253,7 @@
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
       feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString()),
       feeAmount2: new solanaWeb3_js.BN((paymentRoute.feeAmount2 || '0').toString()),
+      protocolAmount: new solanaWeb3_js.BN((paymentRoute.protocolFeeAmount || '0').toString()),
       deadline: new solanaWeb3_js.BN(deadline),
     }, data);
     
@@ -3326,6 +3327,7 @@
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
       feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString()),
       feeAmount2: new solanaWeb3_js.BN((paymentRoute.feeAmount2 || '0').toString()),
+      protocolAmount: new solanaWeb3_js.BN((paymentRoute.protocolFeeAmount || '0').toString()),
       deadline: new solanaWeb3_js.BN(deadline),
     }, data);
     

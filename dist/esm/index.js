@@ -1921,6 +1921,7 @@ const routeOrcaSwapSolIn = async({ paymentRoute, deadline }) =>{
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
     feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
     feeAmount2: new BN((paymentRoute.feeAmount2 || '0').toString()),
+    protocolAmount: new BN((paymentRoute.protocolFeeAmount || '0').toString()),
     deadline: new BN(deadline),
   }, data);
   
@@ -1994,6 +1995,7 @@ const routeOrcaSwapSolOut = async({ paymentRoute, deadline }) =>{
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
     feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
     feeAmount2: new BN((paymentRoute.feeAmount2 || '0').toString()),
+    protocolAmount: new BN((paymentRoute.protocolFeeAmount || '0').toString()),
     deadline: new BN(deadline),
   }, data);
   
