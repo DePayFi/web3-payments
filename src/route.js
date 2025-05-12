@@ -178,7 +178,8 @@ function route({ accept, from, allow, deny, best, blacklist, whitelist }) {
 
     const fail = (text, error)=>{
       rejectAll(text)
-      throw(text, error)
+      console.log(error)
+      throw new Error(text)
     }
 
     const reducedAccept = accept.map((configuration)=>{

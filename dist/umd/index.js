@@ -3685,7 +3685,8 @@
 
       const fail = (text, error)=>{
         rejectAll(text);
-        throw(error)
+        console.log(error);
+        throw new Error(text)
       };
 
       const reducedAccept = accept.map((configuration)=>{
