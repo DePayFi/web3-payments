@@ -58411,9 +58411,8 @@ function route({ accept, from, allow, deny, best, blacklist, whitelist }) {
   return new Promise(async (resolveAll, rejectAll)=>{
 
     const fail = (text, error)=>{
-      rejectAll(text);
       console.log(error);
-      throw new Error(text)
+      rejectAll(new Error(text));
     };
 
     const reducedAccept = accept.map((configuration)=>{
