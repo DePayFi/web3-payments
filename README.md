@@ -277,9 +277,11 @@ let paymentRoutes = await route({
 ```javascript
 let paymentRoutes = await route({
   
-  //...
-  protocolFee: '1.5%'
-
+  accept: [{
+    //...
+    protocolFee: '1.5%'
+    
+  }]
 })
 
 // leaves 1.5% of the outToken to the protocol when payment has been performed
