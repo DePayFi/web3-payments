@@ -3,7 +3,7 @@ import route from './route'
 import routers from './routers'
 
 const getTransaction = (paymentRoute)=>{
-  if(paymentRoute.blockchain === 'solana') {
+  if(paymentRoute.blockchain === 'solana') { // solanapay
     return getSVMTransaction({ paymentRoute })
   }
 }

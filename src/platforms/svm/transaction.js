@@ -1928,7 +1928,7 @@ const payment = async({ paymentRoute, deadline })=> {
 
 const getTransaction = async({ paymentRoute })=> {
 
-  const deadline = getDeadline()
+  const deadline = paymentRoute.deadline || getDeadline()
 
   let instructions = (
     await Promise.all([

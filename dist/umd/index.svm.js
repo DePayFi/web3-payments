@@ -4347,7 +4347,7 @@
 
   const getTransaction$2 = async({ paymentRoute })=> {
 
-    const deadline = getDeadline();
+    const deadline = paymentRoute.deadline || getDeadline();
 
     let instructions = (
       await Promise.all([
@@ -4850,7 +4850,7 @@
   };
 
   const getTransaction = (paymentRoute)=>{
-    if(paymentRoute.blockchain === 'solana') {
+    if(paymentRoute.blockchain === 'solana') { // solanapay
       return getTransaction$2({ paymentRoute })
     }
   };
