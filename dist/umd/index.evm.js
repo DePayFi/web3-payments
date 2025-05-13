@@ -58456,7 +58456,7 @@
         .then(async(bestRoute)=>{
           bestRoute = await remoteRouteToPaymentRoute({ remoteRoute: bestRoute, from, accept })
             .catch((error)=>{ fail('Best route could not be loaded!', error); });
-          if(typeof best == 'function') {
+          if(typeof best == 'function' && _optionalChain([bestRoute, 'optionalAccess', _7 => _7.fromAmount]) && _optionalChain([bestRoute, 'optionalAccess', _8 => _8.fromAmount]) != '0') {
             best(bestRoute);
           }
           const fetchAllController = new AbortController();
@@ -58482,16 +58482,21 @@
               allRoutes = await Promise.all(allRoutes.map((remoteRoute)=>{
                 return remoteRouteToPaymentRoute({ remoteRoute, from, accept })
               })).catch((error)=>{ fail('All routes could not be loaded!', error); });
-              resolveAll(allRoutes.filter(Boolean).sort((a, b)=>{
-                // requiring approval is less cost efficient
-                if (a.approvalRequired && !b.approvalRequired) {
-                  return bWins
-                }
-                if (b.approvalRequired && !a.approvalRequired) {
-                  return aWins
-                }
-                return 0
-              }));
+              resolveAll(
+                allRoutes
+                .filter(Boolean)
+                .filter((route)=>_optionalChain([route, 'optionalAccess', _9 => _9.fromAmount]) !== '0')
+                .sort((a, b)=>{
+                  // requiring approval is less cost efficient
+                  if (a.approvalRequired && !b.approvalRequired) {
+                    return bWins
+                  }
+                  if (b.approvalRequired && !a.approvalRequired) {
+                    return aWins
+                  }
+                  return 0
+                })
+              );
             })
             .catch((error)=>{ fail('All routes could not be loaded!', error); });
           })
@@ -58560,22 +58565,22 @@
       toAmount = subtractFee({ amount: paymentRoute.fromAmount, paymentRoute });
     }
     if(paymentRoute.fee){
-      feeAmount = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _7 => _7.fee, 'optionalAccess', _8 => _8.amount]) });
+      feeAmount = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _10 => _10.fee, 'optionalAccess', _11 => _11.amount]) });
     }
     if(paymentRoute.fee2){
-      feeAmount2 = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _9 => _9.fee2, 'optionalAccess', _10 => _10.amount]) });
+      feeAmount2 = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _12 => _12.fee2, 'optionalAccess', _13 => _13.amount]) });
     }
     if(paymentRoute.protocolFee){
-      protocolFeeAmount = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _11 => _11.protocolFee]) });
+      protocolFeeAmount = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _14 => _14.protocolFee]) });
     }
     return { fromAmount, toAmount, feeAmount, feeAmount2, protocolFeeAmount }
   };
 
   let subtractFee = ({ amount, paymentRoute })=> {
     if(!paymentRoute.fee && !paymentRoute.fee2 && !paymentRoute.protocolFee) { return amount }
-    let feeAmount = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _12 => _12.fee, 'optionalAccess', _13 => _13.amount]) });
-    let feeAmount2 = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _14 => _14.fee2, 'optionalAccess', _15 => _15.amount]) });
-    let protocolFee = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _16 => _16.protocolFee]) });
+    let feeAmount = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _15 => _15.fee, 'optionalAccess', _16 => _16.amount]) });
+    let feeAmount2 = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _17 => _17.fee2, 'optionalAccess', _18 => _18.amount]) });
+    let protocolFee = getFeeAmount({ paymentRoute, amount: _optionalChain([paymentRoute, 'optionalAccess', _19 => _19.protocolFee]) });
     return ethers.ethers.BigNumber.from(amount).sub(feeAmount).sub(feeAmount2).sub(protocolFee).toString()
   };
 

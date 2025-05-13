@@ -215,7 +215,7 @@ function route({ accept, from, allow, deny, best, blacklist, whitelist }) {
       .then(async(bestRoute)=>{
         bestRoute = await remoteRouteToPaymentRoute({ remoteRoute: bestRoute, from, accept })
           .catch((error)=>{ fail('Best route could not be loaded!', error) })
-        if(typeof best == 'function') {
+        if(typeof best == 'function' && bestRoute?.fromAmount && bestRoute?.fromAmount != '0') {
           best(bestRoute)
         }
         const fetchAllController = new AbortController()
@@ -241,16 +241,21 @@ function route({ accept, from, allow, deny, best, blacklist, whitelist }) {
             allRoutes = await Promise.all(allRoutes.map((remoteRoute)=>{
               return remoteRouteToPaymentRoute({ remoteRoute, from, accept })
             })).catch((error)=>{ fail('All routes could not be loaded!', error) })
-            resolveAll(allRoutes.filter(Boolean).sort((a, b)=>{
-              // requiring approval is less cost efficient
-              if (a.approvalRequired && !b.approvalRequired) {
-                return bWins
-              }
-              if (b.approvalRequired && !a.approvalRequired) {
-                return aWins
-              }
-              return 0
-            }))
+            resolveAll(
+              allRoutes
+              .filter(Boolean)
+              .filter((route)=>route?.fromAmount !== '0')
+              .sort((a, b)=>{
+                // requiring approval is less cost efficient
+                if (a.approvalRequired && !b.approvalRequired) {
+                  return bWins
+                }
+                if (b.approvalRequired && !a.approvalRequired) {
+                  return aWins
+                }
+                return 0
+              })
+            )
           })
           .catch((error)=>{ fail('All routes could not be loaded!', error) })
         })
