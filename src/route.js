@@ -16,10 +16,11 @@ import Token from '@depay/web3-tokens'
 //#endif
 
 import Blockchains from '@depay/web3-blockchains'
+import config from './config'
 import routers from './routers'
 import { ethers } from 'ethers'
-import { getTransaction } from './transaction'
 import { getRouterApprovalTransaction, getPermit2ApprovalTransaction, getPermit2ApprovalSignature } from './approval'
+import { getTransaction } from './transaction'
 import { supported } from './blockchains'
 
 class PaymentRoute {
@@ -194,7 +195,7 @@ function route({ accept, from, allow, deny, best, blacklist, whitelist }) {
     setTimeout(()=>fetchBestController.abort(), 10000)
 
     fetch(
-      `https://public.depay.com/routes/best`,
+      config.endpoints.routesBest,
       {
         method: 'POST',
         body: JSON.stringify({
@@ -216,7 +217,8 @@ function route({ accept, from, allow, deny, best, blacklist, whitelist }) {
         bestRoute = await remoteRouteToPaymentRoute({ remoteRoute: bestRoute, from, accept })
           .catch((error)=>{ fail('Best route could not be loaded!', error) })
         if(typeof best == 'function' && bestRoute?.fromAmount && bestRoute?.fromAmount != '0') {
-          best(bestRoute)
+          const callbackResult = best(bestRoute)
+          if(callbackResult === false) { return resolveAll([]) }
         }
         const fetchAllController = new AbortController()
         setTimeout(()=>fetchAllController.abort(), 10000)

@@ -1,10 +1,104 @@
-import Blockchains from '@depay/web3-blockchains';
-import { BN, struct, u64, i64, bool, u8, ACCOUNT_LAYOUT, PublicKey, Connection, u32, publicKey, rustEnum, str, u16, option, vec, Buffer, TransactionInstruction, SystemProgram, ComputeBudgetProgram, u128 } from '@depay/solana-web3.js';
-import { ethers } from 'ethers';
 import Exchanges from '@depay/web3-exchanges-svm';
 import Token$1 from '@depay/web3-tokens-svm';
+import Blockchains from '@depay/web3-blockchains';
+import { ethers } from 'ethers';
+import { BN, struct, u64, i64, bool, u8, ACCOUNT_LAYOUT, PublicKey, Connection, u32, publicKey, rustEnum, str, u16, option, vec, Buffer, TransactionInstruction, SystemProgram, ComputeBudgetProgram, u128 } from '@depay/solana-web3.js';
 
-var routers$1 = {
+const config = {
+  endpoints: {
+    routesBest: 'https://public.depay.com/routes/best'
+  }
+};
+
+const API = [{"inputs":[{"internalType":"address","name":"_PERMIT2","type":"address"},{"internalType":"address","name":"_FORWARDER","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"ExchangeCallFailed","type":"error"},{"inputs":[],"name":"ExchangeCallMissing","type":"error"},{"inputs":[],"name":"ExchangeNotApproved","type":"error"},{"inputs":[],"name":"ForwardingPaymentFailed","type":"error"},{"inputs":[],"name":"InsufficientBalanceInAfterPayment","type":"error"},{"inputs":[],"name":"InsufficientBalanceOutAfterPayment","type":"error"},{"inputs":[],"name":"InsufficientProtocolAmount","type":"error"},{"inputs":[],"name":"NativeFeePaymentFailed","type":"error"},{"inputs":[],"name":"NativePaymentFailed","type":"error"},{"inputs":[],"name":"PaymentDeadlineReached","type":"error"},{"inputs":[],"name":"PaymentToZeroAddressNotAllowed","type":"error"},{"inputs":[],"name":"WrongAmountPaidIn","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"exchange","type":"address"}],"name":"Disabled","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"exchange","type":"address"}],"name":"Enabled","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferStarted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":true,"internalType":"uint256","name":"deadline","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"amountIn","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"feeAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"feeAmount2","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"protocolAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"slippageInAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"slippageOutAmount","type":"uint256"},{"indexed":false,"internalType":"address","name":"tokenInAddress","type":"address"},{"indexed":false,"internalType":"address","name":"tokenOutAddress","type":"address"},{"indexed":false,"internalType":"address","name":"feeReceiverAddress","type":"address"},{"indexed":false,"internalType":"address","name":"feeReceiverAddress2","type":"address"}],"name":"Payment","type":"event"},{"inputs":[],"name":"FORWARDER","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PERMIT2","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"acceptOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"exchange","type":"address"},{"internalType":"bool","name":"enabled","type":"bool"}],"name":"enable","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"exchanges","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"components":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount2","type":"uint256"},{"internalType":"uint256","name":"protocolAmount","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"address","name":"tokenInAddress","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"address","name":"tokenOutAddress","type":"address"},{"internalType":"address","name":"paymentReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress2","type":"address"},{"internalType":"uint8","name":"exchangeType","type":"uint8"},{"internalType":"uint8","name":"receiverType","type":"uint8"},{"internalType":"bool","name":"permit2","type":"bool"},{"internalType":"bytes","name":"exchangeCallData","type":"bytes"},{"internalType":"bytes","name":"receiverCallData","type":"bytes"}],"internalType":"struct IDePayRouterV3.Payment","name":"payment","type":"tuple"},{"components":[{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"internalType":"struct IPermit2.TokenPermissions","name":"permitted","type":"tuple"},{"internalType":"uint256","name":"nonce","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"internalType":"struct IPermit2.PermitTransferFrom","name":"permitTransferFrom","type":"tuple"},{"internalType":"bytes","name":"signature","type":"bytes"}],"internalType":"struct IDePayRouterV3.PermitTransferFromAndSignature","name":"permitTransferFromAndSignature","type":"tuple"}],"name":"pay","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"components":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount2","type":"uint256"},{"internalType":"uint256","name":"protocolAmount","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"address","name":"tokenInAddress","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"address","name":"tokenOutAddress","type":"address"},{"internalType":"address","name":"paymentReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress2","type":"address"},{"internalType":"uint8","name":"exchangeType","type":"uint8"},{"internalType":"uint8","name":"receiverType","type":"uint8"},{"internalType":"bool","name":"permit2","type":"bool"},{"internalType":"bytes","name":"exchangeCallData","type":"bytes"},{"internalType":"bytes","name":"receiverCallData","type":"bytes"}],"internalType":"struct IDePayRouterV3.Payment","name":"payment","type":"tuple"}],"name":"pay","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"components":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount2","type":"uint256"},{"internalType":"uint256","name":"protocolAmount","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"address","name":"tokenInAddress","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"address","name":"tokenOutAddress","type":"address"},{"internalType":"address","name":"paymentReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress2","type":"address"},{"internalType":"uint8","name":"exchangeType","type":"uint8"},{"internalType":"uint8","name":"receiverType","type":"uint8"},{"internalType":"bool","name":"permit2","type":"bool"},{"internalType":"bytes","name":"exchangeCallData","type":"bytes"},{"internalType":"bytes","name":"receiverCallData","type":"bytes"}],"internalType":"struct IDePayRouterV3.Payment","name":"payment","type":"tuple"},{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"uint48","name":"expiration","type":"uint48"},{"internalType":"uint48","name":"nonce","type":"uint48"}],"internalType":"struct IPermit2.PermitDetails","name":"details","type":"tuple"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"sigDeadline","type":"uint256"}],"internalType":"struct IPermit2.PermitSingle","name":"permitSingle","type":"tuple"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"pay","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"pendingOwner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdraw","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}];
+
+var svmRouters = {
+
+  ethereum: {
+    address: '0x365f7B56D2fB16C8Af89D7d33b420E4e013461e8',
+    api: API
+  },
+
+  bsc: {
+    address: '0x5F565EDfB9C446976a9F9910631cfeDb6A87220c',
+    api: API
+  },
+
+  polygon: {
+    address: '0xe04b08Dfc6CaA0F4Ec523a3Ae283Ece7efE00019',
+    api: API
+  },
+
+  avalanche: {
+    address: '0x39E7C98BF4ac3E4C394dD600397f5f7Ee3779BE8',
+    api: API
+  },
+
+  gnosis: {
+    address: '0x328FE8bbd30487BB7b5A8eEb909f892E9E229271',
+    api: API
+  },
+
+  arbitrum: {
+    address: '0x328FE8bbd30487BB7b5A8eEb909f892E9E229271',
+    api: API
+  },
+
+  optimism: {
+    address: '0x558302715e3011Be6695605c11A65526D2ba2245',
+    api: API
+  },
+
+  base: {
+    address: '0x48825133EF08327535D0b24d73779E82BE6Ea4d9',
+    api: API
+  },
+
+  worldchain: {
+    address: '0x886eb82a7e5E7310F66A0E83748662A17E391eb0',
+    api: API
+  },
+
+};
+
+let evmRouters = {};
+
+
+var routers$1 = {... evmRouters, ...svmRouters};
+
+let supported$2 = ['solana'];
+supported$2.evm = [];
+supported$2.svm = ['solana'];
+
+let evmGetRouterApprovalTransaction = ()=>{};
+let evmGetPermit2ApprovalTransaction = ()=>{};
+let evmGetPermit2ApprovalSignature = ()=>{};
+
+const getRouterApprovalTransaction = ({ paymentRoute, options })=>{
+  if(supported$2.evm.includes(paymentRoute.blockchain)) {
+    return evmGetRouterApprovalTransaction()
+  } else if(supported$2.svm.includes(paymentRoute.blockchain)) ; else {
+    throw('Blockchain not supported!')
+  }
+};
+
+const getPermit2ApprovalTransaction = ({ paymentRoute, options })=>{
+  if(supported$2.evm.includes(paymentRoute.blockchain)) {
+    return evmGetPermit2ApprovalTransaction()
+  } else if(supported$2.svm.includes(paymentRoute.blockchain)) ; else {
+    throw('Blockchain not supported!')
+  }
+};
+
+const getPermit2ApprovalSignature = ({ paymentRoute, options })=>{
+  if(supported$2.evm.includes(paymentRoute.blockchain)) {
+    return evmGetPermit2ApprovalSignature()
+  } else if(supported$2.svm.includes(paymentRoute.blockchain)) ; else {
+    throw('Blockchain not supported!')
+  }
+};
+
+var routers = {
   solana: {
     address: 'DePayR1gQfDmViCPKctnZXNtUgqRwnEqMax8LX9ho1Zg',
     exchanges: {
@@ -815,9 +909,9 @@ var Solana = {
   setProvider: setProvider$1,
 };
 
-let supported$2 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
-supported$2.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
-supported$2.svm = ['solana'];
+let supported$1 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
+supported$1.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
+supported$1.svm = ['solana'];
 
 function _optionalChain$1$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 let getCacheStore = () => {
@@ -919,13 +1013,13 @@ let cache = function ({ call, key, expires = 0 }) {
 
 const getProvider = async (blockchain)=>{
 
-  if(supported$2.evm.includes(blockchain)) {
+  if(supported$1.evm.includes(blockchain)) {
 
 
     return await EVM.getProvider(blockchain)
 
 
-  } else if(supported$2.svm.includes(blockchain)) {
+  } else if(supported$1.svm.includes(blockchain)) {
 
 
     return await Solana.getProvider(blockchain)
@@ -1152,13 +1246,13 @@ const request = async function (url, options) {
     expires: cache$1 || 0,
     key: cacheKey || [blockchain, address, method, params, block],
     call: async()=>{
-      if(supported$2.evm.includes(blockchain)) {
+      if(supported$1.evm.includes(blockchain)) {
 
 
         return await requestEVM({ blockchain, address, api, method, params, block, strategy, timeout })
 
 
-      } else if(supported$2.svm.includes(blockchain)) {
+      } else if(supported$1.svm.includes(blockchain)) {
 
 
         return await requestSolana({ blockchain, address, api, method, params, block, strategy, timeout })
@@ -2256,9 +2350,9 @@ var symbolOnSolana = async ({ blockchain, address })=>{
   return _optionalChain$1([metaData, 'optionalAccess', _ => _.symbol])
 };
 
-let supported$1 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
-supported$1.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
-supported$1.svm = ['solana'];
+let supported = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
+supported.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
+supported.svm = ['solana'];
 
 function _optionalChain$5(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 
@@ -2266,9 +2360,9 @@ class Token {
   
   constructor({ blockchain, address, name, decimals, symbol }) {
     this.blockchain = blockchain;
-    if(supported$1.evm.includes(this.blockchain)) {
+    if(supported.evm.includes(this.blockchain)) {
       this.address = ethers.utils.getAddress(address);
-    } else if(supported$1.svm.includes(this.blockchain)) {
+    } else if(supported.svm.includes(this.blockchain)) {
       this.address = address;
     }
     this._name = name;
@@ -2284,11 +2378,11 @@ class Token {
     }
     let decimals;
     try {
-      if(supported$1.evm.includes(this.blockchain)) {
+      if(supported.evm.includes(this.blockchain)) {
 
         decimals = await decimalsOnEVM({ blockchain: this.blockchain, address: this.address, api: Token[this.blockchain].DEFAULT });
 
-      } else if(supported$1.svm.includes(this.blockchain)) {
+      } else if(supported.svm.includes(this.blockchain)) {
 
         decimals = await decimalsOnSolana({ blockchain: this.blockchain, address: this.address });
 
@@ -2306,11 +2400,11 @@ class Token {
       return this._symbol
     }
     let symbol;
-    if(supported$1.evm.includes(this.blockchain)) {
+    if(supported.evm.includes(this.blockchain)) {
 
       symbol = await symbolOnEVM({ blockchain: this.blockchain, address: this.address, api: Token[this.blockchain].DEFAULT });
 
-    } else if(supported$1.svm.includes(this.blockchain)) {
+    } else if(supported.svm.includes(this.blockchain)) {
 
       symbol = await symbolOnSolana({ blockchain: this.blockchain, address: this.address });
 
@@ -2326,11 +2420,11 @@ class Token {
       return this._name
     }
     let name;
-    if(supported$1.evm.includes(this.blockchain)) {
+    if(supported.evm.includes(this.blockchain)) {
 
       name = await nameOnEVM({ blockchain: this.blockchain, address: this.address, api: Token[this.blockchain].DEFAULT, id: _optionalChain$5([args, 'optionalAccess', _ => _.id]) });
 
-    } else if(supported$1.svm.includes(this.blockchain)) {
+    } else if(supported.svm.includes(this.blockchain)) {
 
       name = await nameOnSolana({ blockchain: this.blockchain, address: this.address });
 
@@ -2340,11 +2434,11 @@ class Token {
   }
 
   async balance(account, id) {
-    if(supported$1.evm.includes(this.blockchain)) {
+    if(supported.evm.includes(this.blockchain)) {
 
       return await balanceOnEVM({ blockchain: this.blockchain, account, address: this.address, api: id ? Token[this.blockchain][1155] : Token[this.blockchain].DEFAULT, id })
 
-    } else if(supported$1.svm.includes(this.blockchain)) {
+    } else if(supported.svm.includes(this.blockchain)) {
 
       return await balanceOnSolana({ blockchain: this.blockchain, account, address: this.address, api: Token[this.blockchain].DEFAULT })
 
@@ -2355,11 +2449,11 @@ class Token {
     if (this.address == Blockchains.findByName(this.blockchain).currency.address) {
       return ethers.BigNumber.from(Blockchains.findByName(this.blockchain).maxInt)
     }
-    if(supported$1.evm.includes(this.blockchain)) {
+    if(supported.evm.includes(this.blockchain)) {
 
       return await allowanceOnEVM({ blockchain: this.blockchain, address: this.address, api: Token[this.blockchain].DEFAULT, owner, spender })
 
-    } else if(supported$1.svm.includes(this.blockchain)) {
+    } else if(supported.svm.includes(this.blockchain)) {
       return ethers.BigNumber.from(Blockchains.findByName(this.blockchain).maxInt)
     } 
   }
@@ -2739,7 +2833,7 @@ const getEscrowSolAccountPublicKey = async()=>{
   let seeds = [Buffer.from("escrow_sol")];
   
   let [ pdaPublicKey, bump ] = await PublicKey.findProgramAddress(
-    seeds, new PublicKey(routers$1.solana.address)
+    seeds, new PublicKey(routers.solana.address)
   );
 
   return pdaPublicKey
@@ -2758,7 +2852,7 @@ const getEscrowInWSolAccountPublicKey = async()=>{
   ];
   
   let [ pdaPublicKey, bump ] = await PublicKey.findProgramAddress(
-    seeds, new PublicKey(routers$1.solana.address)
+    seeds, new PublicKey(routers.solana.address)
   );
 
   return pdaPublicKey
@@ -2774,7 +2868,7 @@ const getEscrowOutWSolAccountPublicKey = async()=>{
   let seeds = [Buffer.from("escrow_wsol")];
   
   let [ pdaPublicKey, bump ] = await PublicKey.findProgramAddress(
-    seeds, new PublicKey(routers$1.solana.address)
+    seeds, new PublicKey(routers.solana.address)
   );
 
   return pdaPublicKey
@@ -2788,7 +2882,7 @@ const getEscrowOutAccountPublicKey = async({ paymentRoute })=>{
   ];
   
   let [ pdaPublicKey, bump ] = await PublicKey.findProgramAddress(
-    seeds, new PublicKey(routers$1.solana.address)
+    seeds, new PublicKey(routers.solana.address)
   );
 
   return pdaPublicKey
@@ -2823,14 +2917,14 @@ const createEscrowOutTokenAccount = async({ paymentRoute })=> {
     { pubkey: await getEscrowOutAccountPublicKey({ paymentRoute }), isSigner: false, isWritable: true },
   ];
 
-  const data = Buffer.alloc(routers$1.solana.api.createEscrowTokenAccount.layout.span);
-  routers$1.solana.api.createEscrowTokenAccount.layout.encode({
-    anchorDiscriminator: routers$1.solana.api.createEscrowTokenAccount.anchorDiscriminator
+  const data = Buffer.alloc(routers.solana.api.createEscrowTokenAccount.layout.span);
+  routers.solana.api.createEscrowTokenAccount.layout.encode({
+    anchorDiscriminator: routers.solana.api.createEscrowTokenAccount.anchorDiscriminator
   }, data);
   
   return new TransactionInstruction({
     keys,
-    programId: new PublicKey(routers$1.solana.address),
+    programId: new PublicKey(routers.solana.address),
     data
   })
 };
@@ -2843,7 +2937,7 @@ const getEscrowMiddleAccountPublicKey = async({ paymentRoute })=>{
   ];
   
   let [ pdaPublicKey, bump ] = await PublicKey.findProgramAddress(
-    seeds, new PublicKey(routers$1.solana.address)
+    seeds, new PublicKey(routers.solana.address)
   );
 
   return pdaPublicKey
@@ -2882,14 +2976,14 @@ const createEscrowMiddleTokenAccount = async({ paymentRoute })=> {
     { pubkey: await getEscrowMiddleAccountPublicKey({ paymentRoute }), isSigner: false, isWritable: true },
   ];
 
-  const data = Buffer.alloc(routers$1.solana.api.createEscrowTokenAccount.layout.span);
-  routers$1.solana.api.createEscrowTokenAccount.layout.encode({
-    anchorDiscriminator: routers$1.solana.api.createEscrowTokenAccount.anchorDiscriminator
+  const data = Buffer.alloc(routers.solana.api.createEscrowTokenAccount.layout.span);
+  routers.solana.api.createEscrowTokenAccount.layout.encode({
+    anchorDiscriminator: routers.solana.api.createEscrowTokenAccount.anchorDiscriminator
   }, data);
   
   return new TransactionInstruction({
     keys,
-    programId: new PublicKey(routers$1.solana.address),
+    programId: new PublicKey(routers.solana.address),
     data
   })
 };
@@ -3062,9 +3156,9 @@ const routeSol = async({ paymentRoute, deadline }) =>{
     { pubkey: await getEscrowSolAccountPublicKey(), isSigner: false, isWritable: true },
   ];
 
-  const data = Buffer.alloc(routers$1.solana.api.routeSol.layout.span);
-  routers$1.solana.api.routeSol.layout.encode({
-    anchorDiscriminator: routers$1.solana.api.routeSol.anchorDiscriminator,
+  const data = Buffer.alloc(routers.solana.api.routeSol.layout.span);
+  routers.solana.api.routeSol.layout.encode({
+    anchorDiscriminator: routers.solana.api.routeSol.anchorDiscriminator,
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
     feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
     feeAmount2: new BN((paymentRoute.feeAmount2 || '0').toString()),
@@ -3074,7 +3168,7 @@ const routeSol = async({ paymentRoute, deadline }) =>{
   
   return new TransactionInstruction({
     keys,
-    programId: new PublicKey(routers$1.solana.address),
+    programId: new PublicKey(routers.solana.address),
     data
   })
 };
@@ -3096,9 +3190,9 @@ const routeToken = async({ paymentRoute, deadline }) =>{
     { pubkey: await getEscrowOutAccountPublicKey({ paymentRoute }), isSigner: false, isWritable: true },
   ];
 
-  const data = Buffer.alloc(routers$1.solana.api.routeToken.layout.span);
-  routers$1.solana.api.routeToken.layout.encode({
-    anchorDiscriminator: routers$1.solana.api.routeToken.anchorDiscriminator,
+  const data = Buffer.alloc(routers.solana.api.routeToken.layout.span);
+  routers.solana.api.routeToken.layout.encode({
+    anchorDiscriminator: routers.solana.api.routeToken.anchorDiscriminator,
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
     feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
     feeAmount2: new BN((paymentRoute.feeAmount2 || '0').toString()),
@@ -3108,7 +3202,7 @@ const routeToken = async({ paymentRoute, deadline }) =>{
   
   return new TransactionInstruction({ 
     keys,
-    programId: new PublicKey(routers$1.solana.address),
+    programId: new PublicKey(routers.solana.address),
     data 
   })    
 };
@@ -3121,7 +3215,7 @@ const routeOrcaSwap = async({ paymentRoute, deadline }) =>{
   const fee2ReceiverTokenAccountAddress = paymentRoute.fee2 ? await getFee2ReceiverTokenAccountAddress({ paymentRoute }) : paymentReceiverTokenAccountAddress;
   const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
   const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.orca);
+  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.orca);
 
   const SWAP_LAYOUT = struct([
     u64("anchorDiscriminator"),
@@ -3137,7 +3231,7 @@ const routeOrcaSwap = async({ paymentRoute, deadline }) =>{
     // token_program
     { pubkey: new PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
     // amm_program
-    { pubkey: new PublicKey(routers$1.solana.exchanges.orca), isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(routers.solana.exchanges.orca), isSigner: false, isWritable: false },
     // sender
     { pubkey: new PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
     // sender_token_account
@@ -3166,9 +3260,9 @@ const routeOrcaSwap = async({ paymentRoute, deadline }) =>{
     { pubkey: new PublicKey(fee2ReceiverTokenAccountAddress), isSigner: false, isWritable: true },
   ];
 
-  const data = Buffer.alloc(routers$1.solana.api.routeOrcaSwap.layout.span);
-  routers$1.solana.api.routeOrcaSwap.layout.encode({
-    anchorDiscriminator: routers$1.solana.api.routeOrcaSwap.anchorDiscriminator,
+  const data = Buffer.alloc(routers.solana.api.routeOrcaSwap.layout.span);
+  routers.solana.api.routeOrcaSwap.layout.encode({
+    anchorDiscriminator: routers.solana.api.routeOrcaSwap.anchorDiscriminator,
     amountIn: exchangeRouteSwapInstructionData.amount,
     aToB: exchangeRouteSwapInstructionData.aToB,
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
@@ -3180,7 +3274,7 @@ const routeOrcaSwap = async({ paymentRoute, deadline }) =>{
   
   return new TransactionInstruction({ 
     keys,
-    programId: new PublicKey(routers$1.solana.address),
+    programId: new PublicKey(routers.solana.address),
     data
   })
 };
@@ -3192,7 +3286,7 @@ const routeOrcaSwapSolIn = async({ paymentRoute, deadline }) =>{
   const feeReceiver2TokenAccountPublicKey = paymentRoute.fee2 ? new PublicKey(await getFee2ReceiverTokenAccountAddress({ paymentRoute })) : paymentReceiverTokenAccountPublicKey;
   const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
   const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.orca);
+  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.orca);
 
   const SWAP_LAYOUT = struct([
     u64("anchorDiscriminator"),
@@ -3210,7 +3304,7 @@ const routeOrcaSwapSolIn = async({ paymentRoute, deadline }) =>{
     // token_program
     { pubkey: new PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
     // amm_program
-    { pubkey: new PublicKey(routers$1.solana.exchanges.orca), isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(routers.solana.exchanges.orca), isSigner: false, isWritable: false },
     // sender
     { pubkey: new PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
     // escrow_in
@@ -3239,9 +3333,9 @@ const routeOrcaSwapSolIn = async({ paymentRoute, deadline }) =>{
     { pubkey: feeReceiver2TokenAccountPublicKey, isSigner: false, isWritable: true },
   ];
 
-  const data = Buffer.alloc(routers$1.solana.api.routeOrcaSwapSolIn.layout.span);
-  routers$1.solana.api.routeOrcaSwapSolIn.layout.encode({
-    anchorDiscriminator: routers$1.solana.api.routeOrcaSwapSolIn.anchorDiscriminator,
+  const data = Buffer.alloc(routers.solana.api.routeOrcaSwapSolIn.layout.span);
+  routers.solana.api.routeOrcaSwapSolIn.layout.encode({
+    anchorDiscriminator: routers.solana.api.routeOrcaSwapSolIn.anchorDiscriminator,
     amountIn: exchangeRouteSwapInstructionData.amount,
     aToB: exchangeRouteSwapInstructionData.aToB,
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
@@ -3253,7 +3347,7 @@ const routeOrcaSwapSolIn = async({ paymentRoute, deadline }) =>{
   
   return new TransactionInstruction({ 
     keys,
-    programId: new PublicKey(routers$1.solana.address),
+    programId: new PublicKey(routers.solana.address),
     data
   })
 };
@@ -3262,7 +3356,7 @@ const routeOrcaSwapSolOut = async({ paymentRoute, deadline }) =>{
 
   const senderTokenAccountAddress = await getPaymentSenderTokenAccountAddress({ paymentRoute });
   const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.orca);
+  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.orca);
 
   const SWAP_LAYOUT = struct([
     u64("anchorDiscriminator"),
@@ -3280,7 +3374,7 @@ const routeOrcaSwapSolOut = async({ paymentRoute, deadline }) =>{
     // token_program
     { pubkey: new PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
     // amm_program
-    { pubkey: new PublicKey(routers$1.solana.exchanges.orca), isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(routers.solana.exchanges.orca), isSigner: false, isWritable: false },
     // sender
     { pubkey: new PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
     // sender_token_account
@@ -3313,9 +3407,9 @@ const routeOrcaSwapSolOut = async({ paymentRoute, deadline }) =>{
     { pubkey: new PublicKey(paymentRoute.fee2 ? paymentRoute.fee2.receiver : paymentRoute.toAddress), isSigner: false, isWritable: true },
   ];
 
-  const data = Buffer.alloc(routers$1.solana.api.routeOrcaSwapSolOut.layout.span);
-  routers$1.solana.api.routeOrcaSwapSolOut.layout.encode({
-    anchorDiscriminator: routers$1.solana.api.routeOrcaSwapSolOut.anchorDiscriminator,
+  const data = Buffer.alloc(routers.solana.api.routeOrcaSwapSolOut.layout.span);
+  routers.solana.api.routeOrcaSwapSolOut.layout.encode({
+    anchorDiscriminator: routers.solana.api.routeOrcaSwapSolOut.anchorDiscriminator,
     amountIn: exchangeRouteSwapInstructionData.amount,
     aToB: exchangeRouteSwapInstructionData.aToB,
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
@@ -3327,7 +3421,7 @@ const routeOrcaSwapSolOut = async({ paymentRoute, deadline }) =>{
   
   return new TransactionInstruction({ 
     keys,
-    programId: new PublicKey(routers$1.solana.address),
+    programId: new PublicKey(routers.solana.address),
     data
   })
 };
@@ -3340,7 +3434,7 @@ const routeOrcaTwoHopSwap = async({ paymentRoute, deadline }) =>{
   const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
   const escrowMiddlePublicKey = await getEscrowMiddleAccountPublicKey({ paymentRoute });
   const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.orca);
+  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.orca);
   const senderTokenAccountPublicKey = new PublicKey(await getPaymentSenderTokenAccountAddress({ paymentRoute }));
 
   const SWAP_LAYOUT = struct([
@@ -3359,7 +3453,7 @@ const routeOrcaTwoHopSwap = async({ paymentRoute, deadline }) =>{
     // token_program
     { pubkey: new PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
     // amm_program
-    { pubkey: new PublicKey(routers$1.solana.exchanges.orca), isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(routers.solana.exchanges.orca), isSigner: false, isWritable: false },
     // sender
     { pubkey: new PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
     // whirlpool_one
@@ -3404,9 +3498,9 @@ const routeOrcaTwoHopSwap = async({ paymentRoute, deadline }) =>{
     { pubkey: feeReceiver2TokenAccountPublicKey, isSigner: false, isWritable: true },
   ];
 
-  const data = Buffer.alloc(routers$1.solana.api.routeOrcaTwoHopSwap.layout.span);
-  routers$1.solana.api.routeOrcaTwoHopSwap.layout.encode({
-    anchorDiscriminator: routers$1.solana.api.routeOrcaTwoHopSwap.anchorDiscriminator,
+  const data = Buffer.alloc(routers.solana.api.routeOrcaTwoHopSwap.layout.span);
+  routers.solana.api.routeOrcaTwoHopSwap.layout.encode({
+    anchorDiscriminator: routers.solana.api.routeOrcaTwoHopSwap.anchorDiscriminator,
     amountInOne: new BN(paymentRoute.exchangeRoutes[0].amounts[0].toString()),
     amountInTwo: new BN(paymentRoute.exchangeRoutes[0].amounts[1].toString()),
     aToBOne: exchangeRouteSwapInstructionData.aToBOne,
@@ -3420,7 +3514,7 @@ const routeOrcaTwoHopSwap = async({ paymentRoute, deadline }) =>{
 
   return new TransactionInstruction({ 
     keys,
-    programId: new PublicKey(routers$1.solana.address),
+    programId: new PublicKey(routers.solana.address),
     data
   })
 };
@@ -3433,7 +3527,7 @@ const routeOrcaTwoHopSwapSolIn = async({ paymentRoute, deadline }) =>{
   const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
   const escrowMiddlePublicKey = await getEscrowMiddleAccountPublicKey({ paymentRoute });
   const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.orca);
+  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.orca);
   new PublicKey(await getPaymentSenderTokenAccountAddress({ paymentRoute }));
 
   const SWAP_LAYOUT = struct([
@@ -3454,7 +3548,7 @@ const routeOrcaTwoHopSwapSolIn = async({ paymentRoute, deadline }) =>{
     // token_program
     { pubkey: new PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
     // amm_program
-    { pubkey: new PublicKey(routers$1.solana.exchanges.orca), isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(routers.solana.exchanges.orca), isSigner: false, isWritable: false },
     // sender
     { pubkey: new PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
     // escrow_in
@@ -3499,9 +3593,9 @@ const routeOrcaTwoHopSwapSolIn = async({ paymentRoute, deadline }) =>{
     { pubkey: feeReceiver2TokenAccountPublicKey, isSigner: false, isWritable: true },
   ];
 
-  const data = Buffer.alloc(routers$1.solana.api.routeOrcaTwoHopSwapSolIn.layout.span);
-  routers$1.solana.api.routeOrcaTwoHopSwapSolIn.layout.encode({
-    anchorDiscriminator: routers$1.solana.api.routeOrcaTwoHopSwapSolIn.anchorDiscriminator,
+  const data = Buffer.alloc(routers.solana.api.routeOrcaTwoHopSwapSolIn.layout.span);
+  routers.solana.api.routeOrcaTwoHopSwapSolIn.layout.encode({
+    anchorDiscriminator: routers.solana.api.routeOrcaTwoHopSwapSolIn.anchorDiscriminator,
     amountInOne: new BN(paymentRoute.exchangeRoutes[0].amounts[0].toString()),
     amountInTwo: new BN(paymentRoute.exchangeRoutes[0].amounts[1].toString()),
     aToBOne: exchangeRouteSwapInstructionData.aToBOne,
@@ -3515,7 +3609,7 @@ const routeOrcaTwoHopSwapSolIn = async({ paymentRoute, deadline }) =>{
 
   return new TransactionInstruction({ 
     keys,
-    programId: new PublicKey(routers$1.solana.address),
+    programId: new PublicKey(routers.solana.address),
     data
   })
 };
@@ -3524,7 +3618,7 @@ const routeOrcaTwoHopSwapSolOut = async({ paymentRoute, deadline }) =>{
 
   new PublicKey(await getMiddleTokenAccountAddress({ paymentRoute }));
   const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.orca);
+  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.orca);
   const senderTokenAccountPublicKey = new PublicKey(await getPaymentSenderTokenAccountAddress({ paymentRoute }));
   const escrowMiddlePublicKey = await getEscrowMiddleAccountPublicKey({ paymentRoute });
 
@@ -3546,7 +3640,7 @@ const routeOrcaTwoHopSwapSolOut = async({ paymentRoute, deadline }) =>{
     // token_program
     { pubkey: new PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
     // amm_program
-    { pubkey: new PublicKey(routers$1.solana.exchanges.orca), isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(routers.solana.exchanges.orca), isSigner: false, isWritable: false },
     // sender
     { pubkey: new PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
     // sender_token_account
@@ -3595,9 +3689,9 @@ const routeOrcaTwoHopSwapSolOut = async({ paymentRoute, deadline }) =>{
     { pubkey: new PublicKey(paymentRoute.fee2 ? paymentRoute.fee2.receiver : paymentRoute.toAddress), isSigner: false, isWritable: true },
   ];
 
-  const data = Buffer.alloc(routers$1.solana.api.routeOrcaTwoHopSwapSolOut.layout.span);
-  routers$1.solana.api.routeOrcaTwoHopSwapSolOut.layout.encode({
-    anchorDiscriminator: routers$1.solana.api.routeOrcaTwoHopSwapSolOut.anchorDiscriminator,
+  const data = Buffer.alloc(routers.solana.api.routeOrcaTwoHopSwapSolOut.layout.span);
+  routers.solana.api.routeOrcaTwoHopSwapSolOut.layout.encode({
+    anchorDiscriminator: routers.solana.api.routeOrcaTwoHopSwapSolOut.anchorDiscriminator,
     amountInOne: new BN(paymentRoute.exchangeRoutes[0].amounts[0].toString()),
     amountInTwo: new BN(paymentRoute.exchangeRoutes[0].amounts[1].toString()),
     aToBOne: exchangeRouteSwapInstructionData.aToBOne,
@@ -3611,7 +3705,7 @@ const routeOrcaTwoHopSwapSolOut = async({ paymentRoute, deadline }) =>{
   
   return new TransactionInstruction({ 
     keys,
-    programId: new PublicKey(routers$1.solana.address),
+    programId: new PublicKey(routers.solana.address),
     data
   })
 };
@@ -3624,13 +3718,13 @@ const routeRaydiumCpSwap = async({ paymentRoute, deadline }) =>{
   const fee2ReceiverTokenAccountAddress = paymentRoute.fee2 ? await getFee2ReceiverTokenAccountAddress({ paymentRoute }) : paymentReceiverTokenAccountAddress;
   const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
   const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.raydiumCP);
+  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.raydiumCP);
 
   const keys = [
     // token_program
     { pubkey: new PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
     // cp_swap_program
-    { pubkey: new PublicKey(routers$1.solana.exchanges.raydiumCP), isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(routers.solana.exchanges.raydiumCP), isSigner: false, isWritable: false },
     // sender
     { pubkey: new PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
     // authority
@@ -3661,9 +3755,9 @@ const routeRaydiumCpSwap = async({ paymentRoute, deadline }) =>{
     { pubkey: new PublicKey(fee2ReceiverTokenAccountAddress), isSigner: false, isWritable: true },
   ];
 
-  const data = Buffer.alloc(routers$1.solana.api.routeRaydiumCpSwap.layout.span);
-  routers$1.solana.api.routeRaydiumCpSwap.layout.encode({
-    anchorDiscriminator: routers$1.solana.api.routeRaydiumCpSwap.anchorDiscriminator,
+  const data = Buffer.alloc(routers.solana.api.routeRaydiumCpSwap.layout.span);
+  routers.solana.api.routeRaydiumCpSwap.layout.encode({
+    anchorDiscriminator: routers.solana.api.routeRaydiumCpSwap.anchorDiscriminator,
     amountIn: new BN(paymentRoute.fromAmount.toString()),
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
     feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
@@ -3674,7 +3768,7 @@ const routeRaydiumCpSwap = async({ paymentRoute, deadline }) =>{
   
   return new TransactionInstruction({ 
     keys,
-    programId: new PublicKey(routers$1.solana.address),
+    programId: new PublicKey(routers.solana.address),
     data
   })
 };
@@ -3686,7 +3780,7 @@ const routeRaydiumCpSwapSolIn = async({ paymentRoute, deadline }) =>{
   const fee2ReceiverTokenAccountAddress = paymentRoute.fee2 ? await getFee2ReceiverTokenAccountAddress({ paymentRoute }) : paymentReceiverTokenAccountAddress;
   const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
   const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.raydiumCP);
+  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.raydiumCP);
 
   const keys = [
     // system_program
@@ -3694,7 +3788,7 @@ const routeRaydiumCpSwapSolIn = async({ paymentRoute, deadline }) =>{
     // token_program
     { pubkey: new PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
     // cp_swap_program
-    { pubkey: new PublicKey(routers$1.solana.exchanges.raydiumCP), isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(routers.solana.exchanges.raydiumCP), isSigner: false, isWritable: false },
     // sender
     { pubkey: new PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
     // authority
@@ -3725,9 +3819,9 @@ const routeRaydiumCpSwapSolIn = async({ paymentRoute, deadline }) =>{
     { pubkey: new PublicKey(fee2ReceiverTokenAccountAddress), isSigner: false, isWritable: true },
   ];
 
-  const data = Buffer.alloc(routers$1.solana.api.routeRaydiumCpSwapSolIn.layout.span);
-  routers$1.solana.api.routeRaydiumCpSwapSolIn.layout.encode({
-    anchorDiscriminator: routers$1.solana.api.routeRaydiumCpSwapSolIn.anchorDiscriminator,
+  const data = Buffer.alloc(routers.solana.api.routeRaydiumCpSwapSolIn.layout.span);
+  routers.solana.api.routeRaydiumCpSwapSolIn.layout.encode({
+    anchorDiscriminator: routers.solana.api.routeRaydiumCpSwapSolIn.anchorDiscriminator,
     amountIn: new BN(paymentRoute.fromAmount.toString()),
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
     feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
@@ -3738,7 +3832,7 @@ const routeRaydiumCpSwapSolIn = async({ paymentRoute, deadline }) =>{
   
   return new TransactionInstruction({ 
     keys,
-    programId: new PublicKey(routers$1.solana.address),
+    programId: new PublicKey(routers.solana.address),
     data
   })
 };
@@ -3747,7 +3841,7 @@ const routeRaydiumCpSwapSolOut = async({ paymentRoute, deadline }) =>{
 
   const senderTokenAccountAddress = await getPaymentSenderTokenAccountAddress({ paymentRoute });
   const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.raydiumCP);
+  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.raydiumCP);
 
   const keys = [
     // system_program
@@ -3755,7 +3849,7 @@ const routeRaydiumCpSwapSolOut = async({ paymentRoute, deadline }) =>{
     // token_program
     { pubkey: new PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
     // cp_swap_program
-    { pubkey: new PublicKey(routers$1.solana.exchanges.raydiumCP), isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(routers.solana.exchanges.raydiumCP), isSigner: false, isWritable: false },
     // sender
     { pubkey: new PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
     // authority
@@ -3788,9 +3882,9 @@ const routeRaydiumCpSwapSolOut = async({ paymentRoute, deadline }) =>{
     { pubkey: new PublicKey(paymentRoute.fee2 ? paymentRoute.fee2.receiver : paymentRoute.toAddress), isSigner: false, isWritable: true },
   ];
 
-  const data = Buffer.alloc(routers$1.solana.api.routeRaydiumCpSwapSolOut.layout.span);
-  routers$1.solana.api.routeRaydiumCpSwapSolOut.layout.encode({
-    anchorDiscriminator: routers$1.solana.api.routeRaydiumCpSwapSolOut.anchorDiscriminator,
+  const data = Buffer.alloc(routers.solana.api.routeRaydiumCpSwapSolOut.layout.span);
+  routers.solana.api.routeRaydiumCpSwapSolOut.layout.encode({
+    anchorDiscriminator: routers.solana.api.routeRaydiumCpSwapSolOut.anchorDiscriminator,
     amountIn: new BN(paymentRoute.fromAmount.toString()),
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
     feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
@@ -3801,7 +3895,7 @@ const routeRaydiumCpSwapSolOut = async({ paymentRoute, deadline }) =>{
   
   return new TransactionInstruction({
     keys,
-    programId: new PublicKey(routers$1.solana.address),
+    programId: new PublicKey(routers.solana.address),
     data
   })
 };
@@ -3826,7 +3920,7 @@ const routeRaydiumClSwap = async({ paymentRoute, deadline }) =>{
   const fee2ReceiverTokenAccountAddress = paymentRoute.fee2 ? await getFee2ReceiverTokenAccountAddress({ paymentRoute }) : paymentReceiverTokenAccountAddress;
   const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
   const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.raydiumCL);
+  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.raydiumCL);
 
   const keys = [
     // token_program
@@ -3834,7 +3928,7 @@ const routeRaydiumClSwap = async({ paymentRoute, deadline }) =>{
     // token_program_2022
     { pubkey: new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'), isSigner: false, isWritable: false },
     // clmm_program
-    { pubkey: new PublicKey(routers$1.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(routers.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
     // memo_program
     { pubkey: new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'), isSigner: false, isWritable: false },
     // sender
@@ -3865,9 +3959,9 @@ const routeRaydiumClSwap = async({ paymentRoute, deadline }) =>{
     { pubkey: new PublicKey(fee2ReceiverTokenAccountAddress), isSigner: false, isWritable: true },
   ].concat(exchangeRouteSwapInstruction.keys.slice(13)); // remaining accounts from index 12 onwards
 
-  const data = Buffer.alloc(routers$1.solana.api.routeRaydiumClSwap.layout.span);
-  routers$1.solana.api.routeRaydiumClSwap.layout.encode({
-    anchorDiscriminator: routers$1.solana.api.routeRaydiumClSwap.anchorDiscriminator,
+  const data = Buffer.alloc(routers.solana.api.routeRaydiumClSwap.layout.span);
+  routers.solana.api.routeRaydiumClSwap.layout.encode({
+    anchorDiscriminator: routers.solana.api.routeRaydiumClSwap.anchorDiscriminator,
     amountIn: new BN(paymentRoute.fromAmount.toString()),
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
     feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
@@ -3878,7 +3972,7 @@ const routeRaydiumClSwap = async({ paymentRoute, deadline }) =>{
   
   return new TransactionInstruction({
     keys,
-    programId: new PublicKey(routers$1.solana.address),
+    programId: new PublicKey(routers.solana.address),
     data
   })
 };
@@ -3890,7 +3984,7 @@ const routeRaydiumClSwapSolIn = async({ paymentRoute, deadline }) =>{
   const fee2ReceiverTokenAccountAddress = paymentRoute.fee2 ? await getFee2ReceiverTokenAccountAddress({ paymentRoute }) : paymentReceiverTokenAccountAddress;
   const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
   const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.raydiumCL);
+  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.raydiumCL);
 
   const keys = [
     // system_program
@@ -3900,7 +3994,7 @@ const routeRaydiumClSwapSolIn = async({ paymentRoute, deadline }) =>{
     // token_program_2022
     { pubkey: new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'), isSigner: false, isWritable: false },
     // clmm_program
-    { pubkey: new PublicKey(routers$1.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(routers.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
     // memo_program
     { pubkey: new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'), isSigner: false, isWritable: false },
     // sender
@@ -3931,9 +4025,9 @@ const routeRaydiumClSwapSolIn = async({ paymentRoute, deadline }) =>{
     { pubkey: new PublicKey(fee2ReceiverTokenAccountAddress), isSigner: false, isWritable: true },
   ].concat(exchangeRouteSwapInstruction.keys.slice(13)); // remaining accounts from index 12 onwards
 
-  const data = Buffer.alloc(routers$1.solana.api.routeRaydiumClSwapSolIn.layout.span);
-  routers$1.solana.api.routeRaydiumClSwapSolIn.layout.encode({
-    anchorDiscriminator: routers$1.solana.api.routeRaydiumClSwapSolIn.anchorDiscriminator,
+  const data = Buffer.alloc(routers.solana.api.routeRaydiumClSwapSolIn.layout.span);
+  routers.solana.api.routeRaydiumClSwapSolIn.layout.encode({
+    anchorDiscriminator: routers.solana.api.routeRaydiumClSwapSolIn.anchorDiscriminator,
     amountIn: new BN(paymentRoute.exchangeRoutes[0].amounts[0].toString()),
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
     feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
@@ -3944,7 +4038,7 @@ const routeRaydiumClSwapSolIn = async({ paymentRoute, deadline }) =>{
   
   return new TransactionInstruction({
     keys,
-    programId: new PublicKey(routers$1.solana.address),
+    programId: new PublicKey(routers.solana.address),
     data
   })
 
@@ -3954,7 +4048,7 @@ const routeRaydiumClSwapSolOut = async({ paymentRoute, deadline }) =>{
 
   const senderTokenAccountAddress = await getPaymentSenderTokenAccountAddress({ paymentRoute });
   const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.raydiumCL);
+  const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.raydiumCL);
 
   const keys = [
     // system_program
@@ -3964,7 +4058,7 @@ const routeRaydiumClSwapSolOut = async({ paymentRoute, deadline }) =>{
     // token_program_2022
     { pubkey: new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'), isSigner: false, isWritable: false },
     // clmm_program
-    { pubkey: new PublicKey(routers$1.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(routers.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
     // memo_program
     { pubkey: new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'), isSigner: false, isWritable: false },
     // sender
@@ -3997,9 +4091,9 @@ const routeRaydiumClSwapSolOut = async({ paymentRoute, deadline }) =>{
     { pubkey: new PublicKey(paymentRoute.fee2 ? paymentRoute.fee2.receiver : paymentRoute.toAddress), isSigner: false, isWritable: true },
   ].concat(exchangeRouteSwapInstruction.keys.slice(13)); // remaining accounts from index 12 onwards
 
-  const data = Buffer.alloc(routers$1.solana.api.routeRaydiumClSwapSolOut.layout.span);
-  routers$1.solana.api.routeRaydiumClSwapSolOut.layout.encode({
-    anchorDiscriminator: routers$1.solana.api.routeRaydiumClSwapSolOut.anchorDiscriminator,
+  const data = Buffer.alloc(routers.solana.api.routeRaydiumClSwapSolOut.layout.span);
+  routers.solana.api.routeRaydiumClSwapSolOut.layout.encode({
+    anchorDiscriminator: routers.solana.api.routeRaydiumClSwapSolOut.anchorDiscriminator,
     amountIn: new BN(paymentRoute.fromAmount.toString()),
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
     feeAmount: new BN((paymentRoute.feeAmount || '0').toString()),
@@ -4010,7 +4104,7 @@ const routeRaydiumClSwapSolOut = async({ paymentRoute, deadline }) =>{
   
   return new TransactionInstruction({
     keys,
-    programId: new PublicKey(routers$1.solana.address),
+    programId: new PublicKey(routers.solana.address),
     data
   })
 };
@@ -4024,7 +4118,7 @@ const routeRaydiumClTwoHopSwap = async({ paymentRoute, deadline }) =>{
   const escrowMiddlePublicKey = await getEscrowMiddleAccountPublicKey({ paymentRoute });
   const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
   const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-  const exchangeRouteSwapInstructions = exchangeRouteTransaction.instructions.filter((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.raydiumCL);
+  const exchangeRouteSwapInstructions = exchangeRouteTransaction.instructions.filter((instruction)=>instruction.programId.toString() === routers.solana.exchanges.raydiumCL);
   const exchangeRouteSwapInstructionOne = exchangeRouteSwapInstructions[0];
   const exchangeRouteSwapInstructionTwo = exchangeRouteSwapInstructions[1];
 
@@ -4034,7 +4128,7 @@ const routeRaydiumClTwoHopSwap = async({ paymentRoute, deadline }) =>{
     // token_program_2022
     { pubkey: new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'), isSigner: false, isWritable: false },
     // clmm_program
-    { pubkey: new PublicKey(routers$1.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(routers.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
     // memo_program
     { pubkey: new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'), isSigner: false, isWritable: false },
     // sender
@@ -4079,9 +4173,9 @@ const routeRaydiumClTwoHopSwap = async({ paymentRoute, deadline }) =>{
     { pubkey: new PublicKey(fee2ReceiverTokenAccountAddress), isSigner: false, isWritable: true },
   ].concat(exchangeRouteSwapInstructionOne.keys.slice(13)).concat(exchangeRouteSwapInstructionTwo.keys.slice(13)); // remaining accounts from index 12 onwards
 
-  const data = Buffer.alloc(routers$1.solana.api.routeRaydiumClTwoHopSwap.layout.span);
-  routers$1.solana.api.routeRaydiumClTwoHopSwap.layout.encode({
-    anchorDiscriminator: routers$1.solana.api.routeRaydiumClTwoHopSwap.anchorDiscriminator,
+  const data = Buffer.alloc(routers.solana.api.routeRaydiumClTwoHopSwap.layout.span);
+  routers.solana.api.routeRaydiumClTwoHopSwap.layout.encode({
+    anchorDiscriminator: routers.solana.api.routeRaydiumClTwoHopSwap.anchorDiscriminator,
     amountInOne: new BN(paymentRoute.exchangeRoutes[0].amounts[0].toString()),
     amountInTwo: new BN(paymentRoute.exchangeRoutes[0].amounts[1].toString()),
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
@@ -4094,7 +4188,7 @@ const routeRaydiumClTwoHopSwap = async({ paymentRoute, deadline }) =>{
   
   return new TransactionInstruction({
     keys,
-    programId: new PublicKey(routers$1.solana.address),
+    programId: new PublicKey(routers.solana.address),
     data
   })
 };
@@ -4107,7 +4201,7 @@ const routeRaydiumClTwoHopSwapSolIn = async({ paymentRoute, deadline }) =>{
   const escrowMiddlePublicKey = await getEscrowMiddleAccountPublicKey({ paymentRoute });
   const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
   const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-  const exchangeRouteSwapInstructions = exchangeRouteTransaction.instructions.filter((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.raydiumCL);
+  const exchangeRouteSwapInstructions = exchangeRouteTransaction.instructions.filter((instruction)=>instruction.programId.toString() === routers.solana.exchanges.raydiumCL);
   const exchangeRouteSwapInstructionOne = exchangeRouteSwapInstructions[0];
   const exchangeRouteSwapInstructionTwo = exchangeRouteSwapInstructions[1];
 
@@ -4119,7 +4213,7 @@ const routeRaydiumClTwoHopSwapSolIn = async({ paymentRoute, deadline }) =>{
     // token_program_2022
     { pubkey: new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'), isSigner: false, isWritable: false },
     // clmm_program
-    { pubkey: new PublicKey(routers$1.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(routers.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
     // memo_program
     { pubkey: new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'), isSigner: false, isWritable: false },
     // sender
@@ -4164,9 +4258,9 @@ const routeRaydiumClTwoHopSwapSolIn = async({ paymentRoute, deadline }) =>{
     { pubkey: new PublicKey(fee2ReceiverTokenAccountAddress), isSigner: false, isWritable: true },
   ].concat(exchangeRouteSwapInstructionOne.keys.slice(13)).concat(exchangeRouteSwapInstructionTwo.keys.slice(13)); // remaining accounts from index 12 onwards
 
-  const data = Buffer.alloc(routers$1.solana.api.routeRaydiumClTwoHopSwapSolIn.layout.span);
-  routers$1.solana.api.routeRaydiumClTwoHopSwapSolIn.layout.encode({
-    anchorDiscriminator: routers$1.solana.api.routeRaydiumClTwoHopSwapSolIn.anchorDiscriminator,
+  const data = Buffer.alloc(routers.solana.api.routeRaydiumClTwoHopSwapSolIn.layout.span);
+  routers.solana.api.routeRaydiumClTwoHopSwapSolIn.layout.encode({
+    anchorDiscriminator: routers.solana.api.routeRaydiumClTwoHopSwapSolIn.anchorDiscriminator,
     amountInOne: new BN(paymentRoute.exchangeRoutes[0].amounts[0].toString()),
     amountInTwo: new BN(paymentRoute.exchangeRoutes[0].amounts[1].toString()),
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
@@ -4179,7 +4273,7 @@ const routeRaydiumClTwoHopSwapSolIn = async({ paymentRoute, deadline }) =>{
   
   return new TransactionInstruction({
     keys,
-    programId: new PublicKey(routers$1.solana.address),
+    programId: new PublicKey(routers.solana.address),
     data
   })
 };
@@ -4190,7 +4284,7 @@ const routeRaydiumClTwoHopSwapSolOut = async({ paymentRoute, deadline }) =>{
   const escrowMiddlePublicKey = await getEscrowMiddleAccountPublicKey({ paymentRoute });
   await getEscrowInWSolAccountPublicKey();
   const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-  const exchangeRouteSwapInstructions = exchangeRouteTransaction.instructions.filter((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.raydiumCL);
+  const exchangeRouteSwapInstructions = exchangeRouteTransaction.instructions.filter((instruction)=>instruction.programId.toString() === routers.solana.exchanges.raydiumCL);
   const exchangeRouteSwapInstructionOne = exchangeRouteSwapInstructions[0];
   const exchangeRouteSwapInstructionTwo = exchangeRouteSwapInstructions[1];
 
@@ -4202,7 +4296,7 @@ const routeRaydiumClTwoHopSwapSolOut = async({ paymentRoute, deadline }) =>{
     // token_program_2022
     { pubkey: new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'), isSigner: false, isWritable: false },
     // clmm_program
-    { pubkey: new PublicKey(routers$1.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
+    { pubkey: new PublicKey(routers.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
     // memo_program
     { pubkey: new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'), isSigner: false, isWritable: false },
     // sender
@@ -4249,9 +4343,9 @@ const routeRaydiumClTwoHopSwapSolOut = async({ paymentRoute, deadline }) =>{
     { pubkey: new PublicKey(paymentRoute.fee2 ? paymentRoute.fee2.receiver : paymentRoute.toAddress), isSigner: false, isWritable: true },
   ].concat(exchangeRouteSwapInstructionOne.keys.slice(13)).concat(exchangeRouteSwapInstructionTwo.keys.slice(13)); // remaining accounts from index 12 onwards
 
-  const data = Buffer.alloc(routers$1.solana.api.routeRaydiumClTwoHopSwapSolOut.layout.span);
-  routers$1.solana.api.routeRaydiumClTwoHopSwapSolOut.layout.encode({
-    anchorDiscriminator: routers$1.solana.api.routeRaydiumClTwoHopSwapSolOut.anchorDiscriminator,
+  const data = Buffer.alloc(routers.solana.api.routeRaydiumClTwoHopSwapSolOut.layout.span);
+  routers.solana.api.routeRaydiumClTwoHopSwapSolOut.layout.encode({
+    anchorDiscriminator: routers.solana.api.routeRaydiumClTwoHopSwapSolOut.anchorDiscriminator,
     amountInOne: new BN(paymentRoute.exchangeRoutes[0].amounts[0].toString()),
     amountInTwo: new BN(paymentRoute.exchangeRoutes[0].amounts[1].toString()),
     paymentAmount: new BN(paymentRoute.toAmount.toString()),
@@ -4264,7 +4358,7 @@ const routeRaydiumClTwoHopSwapSolOut = async({ paymentRoute, deadline }) =>{
   
   return new TransactionInstruction({
     keys,
-    programId: new PublicKey(routers$1.solana.address),
+    programId: new PublicKey(routers.solana.address),
     data
   })
 };
@@ -4362,7 +4456,7 @@ const getTransaction$2 = async({ paymentRoute })=> {
   const transaction = {
     blockchain: paymentRoute.blockchain,
     instructions,
-    alts: [routers$1.solana.alt]
+    alts: [routers.solana.alt]
   };
 
   // debug(transaction, paymentRoute)
@@ -4372,102 +4466,14 @@ const getTransaction$2 = async({ paymentRoute })=> {
   return transaction
 };
 
-const API = [{"inputs":[{"internalType":"address","name":"_PERMIT2","type":"address"},{"internalType":"address","name":"_FORWARDER","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"ExchangeCallFailed","type":"error"},{"inputs":[],"name":"ExchangeCallMissing","type":"error"},{"inputs":[],"name":"ExchangeNotApproved","type":"error"},{"inputs":[],"name":"ForwardingPaymentFailed","type":"error"},{"inputs":[],"name":"InsufficientBalanceInAfterPayment","type":"error"},{"inputs":[],"name":"InsufficientBalanceOutAfterPayment","type":"error"},{"inputs":[],"name":"InsufficientProtocolAmount","type":"error"},{"inputs":[],"name":"NativeFeePaymentFailed","type":"error"},{"inputs":[],"name":"NativePaymentFailed","type":"error"},{"inputs":[],"name":"PaymentDeadlineReached","type":"error"},{"inputs":[],"name":"PaymentToZeroAddressNotAllowed","type":"error"},{"inputs":[],"name":"WrongAmountPaidIn","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"exchange","type":"address"}],"name":"Disabled","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"exchange","type":"address"}],"name":"Enabled","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferStarted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":true,"internalType":"uint256","name":"deadline","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"amountIn","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"feeAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"feeAmount2","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"protocolAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"slippageInAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"slippageOutAmount","type":"uint256"},{"indexed":false,"internalType":"address","name":"tokenInAddress","type":"address"},{"indexed":false,"internalType":"address","name":"tokenOutAddress","type":"address"},{"indexed":false,"internalType":"address","name":"feeReceiverAddress","type":"address"},{"indexed":false,"internalType":"address","name":"feeReceiverAddress2","type":"address"}],"name":"Payment","type":"event"},{"inputs":[],"name":"FORWARDER","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PERMIT2","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"acceptOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"exchange","type":"address"},{"internalType":"bool","name":"enabled","type":"bool"}],"name":"enable","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"exchanges","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"components":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount2","type":"uint256"},{"internalType":"uint256","name":"protocolAmount","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"address","name":"tokenInAddress","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"address","name":"tokenOutAddress","type":"address"},{"internalType":"address","name":"paymentReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress2","type":"address"},{"internalType":"uint8","name":"exchangeType","type":"uint8"},{"internalType":"uint8","name":"receiverType","type":"uint8"},{"internalType":"bool","name":"permit2","type":"bool"},{"internalType":"bytes","name":"exchangeCallData","type":"bytes"},{"internalType":"bytes","name":"receiverCallData","type":"bytes"}],"internalType":"struct IDePayRouterV3.Payment","name":"payment","type":"tuple"},{"components":[{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"internalType":"struct IPermit2.TokenPermissions","name":"permitted","type":"tuple"},{"internalType":"uint256","name":"nonce","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"internalType":"struct IPermit2.PermitTransferFrom","name":"permitTransferFrom","type":"tuple"},{"internalType":"bytes","name":"signature","type":"bytes"}],"internalType":"struct IDePayRouterV3.PermitTransferFromAndSignature","name":"permitTransferFromAndSignature","type":"tuple"}],"name":"pay","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"components":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount2","type":"uint256"},{"internalType":"uint256","name":"protocolAmount","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"address","name":"tokenInAddress","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"address","name":"tokenOutAddress","type":"address"},{"internalType":"address","name":"paymentReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress2","type":"address"},{"internalType":"uint8","name":"exchangeType","type":"uint8"},{"internalType":"uint8","name":"receiverType","type":"uint8"},{"internalType":"bool","name":"permit2","type":"bool"},{"internalType":"bytes","name":"exchangeCallData","type":"bytes"},{"internalType":"bytes","name":"receiverCallData","type":"bytes"}],"internalType":"struct IDePayRouterV3.Payment","name":"payment","type":"tuple"}],"name":"pay","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"components":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount2","type":"uint256"},{"internalType":"uint256","name":"protocolAmount","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"address","name":"tokenInAddress","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"address","name":"tokenOutAddress","type":"address"},{"internalType":"address","name":"paymentReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress2","type":"address"},{"internalType":"uint8","name":"exchangeType","type":"uint8"},{"internalType":"uint8","name":"receiverType","type":"uint8"},{"internalType":"bool","name":"permit2","type":"bool"},{"internalType":"bytes","name":"exchangeCallData","type":"bytes"},{"internalType":"bytes","name":"receiverCallData","type":"bytes"}],"internalType":"struct IDePayRouterV3.Payment","name":"payment","type":"tuple"},{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"uint48","name":"expiration","type":"uint48"},{"internalType":"uint48","name":"nonce","type":"uint48"}],"internalType":"struct IPermit2.PermitDetails","name":"details","type":"tuple"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"sigDeadline","type":"uint256"}],"internalType":"struct IPermit2.PermitSingle","name":"permitSingle","type":"tuple"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"pay","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"pendingOwner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdraw","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}];
-
-var svmRouters = {
-
-  ethereum: {
-    address: '0x365f7B56D2fB16C8Af89D7d33b420E4e013461e8',
-    api: API
-  },
-
-  bsc: {
-    address: '0x5F565EDfB9C446976a9F9910631cfeDb6A87220c',
-    api: API
-  },
-
-  polygon: {
-    address: '0xe04b08Dfc6CaA0F4Ec523a3Ae283Ece7efE00019',
-    api: API
-  },
-
-  avalanche: {
-    address: '0x39E7C98BF4ac3E4C394dD600397f5f7Ee3779BE8',
-    api: API
-  },
-
-  gnosis: {
-    address: '0x328FE8bbd30487BB7b5A8eEb909f892E9E229271',
-    api: API
-  },
-
-  arbitrum: {
-    address: '0x328FE8bbd30487BB7b5A8eEb909f892E9E229271',
-    api: API
-  },
-
-  optimism: {
-    address: '0x558302715e3011Be6695605c11A65526D2ba2245',
-    api: API
-  },
-
-  base: {
-    address: '0x48825133EF08327535D0b24d73779E82BE6Ea4d9',
-    api: API
-  },
-
-  worldchain: {
-    address: '0x886eb82a7e5E7310F66A0E83748662A17E391eb0',
-    api: API
-  },
-
-};
-
-let evmRouters = {};
-
-
-var routers = {... evmRouters, ...svmRouters};
-
-let supported = ['solana'];
-supported.evm = [];
-supported.svm = ['solana'];
-
 let evmGetTransaction = ()=>{};
 
 const getTransaction$1 = ({ paymentRoute, fee, options })=>{
-  if(supported.evm.includes(paymentRoute.blockchain)) {
+  if(supported$2.evm.includes(paymentRoute.blockchain)) {
     return evmGetTransaction()
-  } else if(supported.svm.includes(paymentRoute.blockchain)) {
+  } else if(supported$2.svm.includes(paymentRoute.blockchain)) {
     return getTransaction$2({ paymentRoute, fee, options })
   } else {
-    throw('Blockchain not supported!')
-  }
-};
-
-let evmGetRouterApprovalTransaction = ()=>{};
-let evmGetPermit2ApprovalTransaction = ()=>{};
-let evmGetPermit2ApprovalSignature = ()=>{};
-
-const getRouterApprovalTransaction = ({ paymentRoute, options })=>{
-  if(supported.evm.includes(paymentRoute.blockchain)) {
-    return evmGetRouterApprovalTransaction()
-  } else if(supported.svm.includes(paymentRoute.blockchain)) ; else {
-    throw('Blockchain not supported!')
-  }
-};
-
-const getPermit2ApprovalTransaction = ({ paymentRoute, options })=>{
-  if(supported.evm.includes(paymentRoute.blockchain)) {
-    return evmGetPermit2ApprovalTransaction()
-  } else if(supported.svm.includes(paymentRoute.blockchain)) ; else {
-    throw('Blockchain not supported!')
-  }
-};
-
-const getPermit2ApprovalSignature = ({ paymentRoute, options })=>{
-  if(supported.evm.includes(paymentRoute.blockchain)) {
-    return evmGetPermit2ApprovalSignature()
-  } else if(supported.svm.includes(paymentRoute.blockchain)) ; else {
     throw('Blockchain not supported!')
   }
 };
@@ -4646,7 +4652,7 @@ function route({ accept, from, allow, deny, best, blacklist, whitelist }) {
     setTimeout(()=>fetchBestController.abort(), 10000);
 
     fetch(
-      `https://public.depay.com/routes/best`,
+      config.endpoints.routesBest,
       {
         method: 'POST',
         body: JSON.stringify({
@@ -4668,7 +4674,8 @@ function route({ accept, from, allow, deny, best, blacklist, whitelist }) {
         bestRoute = await remoteRouteToPaymentRoute({ remoteRoute: bestRoute, from, accept })
           .catch((error)=>{ fail('Best route could not be loaded!', error); });
         if(typeof best == 'function' && _optionalChain([bestRoute, 'optionalAccess', _7 => _7.fromAmount]) && _optionalChain([bestRoute, 'optionalAccess', _8 => _8.fromAmount]) != '0') {
-          best(bestRoute);
+          const callbackResult = best(bestRoute);
+          if(callbackResult === false) { return resolveAll([]) }
         }
         const fetchAllController = new AbortController();
         setTimeout(()=>fetchAllController.abort(), 10000);
@@ -4730,7 +4737,7 @@ let addApproval = async (route) => {
     ];
   } else {
     allowances = await Promise.all([
-      route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address).catch(()=>{}),
+      route.fromToken.allowance(route.fromAddress, routers$1[route.blockchain].address).catch(()=>{}),
       route.fromToken.allowance(route.fromAddress, Blockchains[route.blockchain].permit2).catch(()=>{})
     ]);
   }
@@ -4811,7 +4818,7 @@ let getFeeAmount = ({ paymentRoute, amount })=> {
 
 let addRouteAmounts = (route)=> {
 
-  if(supported.evm.includes(route.blockchain)) {
+  if(supported$2.evm.includes(route.blockchain)) {
 
     if(route.directTransfer && !route.fee && !route.fee2) {
       route.fromAmount = route.toAmount;
@@ -4829,7 +4836,7 @@ let addRouteAmounts = (route)=> {
         route.protocolFeeAmount = protocolFeeAmount;
       }
     }
-  } else if (supported.svm.includes(route.blockchain)) {
+  } else if (supported$2.svm.includes(route.blockchain)) {
 
     let { fromAmount, toAmount, feeAmount, feeAmount2, protocolFeeAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0] });
     route.fromAmount = fromAmount;
@@ -4854,4 +4861,4 @@ const getTransaction = (paymentRoute)=>{
   }
 };
 
-export { getTransaction, route, routers };
+export { config, getTransaction, route, routers$1 as routers };

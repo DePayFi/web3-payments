@@ -1,16 +1,110 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@depay/web3-blockchains'), require('@depay/solana-web3.js'), require('ethers'), require('@depay/web3-exchanges-svm'), require('@depay/web3-tokens-svm')) :
-  typeof define === 'function' && define.amd ? define(['exports', '@depay/web3-blockchains', '@depay/solana-web3.js', 'ethers', '@depay/web3-exchanges-svm', '@depay/web3-tokens-svm'], factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.Web3Payments = {}, global.Web3Blockchains, global.SolanaWeb3js, global.ethers, global.Web3Exchanges, global.Web3Tokens));
-})(this, (function (exports, Blockchains, solanaWeb3_js, ethers, Exchanges, Token$1) { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@depay/web3-exchanges-svm'), require('@depay/web3-tokens-svm'), require('@depay/web3-blockchains'), require('ethers'), require('@depay/solana-web3.js')) :
+  typeof define === 'function' && define.amd ? define(['exports', '@depay/web3-exchanges-svm', '@depay/web3-tokens-svm', '@depay/web3-blockchains', 'ethers', '@depay/solana-web3.js'], factory) :
+  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.Web3Payments = {}, global.Web3Exchanges, global.Web3Tokens, global.Web3Blockchains, global.ethers, global.SolanaWeb3js));
+})(this, (function (exports, Exchanges, Token$1, Blockchains, ethers, solanaWeb3_js) { 'use strict';
 
   function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
-  var Blockchains__default = /*#__PURE__*/_interopDefaultLegacy(Blockchains);
   var Exchanges__default = /*#__PURE__*/_interopDefaultLegacy(Exchanges);
   var Token__default = /*#__PURE__*/_interopDefaultLegacy(Token$1);
+  var Blockchains__default = /*#__PURE__*/_interopDefaultLegacy(Blockchains);
 
-  var routers$1 = {
+  const config = {
+    endpoints: {
+      routesBest: 'https://public.depay.com/routes/best'
+    }
+  };
+
+  const API = [{"inputs":[{"internalType":"address","name":"_PERMIT2","type":"address"},{"internalType":"address","name":"_FORWARDER","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"ExchangeCallFailed","type":"error"},{"inputs":[],"name":"ExchangeCallMissing","type":"error"},{"inputs":[],"name":"ExchangeNotApproved","type":"error"},{"inputs":[],"name":"ForwardingPaymentFailed","type":"error"},{"inputs":[],"name":"InsufficientBalanceInAfterPayment","type":"error"},{"inputs":[],"name":"InsufficientBalanceOutAfterPayment","type":"error"},{"inputs":[],"name":"InsufficientProtocolAmount","type":"error"},{"inputs":[],"name":"NativeFeePaymentFailed","type":"error"},{"inputs":[],"name":"NativePaymentFailed","type":"error"},{"inputs":[],"name":"PaymentDeadlineReached","type":"error"},{"inputs":[],"name":"PaymentToZeroAddressNotAllowed","type":"error"},{"inputs":[],"name":"WrongAmountPaidIn","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"exchange","type":"address"}],"name":"Disabled","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"exchange","type":"address"}],"name":"Enabled","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferStarted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":true,"internalType":"uint256","name":"deadline","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"amountIn","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"feeAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"feeAmount2","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"protocolAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"slippageInAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"slippageOutAmount","type":"uint256"},{"indexed":false,"internalType":"address","name":"tokenInAddress","type":"address"},{"indexed":false,"internalType":"address","name":"tokenOutAddress","type":"address"},{"indexed":false,"internalType":"address","name":"feeReceiverAddress","type":"address"},{"indexed":false,"internalType":"address","name":"feeReceiverAddress2","type":"address"}],"name":"Payment","type":"event"},{"inputs":[],"name":"FORWARDER","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PERMIT2","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"acceptOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"exchange","type":"address"},{"internalType":"bool","name":"enabled","type":"bool"}],"name":"enable","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"exchanges","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"components":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount2","type":"uint256"},{"internalType":"uint256","name":"protocolAmount","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"address","name":"tokenInAddress","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"address","name":"tokenOutAddress","type":"address"},{"internalType":"address","name":"paymentReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress2","type":"address"},{"internalType":"uint8","name":"exchangeType","type":"uint8"},{"internalType":"uint8","name":"receiverType","type":"uint8"},{"internalType":"bool","name":"permit2","type":"bool"},{"internalType":"bytes","name":"exchangeCallData","type":"bytes"},{"internalType":"bytes","name":"receiverCallData","type":"bytes"}],"internalType":"struct IDePayRouterV3.Payment","name":"payment","type":"tuple"},{"components":[{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"internalType":"struct IPermit2.TokenPermissions","name":"permitted","type":"tuple"},{"internalType":"uint256","name":"nonce","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"internalType":"struct IPermit2.PermitTransferFrom","name":"permitTransferFrom","type":"tuple"},{"internalType":"bytes","name":"signature","type":"bytes"}],"internalType":"struct IDePayRouterV3.PermitTransferFromAndSignature","name":"permitTransferFromAndSignature","type":"tuple"}],"name":"pay","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"components":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount2","type":"uint256"},{"internalType":"uint256","name":"protocolAmount","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"address","name":"tokenInAddress","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"address","name":"tokenOutAddress","type":"address"},{"internalType":"address","name":"paymentReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress2","type":"address"},{"internalType":"uint8","name":"exchangeType","type":"uint8"},{"internalType":"uint8","name":"receiverType","type":"uint8"},{"internalType":"bool","name":"permit2","type":"bool"},{"internalType":"bytes","name":"exchangeCallData","type":"bytes"},{"internalType":"bytes","name":"receiverCallData","type":"bytes"}],"internalType":"struct IDePayRouterV3.Payment","name":"payment","type":"tuple"}],"name":"pay","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"components":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount2","type":"uint256"},{"internalType":"uint256","name":"protocolAmount","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"address","name":"tokenInAddress","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"address","name":"tokenOutAddress","type":"address"},{"internalType":"address","name":"paymentReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress2","type":"address"},{"internalType":"uint8","name":"exchangeType","type":"uint8"},{"internalType":"uint8","name":"receiverType","type":"uint8"},{"internalType":"bool","name":"permit2","type":"bool"},{"internalType":"bytes","name":"exchangeCallData","type":"bytes"},{"internalType":"bytes","name":"receiverCallData","type":"bytes"}],"internalType":"struct IDePayRouterV3.Payment","name":"payment","type":"tuple"},{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"uint48","name":"expiration","type":"uint48"},{"internalType":"uint48","name":"nonce","type":"uint48"}],"internalType":"struct IPermit2.PermitDetails","name":"details","type":"tuple"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"sigDeadline","type":"uint256"}],"internalType":"struct IPermit2.PermitSingle","name":"permitSingle","type":"tuple"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"pay","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"pendingOwner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdraw","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}];
+
+  var svmRouters = {
+
+    ethereum: {
+      address: '0x365f7B56D2fB16C8Af89D7d33b420E4e013461e8',
+      api: API
+    },
+
+    bsc: {
+      address: '0x5F565EDfB9C446976a9F9910631cfeDb6A87220c',
+      api: API
+    },
+
+    polygon: {
+      address: '0xe04b08Dfc6CaA0F4Ec523a3Ae283Ece7efE00019',
+      api: API
+    },
+
+    avalanche: {
+      address: '0x39E7C98BF4ac3E4C394dD600397f5f7Ee3779BE8',
+      api: API
+    },
+
+    gnosis: {
+      address: '0x328FE8bbd30487BB7b5A8eEb909f892E9E229271',
+      api: API
+    },
+
+    arbitrum: {
+      address: '0x328FE8bbd30487BB7b5A8eEb909f892E9E229271',
+      api: API
+    },
+
+    optimism: {
+      address: '0x558302715e3011Be6695605c11A65526D2ba2245',
+      api: API
+    },
+
+    base: {
+      address: '0x48825133EF08327535D0b24d73779E82BE6Ea4d9',
+      api: API
+    },
+
+    worldchain: {
+      address: '0x886eb82a7e5E7310F66A0E83748662A17E391eb0',
+      api: API
+    },
+
+  };
+
+  let evmRouters = {};
+
+
+  var routers$1 = {... evmRouters, ...svmRouters};
+
+  let supported$2 = ['solana'];
+  supported$2.evm = [];
+  supported$2.svm = ['solana'];
+
+  let evmGetRouterApprovalTransaction = ()=>{};
+  let evmGetPermit2ApprovalTransaction = ()=>{};
+  let evmGetPermit2ApprovalSignature = ()=>{};
+
+  const getRouterApprovalTransaction = ({ paymentRoute, options })=>{
+    if(supported$2.evm.includes(paymentRoute.blockchain)) {
+      return evmGetRouterApprovalTransaction()
+    } else if(supported$2.svm.includes(paymentRoute.blockchain)) ; else {
+      throw('Blockchain not supported!')
+    }
+  };
+
+  const getPermit2ApprovalTransaction = ({ paymentRoute, options })=>{
+    if(supported$2.evm.includes(paymentRoute.blockchain)) {
+      return evmGetPermit2ApprovalTransaction()
+    } else if(supported$2.svm.includes(paymentRoute.blockchain)) ; else {
+      throw('Blockchain not supported!')
+    }
+  };
+
+  const getPermit2ApprovalSignature = ({ paymentRoute, options })=>{
+    if(supported$2.evm.includes(paymentRoute.blockchain)) {
+      return evmGetPermit2ApprovalSignature()
+    } else if(supported$2.svm.includes(paymentRoute.blockchain)) ; else {
+      throw('Blockchain not supported!')
+    }
+  };
+
+  var routers = {
     solana: {
       address: 'DePayR1gQfDmViCPKctnZXNtUgqRwnEqMax8LX9ho1Zg',
       exchanges: {
@@ -821,9 +915,9 @@
     setProvider: setProvider$1,
   };
 
-  let supported$2 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
-  supported$2.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
-  supported$2.svm = ['solana'];
+  let supported$1 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
+  supported$1.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
+  supported$1.svm = ['solana'];
 
   function _optionalChain$1$1(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
   let getCacheStore = () => {
@@ -925,13 +1019,13 @@
 
   const getProvider = async (blockchain)=>{
 
-    if(supported$2.evm.includes(blockchain)) {
+    if(supported$1.evm.includes(blockchain)) {
 
 
       return await EVM.getProvider(blockchain)
 
 
-    } else if(supported$2.svm.includes(blockchain)) {
+    } else if(supported$1.svm.includes(blockchain)) {
 
 
       return await Solana.getProvider(blockchain)
@@ -1158,13 +1252,13 @@
       expires: cache$1 || 0,
       key: cacheKey || [blockchain, address, method, params, block],
       call: async()=>{
-        if(supported$2.evm.includes(blockchain)) {
+        if(supported$1.evm.includes(blockchain)) {
 
 
           return await requestEVM({ blockchain, address, api, method, params, block, strategy, timeout })
 
 
-        } else if(supported$2.svm.includes(blockchain)) {
+        } else if(supported$1.svm.includes(blockchain)) {
 
 
           return await requestSolana({ blockchain, address, api, method, params, block, strategy, timeout })
@@ -2262,9 +2356,9 @@
     return _optionalChain$1([metaData, 'optionalAccess', _ => _.symbol])
   };
 
-  let supported$1 = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
-  supported$1.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
-  supported$1.svm = ['solana'];
+  let supported = ['ethereum', 'bsc', 'polygon', 'solana', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
+  supported.evm = ['ethereum', 'bsc', 'polygon', 'fantom', 'arbitrum', 'avalanche', 'gnosis', 'optimism', 'base', 'worldchain'];
+  supported.svm = ['solana'];
 
   function _optionalChain$5(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }
 
@@ -2272,9 +2366,9 @@
     
     constructor({ blockchain, address, name, decimals, symbol }) {
       this.blockchain = blockchain;
-      if(supported$1.evm.includes(this.blockchain)) {
+      if(supported.evm.includes(this.blockchain)) {
         this.address = ethers.ethers.utils.getAddress(address);
-      } else if(supported$1.svm.includes(this.blockchain)) {
+      } else if(supported.svm.includes(this.blockchain)) {
         this.address = address;
       }
       this._name = name;
@@ -2290,11 +2384,11 @@
       }
       let decimals;
       try {
-        if(supported$1.evm.includes(this.blockchain)) {
+        if(supported.evm.includes(this.blockchain)) {
 
           decimals = await decimalsOnEVM({ blockchain: this.blockchain, address: this.address, api: Token[this.blockchain].DEFAULT });
 
-        } else if(supported$1.svm.includes(this.blockchain)) {
+        } else if(supported.svm.includes(this.blockchain)) {
 
           decimals = await decimalsOnSolana({ blockchain: this.blockchain, address: this.address });
 
@@ -2312,11 +2406,11 @@
         return this._symbol
       }
       let symbol;
-      if(supported$1.evm.includes(this.blockchain)) {
+      if(supported.evm.includes(this.blockchain)) {
 
         symbol = await symbolOnEVM({ blockchain: this.blockchain, address: this.address, api: Token[this.blockchain].DEFAULT });
 
-      } else if(supported$1.svm.includes(this.blockchain)) {
+      } else if(supported.svm.includes(this.blockchain)) {
 
         symbol = await symbolOnSolana({ blockchain: this.blockchain, address: this.address });
 
@@ -2332,11 +2426,11 @@
         return this._name
       }
       let name;
-      if(supported$1.evm.includes(this.blockchain)) {
+      if(supported.evm.includes(this.blockchain)) {
 
         name = await nameOnEVM({ blockchain: this.blockchain, address: this.address, api: Token[this.blockchain].DEFAULT, id: _optionalChain$5([args, 'optionalAccess', _ => _.id]) });
 
-      } else if(supported$1.svm.includes(this.blockchain)) {
+      } else if(supported.svm.includes(this.blockchain)) {
 
         name = await nameOnSolana({ blockchain: this.blockchain, address: this.address });
 
@@ -2346,11 +2440,11 @@
     }
 
     async balance(account, id) {
-      if(supported$1.evm.includes(this.blockchain)) {
+      if(supported.evm.includes(this.blockchain)) {
 
         return await balanceOnEVM({ blockchain: this.blockchain, account, address: this.address, api: id ? Token[this.blockchain][1155] : Token[this.blockchain].DEFAULT, id })
 
-      } else if(supported$1.svm.includes(this.blockchain)) {
+      } else if(supported.svm.includes(this.blockchain)) {
 
         return await balanceOnSolana({ blockchain: this.blockchain, account, address: this.address, api: Token[this.blockchain].DEFAULT })
 
@@ -2361,11 +2455,11 @@
       if (this.address == Blockchains__default["default"].findByName(this.blockchain).currency.address) {
         return ethers.ethers.BigNumber.from(Blockchains__default["default"].findByName(this.blockchain).maxInt)
       }
-      if(supported$1.evm.includes(this.blockchain)) {
+      if(supported.evm.includes(this.blockchain)) {
 
         return await allowanceOnEVM({ blockchain: this.blockchain, address: this.address, api: Token[this.blockchain].DEFAULT, owner, spender })
 
-      } else if(supported$1.svm.includes(this.blockchain)) {
+      } else if(supported.svm.includes(this.blockchain)) {
         return ethers.ethers.BigNumber.from(Blockchains__default["default"].findByName(this.blockchain).maxInt)
       } 
     }
@@ -2745,7 +2839,7 @@
     let seeds = [solanaWeb3_js.Buffer.from("escrow_sol")];
     
     let [ pdaPublicKey, bump ] = await solanaWeb3_js.PublicKey.findProgramAddress(
-      seeds, new solanaWeb3_js.PublicKey(routers$1.solana.address)
+      seeds, new solanaWeb3_js.PublicKey(routers.solana.address)
     );
 
     return pdaPublicKey
@@ -2764,7 +2858,7 @@
     ];
     
     let [ pdaPublicKey, bump ] = await solanaWeb3_js.PublicKey.findProgramAddress(
-      seeds, new solanaWeb3_js.PublicKey(routers$1.solana.address)
+      seeds, new solanaWeb3_js.PublicKey(routers.solana.address)
     );
 
     return pdaPublicKey
@@ -2780,7 +2874,7 @@
     let seeds = [solanaWeb3_js.Buffer.from("escrow_wsol")];
     
     let [ pdaPublicKey, bump ] = await solanaWeb3_js.PublicKey.findProgramAddress(
-      seeds, new solanaWeb3_js.PublicKey(routers$1.solana.address)
+      seeds, new solanaWeb3_js.PublicKey(routers.solana.address)
     );
 
     return pdaPublicKey
@@ -2794,7 +2888,7 @@
     ];
     
     let [ pdaPublicKey, bump ] = await solanaWeb3_js.PublicKey.findProgramAddress(
-      seeds, new solanaWeb3_js.PublicKey(routers$1.solana.address)
+      seeds, new solanaWeb3_js.PublicKey(routers.solana.address)
     );
 
     return pdaPublicKey
@@ -2829,14 +2923,14 @@
       { pubkey: await getEscrowOutAccountPublicKey({ paymentRoute }), isSigner: false, isWritable: true },
     ];
 
-    const data = solanaWeb3_js.Buffer.alloc(routers$1.solana.api.createEscrowTokenAccount.layout.span);
-    routers$1.solana.api.createEscrowTokenAccount.layout.encode({
-      anchorDiscriminator: routers$1.solana.api.createEscrowTokenAccount.anchorDiscriminator
+    const data = solanaWeb3_js.Buffer.alloc(routers.solana.api.createEscrowTokenAccount.layout.span);
+    routers.solana.api.createEscrowTokenAccount.layout.encode({
+      anchorDiscriminator: routers.solana.api.createEscrowTokenAccount.anchorDiscriminator
     }, data);
     
     return new solanaWeb3_js.TransactionInstruction({
       keys,
-      programId: new solanaWeb3_js.PublicKey(routers$1.solana.address),
+      programId: new solanaWeb3_js.PublicKey(routers.solana.address),
       data
     })
   };
@@ -2849,7 +2943,7 @@
     ];
     
     let [ pdaPublicKey, bump ] = await solanaWeb3_js.PublicKey.findProgramAddress(
-      seeds, new solanaWeb3_js.PublicKey(routers$1.solana.address)
+      seeds, new solanaWeb3_js.PublicKey(routers.solana.address)
     );
 
     return pdaPublicKey
@@ -2888,14 +2982,14 @@
       { pubkey: await getEscrowMiddleAccountPublicKey({ paymentRoute }), isSigner: false, isWritable: true },
     ];
 
-    const data = solanaWeb3_js.Buffer.alloc(routers$1.solana.api.createEscrowTokenAccount.layout.span);
-    routers$1.solana.api.createEscrowTokenAccount.layout.encode({
-      anchorDiscriminator: routers$1.solana.api.createEscrowTokenAccount.anchorDiscriminator
+    const data = solanaWeb3_js.Buffer.alloc(routers.solana.api.createEscrowTokenAccount.layout.span);
+    routers.solana.api.createEscrowTokenAccount.layout.encode({
+      anchorDiscriminator: routers.solana.api.createEscrowTokenAccount.anchorDiscriminator
     }, data);
     
     return new solanaWeb3_js.TransactionInstruction({
       keys,
-      programId: new solanaWeb3_js.PublicKey(routers$1.solana.address),
+      programId: new solanaWeb3_js.PublicKey(routers.solana.address),
       data
     })
   };
@@ -3068,9 +3162,9 @@
       { pubkey: await getEscrowSolAccountPublicKey(), isSigner: false, isWritable: true },
     ];
 
-    const data = solanaWeb3_js.Buffer.alloc(routers$1.solana.api.routeSol.layout.span);
-    routers$1.solana.api.routeSol.layout.encode({
-      anchorDiscriminator: routers$1.solana.api.routeSol.anchorDiscriminator,
+    const data = solanaWeb3_js.Buffer.alloc(routers.solana.api.routeSol.layout.span);
+    routers.solana.api.routeSol.layout.encode({
+      anchorDiscriminator: routers.solana.api.routeSol.anchorDiscriminator,
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
       feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString()),
       feeAmount2: new solanaWeb3_js.BN((paymentRoute.feeAmount2 || '0').toString()),
@@ -3080,7 +3174,7 @@
     
     return new solanaWeb3_js.TransactionInstruction({
       keys,
-      programId: new solanaWeb3_js.PublicKey(routers$1.solana.address),
+      programId: new solanaWeb3_js.PublicKey(routers.solana.address),
       data
     })
   };
@@ -3102,9 +3196,9 @@
       { pubkey: await getEscrowOutAccountPublicKey({ paymentRoute }), isSigner: false, isWritable: true },
     ];
 
-    const data = solanaWeb3_js.Buffer.alloc(routers$1.solana.api.routeToken.layout.span);
-    routers$1.solana.api.routeToken.layout.encode({
-      anchorDiscriminator: routers$1.solana.api.routeToken.anchorDiscriminator,
+    const data = solanaWeb3_js.Buffer.alloc(routers.solana.api.routeToken.layout.span);
+    routers.solana.api.routeToken.layout.encode({
+      anchorDiscriminator: routers.solana.api.routeToken.anchorDiscriminator,
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
       feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString()),
       feeAmount2: new solanaWeb3_js.BN((paymentRoute.feeAmount2 || '0').toString()),
@@ -3114,7 +3208,7 @@
     
     return new solanaWeb3_js.TransactionInstruction({ 
       keys,
-      programId: new solanaWeb3_js.PublicKey(routers$1.solana.address),
+      programId: new solanaWeb3_js.PublicKey(routers.solana.address),
       data 
     })    
   };
@@ -3127,7 +3221,7 @@
     const fee2ReceiverTokenAccountAddress = paymentRoute.fee2 ? await getFee2ReceiverTokenAccountAddress({ paymentRoute }) : paymentReceiverTokenAccountAddress;
     const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
     const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.orca);
+    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.orca);
 
     const SWAP_LAYOUT = solanaWeb3_js.struct([
       solanaWeb3_js.u64("anchorDiscriminator"),
@@ -3143,7 +3237,7 @@
       // token_program
       { pubkey: new solanaWeb3_js.PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
       // amm_program
-      { pubkey: new solanaWeb3_js.PublicKey(routers$1.solana.exchanges.orca), isSigner: false, isWritable: false },
+      { pubkey: new solanaWeb3_js.PublicKey(routers.solana.exchanges.orca), isSigner: false, isWritable: false },
       // sender
       { pubkey: new solanaWeb3_js.PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
       // sender_token_account
@@ -3172,9 +3266,9 @@
       { pubkey: new solanaWeb3_js.PublicKey(fee2ReceiverTokenAccountAddress), isSigner: false, isWritable: true },
     ];
 
-    const data = solanaWeb3_js.Buffer.alloc(routers$1.solana.api.routeOrcaSwap.layout.span);
-    routers$1.solana.api.routeOrcaSwap.layout.encode({
-      anchorDiscriminator: routers$1.solana.api.routeOrcaSwap.anchorDiscriminator,
+    const data = solanaWeb3_js.Buffer.alloc(routers.solana.api.routeOrcaSwap.layout.span);
+    routers.solana.api.routeOrcaSwap.layout.encode({
+      anchorDiscriminator: routers.solana.api.routeOrcaSwap.anchorDiscriminator,
       amountIn: exchangeRouteSwapInstructionData.amount,
       aToB: exchangeRouteSwapInstructionData.aToB,
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
@@ -3186,7 +3280,7 @@
     
     return new solanaWeb3_js.TransactionInstruction({ 
       keys,
-      programId: new solanaWeb3_js.PublicKey(routers$1.solana.address),
+      programId: new solanaWeb3_js.PublicKey(routers.solana.address),
       data
     })
   };
@@ -3198,7 +3292,7 @@
     const feeReceiver2TokenAccountPublicKey = paymentRoute.fee2 ? new solanaWeb3_js.PublicKey(await getFee2ReceiverTokenAccountAddress({ paymentRoute })) : paymentReceiverTokenAccountPublicKey;
     const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
     const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.orca);
+    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.orca);
 
     const SWAP_LAYOUT = solanaWeb3_js.struct([
       solanaWeb3_js.u64("anchorDiscriminator"),
@@ -3216,7 +3310,7 @@
       // token_program
       { pubkey: new solanaWeb3_js.PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
       // amm_program
-      { pubkey: new solanaWeb3_js.PublicKey(routers$1.solana.exchanges.orca), isSigner: false, isWritable: false },
+      { pubkey: new solanaWeb3_js.PublicKey(routers.solana.exchanges.orca), isSigner: false, isWritable: false },
       // sender
       { pubkey: new solanaWeb3_js.PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
       // escrow_in
@@ -3245,9 +3339,9 @@
       { pubkey: feeReceiver2TokenAccountPublicKey, isSigner: false, isWritable: true },
     ];
 
-    const data = solanaWeb3_js.Buffer.alloc(routers$1.solana.api.routeOrcaSwapSolIn.layout.span);
-    routers$1.solana.api.routeOrcaSwapSolIn.layout.encode({
-      anchorDiscriminator: routers$1.solana.api.routeOrcaSwapSolIn.anchorDiscriminator,
+    const data = solanaWeb3_js.Buffer.alloc(routers.solana.api.routeOrcaSwapSolIn.layout.span);
+    routers.solana.api.routeOrcaSwapSolIn.layout.encode({
+      anchorDiscriminator: routers.solana.api.routeOrcaSwapSolIn.anchorDiscriminator,
       amountIn: exchangeRouteSwapInstructionData.amount,
       aToB: exchangeRouteSwapInstructionData.aToB,
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
@@ -3259,7 +3353,7 @@
     
     return new solanaWeb3_js.TransactionInstruction({ 
       keys,
-      programId: new solanaWeb3_js.PublicKey(routers$1.solana.address),
+      programId: new solanaWeb3_js.PublicKey(routers.solana.address),
       data
     })
   };
@@ -3268,7 +3362,7 @@
 
     const senderTokenAccountAddress = await getPaymentSenderTokenAccountAddress({ paymentRoute });
     const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.orca);
+    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.orca);
 
     const SWAP_LAYOUT = solanaWeb3_js.struct([
       solanaWeb3_js.u64("anchorDiscriminator"),
@@ -3286,7 +3380,7 @@
       // token_program
       { pubkey: new solanaWeb3_js.PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
       // amm_program
-      { pubkey: new solanaWeb3_js.PublicKey(routers$1.solana.exchanges.orca), isSigner: false, isWritable: false },
+      { pubkey: new solanaWeb3_js.PublicKey(routers.solana.exchanges.orca), isSigner: false, isWritable: false },
       // sender
       { pubkey: new solanaWeb3_js.PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
       // sender_token_account
@@ -3319,9 +3413,9 @@
       { pubkey: new solanaWeb3_js.PublicKey(paymentRoute.fee2 ? paymentRoute.fee2.receiver : paymentRoute.toAddress), isSigner: false, isWritable: true },
     ];
 
-    const data = solanaWeb3_js.Buffer.alloc(routers$1.solana.api.routeOrcaSwapSolOut.layout.span);
-    routers$1.solana.api.routeOrcaSwapSolOut.layout.encode({
-      anchorDiscriminator: routers$1.solana.api.routeOrcaSwapSolOut.anchorDiscriminator,
+    const data = solanaWeb3_js.Buffer.alloc(routers.solana.api.routeOrcaSwapSolOut.layout.span);
+    routers.solana.api.routeOrcaSwapSolOut.layout.encode({
+      anchorDiscriminator: routers.solana.api.routeOrcaSwapSolOut.anchorDiscriminator,
       amountIn: exchangeRouteSwapInstructionData.amount,
       aToB: exchangeRouteSwapInstructionData.aToB,
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
@@ -3333,7 +3427,7 @@
     
     return new solanaWeb3_js.TransactionInstruction({ 
       keys,
-      programId: new solanaWeb3_js.PublicKey(routers$1.solana.address),
+      programId: new solanaWeb3_js.PublicKey(routers.solana.address),
       data
     })
   };
@@ -3346,7 +3440,7 @@
     const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
     const escrowMiddlePublicKey = await getEscrowMiddleAccountPublicKey({ paymentRoute });
     const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.orca);
+    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.orca);
     const senderTokenAccountPublicKey = new solanaWeb3_js.PublicKey(await getPaymentSenderTokenAccountAddress({ paymentRoute }));
 
     const SWAP_LAYOUT = solanaWeb3_js.struct([
@@ -3365,7 +3459,7 @@
       // token_program
       { pubkey: new solanaWeb3_js.PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
       // amm_program
-      { pubkey: new solanaWeb3_js.PublicKey(routers$1.solana.exchanges.orca), isSigner: false, isWritable: false },
+      { pubkey: new solanaWeb3_js.PublicKey(routers.solana.exchanges.orca), isSigner: false, isWritable: false },
       // sender
       { pubkey: new solanaWeb3_js.PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
       // whirlpool_one
@@ -3410,9 +3504,9 @@
       { pubkey: feeReceiver2TokenAccountPublicKey, isSigner: false, isWritable: true },
     ];
 
-    const data = solanaWeb3_js.Buffer.alloc(routers$1.solana.api.routeOrcaTwoHopSwap.layout.span);
-    routers$1.solana.api.routeOrcaTwoHopSwap.layout.encode({
-      anchorDiscriminator: routers$1.solana.api.routeOrcaTwoHopSwap.anchorDiscriminator,
+    const data = solanaWeb3_js.Buffer.alloc(routers.solana.api.routeOrcaTwoHopSwap.layout.span);
+    routers.solana.api.routeOrcaTwoHopSwap.layout.encode({
+      anchorDiscriminator: routers.solana.api.routeOrcaTwoHopSwap.anchorDiscriminator,
       amountInOne: new solanaWeb3_js.BN(paymentRoute.exchangeRoutes[0].amounts[0].toString()),
       amountInTwo: new solanaWeb3_js.BN(paymentRoute.exchangeRoutes[0].amounts[1].toString()),
       aToBOne: exchangeRouteSwapInstructionData.aToBOne,
@@ -3426,7 +3520,7 @@
 
     return new solanaWeb3_js.TransactionInstruction({ 
       keys,
-      programId: new solanaWeb3_js.PublicKey(routers$1.solana.address),
+      programId: new solanaWeb3_js.PublicKey(routers.solana.address),
       data
     })
   };
@@ -3439,7 +3533,7 @@
     const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
     const escrowMiddlePublicKey = await getEscrowMiddleAccountPublicKey({ paymentRoute });
     const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.orca);
+    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.orca);
     new solanaWeb3_js.PublicKey(await getPaymentSenderTokenAccountAddress({ paymentRoute }));
 
     const SWAP_LAYOUT = solanaWeb3_js.struct([
@@ -3460,7 +3554,7 @@
       // token_program
       { pubkey: new solanaWeb3_js.PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
       // amm_program
-      { pubkey: new solanaWeb3_js.PublicKey(routers$1.solana.exchanges.orca), isSigner: false, isWritable: false },
+      { pubkey: new solanaWeb3_js.PublicKey(routers.solana.exchanges.orca), isSigner: false, isWritable: false },
       // sender
       { pubkey: new solanaWeb3_js.PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
       // escrow_in
@@ -3505,9 +3599,9 @@
       { pubkey: feeReceiver2TokenAccountPublicKey, isSigner: false, isWritable: true },
     ];
 
-    const data = solanaWeb3_js.Buffer.alloc(routers$1.solana.api.routeOrcaTwoHopSwapSolIn.layout.span);
-    routers$1.solana.api.routeOrcaTwoHopSwapSolIn.layout.encode({
-      anchorDiscriminator: routers$1.solana.api.routeOrcaTwoHopSwapSolIn.anchorDiscriminator,
+    const data = solanaWeb3_js.Buffer.alloc(routers.solana.api.routeOrcaTwoHopSwapSolIn.layout.span);
+    routers.solana.api.routeOrcaTwoHopSwapSolIn.layout.encode({
+      anchorDiscriminator: routers.solana.api.routeOrcaTwoHopSwapSolIn.anchorDiscriminator,
       amountInOne: new solanaWeb3_js.BN(paymentRoute.exchangeRoutes[0].amounts[0].toString()),
       amountInTwo: new solanaWeb3_js.BN(paymentRoute.exchangeRoutes[0].amounts[1].toString()),
       aToBOne: exchangeRouteSwapInstructionData.aToBOne,
@@ -3521,7 +3615,7 @@
 
     return new solanaWeb3_js.TransactionInstruction({ 
       keys,
-      programId: new solanaWeb3_js.PublicKey(routers$1.solana.address),
+      programId: new solanaWeb3_js.PublicKey(routers.solana.address),
       data
     })
   };
@@ -3530,7 +3624,7 @@
 
     new solanaWeb3_js.PublicKey(await getMiddleTokenAccountAddress({ paymentRoute }));
     const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.orca);
+    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.orca);
     const senderTokenAccountPublicKey = new solanaWeb3_js.PublicKey(await getPaymentSenderTokenAccountAddress({ paymentRoute }));
     const escrowMiddlePublicKey = await getEscrowMiddleAccountPublicKey({ paymentRoute });
 
@@ -3552,7 +3646,7 @@
       // token_program
       { pubkey: new solanaWeb3_js.PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
       // amm_program
-      { pubkey: new solanaWeb3_js.PublicKey(routers$1.solana.exchanges.orca), isSigner: false, isWritable: false },
+      { pubkey: new solanaWeb3_js.PublicKey(routers.solana.exchanges.orca), isSigner: false, isWritable: false },
       // sender
       { pubkey: new solanaWeb3_js.PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
       // sender_token_account
@@ -3601,9 +3695,9 @@
       { pubkey: new solanaWeb3_js.PublicKey(paymentRoute.fee2 ? paymentRoute.fee2.receiver : paymentRoute.toAddress), isSigner: false, isWritable: true },
     ];
 
-    const data = solanaWeb3_js.Buffer.alloc(routers$1.solana.api.routeOrcaTwoHopSwapSolOut.layout.span);
-    routers$1.solana.api.routeOrcaTwoHopSwapSolOut.layout.encode({
-      anchorDiscriminator: routers$1.solana.api.routeOrcaTwoHopSwapSolOut.anchorDiscriminator,
+    const data = solanaWeb3_js.Buffer.alloc(routers.solana.api.routeOrcaTwoHopSwapSolOut.layout.span);
+    routers.solana.api.routeOrcaTwoHopSwapSolOut.layout.encode({
+      anchorDiscriminator: routers.solana.api.routeOrcaTwoHopSwapSolOut.anchorDiscriminator,
       amountInOne: new solanaWeb3_js.BN(paymentRoute.exchangeRoutes[0].amounts[0].toString()),
       amountInTwo: new solanaWeb3_js.BN(paymentRoute.exchangeRoutes[0].amounts[1].toString()),
       aToBOne: exchangeRouteSwapInstructionData.aToBOne,
@@ -3617,7 +3711,7 @@
     
     return new solanaWeb3_js.TransactionInstruction({ 
       keys,
-      programId: new solanaWeb3_js.PublicKey(routers$1.solana.address),
+      programId: new solanaWeb3_js.PublicKey(routers.solana.address),
       data
     })
   };
@@ -3630,13 +3724,13 @@
     const fee2ReceiverTokenAccountAddress = paymentRoute.fee2 ? await getFee2ReceiverTokenAccountAddress({ paymentRoute }) : paymentReceiverTokenAccountAddress;
     const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
     const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.raydiumCP);
+    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.raydiumCP);
 
     const keys = [
       // token_program
       { pubkey: new solanaWeb3_js.PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
       // cp_swap_program
-      { pubkey: new solanaWeb3_js.PublicKey(routers$1.solana.exchanges.raydiumCP), isSigner: false, isWritable: false },
+      { pubkey: new solanaWeb3_js.PublicKey(routers.solana.exchanges.raydiumCP), isSigner: false, isWritable: false },
       // sender
       { pubkey: new solanaWeb3_js.PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
       // authority
@@ -3667,9 +3761,9 @@
       { pubkey: new solanaWeb3_js.PublicKey(fee2ReceiverTokenAccountAddress), isSigner: false, isWritable: true },
     ];
 
-    const data = solanaWeb3_js.Buffer.alloc(routers$1.solana.api.routeRaydiumCpSwap.layout.span);
-    routers$1.solana.api.routeRaydiumCpSwap.layout.encode({
-      anchorDiscriminator: routers$1.solana.api.routeRaydiumCpSwap.anchorDiscriminator,
+    const data = solanaWeb3_js.Buffer.alloc(routers.solana.api.routeRaydiumCpSwap.layout.span);
+    routers.solana.api.routeRaydiumCpSwap.layout.encode({
+      anchorDiscriminator: routers.solana.api.routeRaydiumCpSwap.anchorDiscriminator,
       amountIn: new solanaWeb3_js.BN(paymentRoute.fromAmount.toString()),
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
       feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString()),
@@ -3680,7 +3774,7 @@
     
     return new solanaWeb3_js.TransactionInstruction({ 
       keys,
-      programId: new solanaWeb3_js.PublicKey(routers$1.solana.address),
+      programId: new solanaWeb3_js.PublicKey(routers.solana.address),
       data
     })
   };
@@ -3692,7 +3786,7 @@
     const fee2ReceiverTokenAccountAddress = paymentRoute.fee2 ? await getFee2ReceiverTokenAccountAddress({ paymentRoute }) : paymentReceiverTokenAccountAddress;
     const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
     const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.raydiumCP);
+    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.raydiumCP);
 
     const keys = [
       // system_program
@@ -3700,7 +3794,7 @@
       // token_program
       { pubkey: new solanaWeb3_js.PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
       // cp_swap_program
-      { pubkey: new solanaWeb3_js.PublicKey(routers$1.solana.exchanges.raydiumCP), isSigner: false, isWritable: false },
+      { pubkey: new solanaWeb3_js.PublicKey(routers.solana.exchanges.raydiumCP), isSigner: false, isWritable: false },
       // sender
       { pubkey: new solanaWeb3_js.PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
       // authority
@@ -3731,9 +3825,9 @@
       { pubkey: new solanaWeb3_js.PublicKey(fee2ReceiverTokenAccountAddress), isSigner: false, isWritable: true },
     ];
 
-    const data = solanaWeb3_js.Buffer.alloc(routers$1.solana.api.routeRaydiumCpSwapSolIn.layout.span);
-    routers$1.solana.api.routeRaydiumCpSwapSolIn.layout.encode({
-      anchorDiscriminator: routers$1.solana.api.routeRaydiumCpSwapSolIn.anchorDiscriminator,
+    const data = solanaWeb3_js.Buffer.alloc(routers.solana.api.routeRaydiumCpSwapSolIn.layout.span);
+    routers.solana.api.routeRaydiumCpSwapSolIn.layout.encode({
+      anchorDiscriminator: routers.solana.api.routeRaydiumCpSwapSolIn.anchorDiscriminator,
       amountIn: new solanaWeb3_js.BN(paymentRoute.fromAmount.toString()),
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
       feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString()),
@@ -3744,7 +3838,7 @@
     
     return new solanaWeb3_js.TransactionInstruction({ 
       keys,
-      programId: new solanaWeb3_js.PublicKey(routers$1.solana.address),
+      programId: new solanaWeb3_js.PublicKey(routers.solana.address),
       data
     })
   };
@@ -3753,7 +3847,7 @@
 
     const senderTokenAccountAddress = await getPaymentSenderTokenAccountAddress({ paymentRoute });
     const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.raydiumCP);
+    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.raydiumCP);
 
     const keys = [
       // system_program
@@ -3761,7 +3855,7 @@
       // token_program
       { pubkey: new solanaWeb3_js.PublicKey(Token.solana.TOKEN_PROGRAM), isSigner: false, isWritable: false },
       // cp_swap_program
-      { pubkey: new solanaWeb3_js.PublicKey(routers$1.solana.exchanges.raydiumCP), isSigner: false, isWritable: false },
+      { pubkey: new solanaWeb3_js.PublicKey(routers.solana.exchanges.raydiumCP), isSigner: false, isWritable: false },
       // sender
       { pubkey: new solanaWeb3_js.PublicKey(paymentRoute.fromAddress), isSigner: true, isWritable: true },
       // authority
@@ -3794,9 +3888,9 @@
       { pubkey: new solanaWeb3_js.PublicKey(paymentRoute.fee2 ? paymentRoute.fee2.receiver : paymentRoute.toAddress), isSigner: false, isWritable: true },
     ];
 
-    const data = solanaWeb3_js.Buffer.alloc(routers$1.solana.api.routeRaydiumCpSwapSolOut.layout.span);
-    routers$1.solana.api.routeRaydiumCpSwapSolOut.layout.encode({
-      anchorDiscriminator: routers$1.solana.api.routeRaydiumCpSwapSolOut.anchorDiscriminator,
+    const data = solanaWeb3_js.Buffer.alloc(routers.solana.api.routeRaydiumCpSwapSolOut.layout.span);
+    routers.solana.api.routeRaydiumCpSwapSolOut.layout.encode({
+      anchorDiscriminator: routers.solana.api.routeRaydiumCpSwapSolOut.anchorDiscriminator,
       amountIn: new solanaWeb3_js.BN(paymentRoute.fromAmount.toString()),
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
       feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString()),
@@ -3807,7 +3901,7 @@
     
     return new solanaWeb3_js.TransactionInstruction({
       keys,
-      programId: new solanaWeb3_js.PublicKey(routers$1.solana.address),
+      programId: new solanaWeb3_js.PublicKey(routers.solana.address),
       data
     })
   };
@@ -3832,7 +3926,7 @@
     const fee2ReceiverTokenAccountAddress = paymentRoute.fee2 ? await getFee2ReceiverTokenAccountAddress({ paymentRoute }) : paymentReceiverTokenAccountAddress;
     const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
     const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.raydiumCL);
+    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.raydiumCL);
 
     const keys = [
       // token_program
@@ -3840,7 +3934,7 @@
       // token_program_2022
       { pubkey: new solanaWeb3_js.PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'), isSigner: false, isWritable: false },
       // clmm_program
-      { pubkey: new solanaWeb3_js.PublicKey(routers$1.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
+      { pubkey: new solanaWeb3_js.PublicKey(routers.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
       // memo_program
       { pubkey: new solanaWeb3_js.PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'), isSigner: false, isWritable: false },
       // sender
@@ -3871,9 +3965,9 @@
       { pubkey: new solanaWeb3_js.PublicKey(fee2ReceiverTokenAccountAddress), isSigner: false, isWritable: true },
     ].concat(exchangeRouteSwapInstruction.keys.slice(13)); // remaining accounts from index 12 onwards
 
-    const data = solanaWeb3_js.Buffer.alloc(routers$1.solana.api.routeRaydiumClSwap.layout.span);
-    routers$1.solana.api.routeRaydiumClSwap.layout.encode({
-      anchorDiscriminator: routers$1.solana.api.routeRaydiumClSwap.anchorDiscriminator,
+    const data = solanaWeb3_js.Buffer.alloc(routers.solana.api.routeRaydiumClSwap.layout.span);
+    routers.solana.api.routeRaydiumClSwap.layout.encode({
+      anchorDiscriminator: routers.solana.api.routeRaydiumClSwap.anchorDiscriminator,
       amountIn: new solanaWeb3_js.BN(paymentRoute.fromAmount.toString()),
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
       feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString()),
@@ -3884,7 +3978,7 @@
     
     return new solanaWeb3_js.TransactionInstruction({
       keys,
-      programId: new solanaWeb3_js.PublicKey(routers$1.solana.address),
+      programId: new solanaWeb3_js.PublicKey(routers.solana.address),
       data
     })
   };
@@ -3896,7 +3990,7 @@
     const fee2ReceiverTokenAccountAddress = paymentRoute.fee2 ? await getFee2ReceiverTokenAccountAddress({ paymentRoute }) : paymentReceiverTokenAccountAddress;
     const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
     const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.raydiumCL);
+    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.raydiumCL);
 
     const keys = [
       // system_program
@@ -3906,7 +4000,7 @@
       // token_program_2022
       { pubkey: new solanaWeb3_js.PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'), isSigner: false, isWritable: false },
       // clmm_program
-      { pubkey: new solanaWeb3_js.PublicKey(routers$1.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
+      { pubkey: new solanaWeb3_js.PublicKey(routers.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
       // memo_program
       { pubkey: new solanaWeb3_js.PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'), isSigner: false, isWritable: false },
       // sender
@@ -3937,9 +4031,9 @@
       { pubkey: new solanaWeb3_js.PublicKey(fee2ReceiverTokenAccountAddress), isSigner: false, isWritable: true },
     ].concat(exchangeRouteSwapInstruction.keys.slice(13)); // remaining accounts from index 12 onwards
 
-    const data = solanaWeb3_js.Buffer.alloc(routers$1.solana.api.routeRaydiumClSwapSolIn.layout.span);
-    routers$1.solana.api.routeRaydiumClSwapSolIn.layout.encode({
-      anchorDiscriminator: routers$1.solana.api.routeRaydiumClSwapSolIn.anchorDiscriminator,
+    const data = solanaWeb3_js.Buffer.alloc(routers.solana.api.routeRaydiumClSwapSolIn.layout.span);
+    routers.solana.api.routeRaydiumClSwapSolIn.layout.encode({
+      anchorDiscriminator: routers.solana.api.routeRaydiumClSwapSolIn.anchorDiscriminator,
       amountIn: new solanaWeb3_js.BN(paymentRoute.exchangeRoutes[0].amounts[0].toString()),
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
       feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString()),
@@ -3950,7 +4044,7 @@
     
     return new solanaWeb3_js.TransactionInstruction({
       keys,
-      programId: new solanaWeb3_js.PublicKey(routers$1.solana.address),
+      programId: new solanaWeb3_js.PublicKey(routers.solana.address),
       data
     })
 
@@ -3960,7 +4054,7 @@
 
     const senderTokenAccountAddress = await getPaymentSenderTokenAccountAddress({ paymentRoute });
     const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.raydiumCL);
+    const exchangeRouteSwapInstruction = exchangeRouteTransaction.instructions.find((instruction)=>instruction.programId.toString() === routers.solana.exchanges.raydiumCL);
 
     const keys = [
       // system_program
@@ -3970,7 +4064,7 @@
       // token_program_2022
       { pubkey: new solanaWeb3_js.PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'), isSigner: false, isWritable: false },
       // clmm_program
-      { pubkey: new solanaWeb3_js.PublicKey(routers$1.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
+      { pubkey: new solanaWeb3_js.PublicKey(routers.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
       // memo_program
       { pubkey: new solanaWeb3_js.PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'), isSigner: false, isWritable: false },
       // sender
@@ -4003,9 +4097,9 @@
       { pubkey: new solanaWeb3_js.PublicKey(paymentRoute.fee2 ? paymentRoute.fee2.receiver : paymentRoute.toAddress), isSigner: false, isWritable: true },
     ].concat(exchangeRouteSwapInstruction.keys.slice(13)); // remaining accounts from index 12 onwards
 
-    const data = solanaWeb3_js.Buffer.alloc(routers$1.solana.api.routeRaydiumClSwapSolOut.layout.span);
-    routers$1.solana.api.routeRaydiumClSwapSolOut.layout.encode({
-      anchorDiscriminator: routers$1.solana.api.routeRaydiumClSwapSolOut.anchorDiscriminator,
+    const data = solanaWeb3_js.Buffer.alloc(routers.solana.api.routeRaydiumClSwapSolOut.layout.span);
+    routers.solana.api.routeRaydiumClSwapSolOut.layout.encode({
+      anchorDiscriminator: routers.solana.api.routeRaydiumClSwapSolOut.anchorDiscriminator,
       amountIn: new solanaWeb3_js.BN(paymentRoute.fromAmount.toString()),
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
       feeAmount: new solanaWeb3_js.BN((paymentRoute.feeAmount || '0').toString()),
@@ -4016,7 +4110,7 @@
     
     return new solanaWeb3_js.TransactionInstruction({
       keys,
-      programId: new solanaWeb3_js.PublicKey(routers$1.solana.address),
+      programId: new solanaWeb3_js.PublicKey(routers.solana.address),
       data
     })
   };
@@ -4030,7 +4124,7 @@
     const escrowMiddlePublicKey = await getEscrowMiddleAccountPublicKey({ paymentRoute });
     const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
     const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-    const exchangeRouteSwapInstructions = exchangeRouteTransaction.instructions.filter((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.raydiumCL);
+    const exchangeRouteSwapInstructions = exchangeRouteTransaction.instructions.filter((instruction)=>instruction.programId.toString() === routers.solana.exchanges.raydiumCL);
     const exchangeRouteSwapInstructionOne = exchangeRouteSwapInstructions[0];
     const exchangeRouteSwapInstructionTwo = exchangeRouteSwapInstructions[1];
 
@@ -4040,7 +4134,7 @@
       // token_program_2022
       { pubkey: new solanaWeb3_js.PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'), isSigner: false, isWritable: false },
       // clmm_program
-      { pubkey: new solanaWeb3_js.PublicKey(routers$1.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
+      { pubkey: new solanaWeb3_js.PublicKey(routers.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
       // memo_program
       { pubkey: new solanaWeb3_js.PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'), isSigner: false, isWritable: false },
       // sender
@@ -4085,9 +4179,9 @@
       { pubkey: new solanaWeb3_js.PublicKey(fee2ReceiverTokenAccountAddress), isSigner: false, isWritable: true },
     ].concat(exchangeRouteSwapInstructionOne.keys.slice(13)).concat(exchangeRouteSwapInstructionTwo.keys.slice(13)); // remaining accounts from index 12 onwards
 
-    const data = solanaWeb3_js.Buffer.alloc(routers$1.solana.api.routeRaydiumClTwoHopSwap.layout.span);
-    routers$1.solana.api.routeRaydiumClTwoHopSwap.layout.encode({
-      anchorDiscriminator: routers$1.solana.api.routeRaydiumClTwoHopSwap.anchorDiscriminator,
+    const data = solanaWeb3_js.Buffer.alloc(routers.solana.api.routeRaydiumClTwoHopSwap.layout.span);
+    routers.solana.api.routeRaydiumClTwoHopSwap.layout.encode({
+      anchorDiscriminator: routers.solana.api.routeRaydiumClTwoHopSwap.anchorDiscriminator,
       amountInOne: new solanaWeb3_js.BN(paymentRoute.exchangeRoutes[0].amounts[0].toString()),
       amountInTwo: new solanaWeb3_js.BN(paymentRoute.exchangeRoutes[0].amounts[1].toString()),
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
@@ -4100,7 +4194,7 @@
     
     return new solanaWeb3_js.TransactionInstruction({
       keys,
-      programId: new solanaWeb3_js.PublicKey(routers$1.solana.address),
+      programId: new solanaWeb3_js.PublicKey(routers.solana.address),
       data
     })
   };
@@ -4113,7 +4207,7 @@
     const escrowMiddlePublicKey = await getEscrowMiddleAccountPublicKey({ paymentRoute });
     const escrowOutPublicKey = await getEscrowOutAccountPublicKey({ paymentRoute });
     const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-    const exchangeRouteSwapInstructions = exchangeRouteTransaction.instructions.filter((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.raydiumCL);
+    const exchangeRouteSwapInstructions = exchangeRouteTransaction.instructions.filter((instruction)=>instruction.programId.toString() === routers.solana.exchanges.raydiumCL);
     const exchangeRouteSwapInstructionOne = exchangeRouteSwapInstructions[0];
     const exchangeRouteSwapInstructionTwo = exchangeRouteSwapInstructions[1];
 
@@ -4125,7 +4219,7 @@
       // token_program_2022
       { pubkey: new solanaWeb3_js.PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'), isSigner: false, isWritable: false },
       // clmm_program
-      { pubkey: new solanaWeb3_js.PublicKey(routers$1.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
+      { pubkey: new solanaWeb3_js.PublicKey(routers.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
       // memo_program
       { pubkey: new solanaWeb3_js.PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'), isSigner: false, isWritable: false },
       // sender
@@ -4170,9 +4264,9 @@
       { pubkey: new solanaWeb3_js.PublicKey(fee2ReceiverTokenAccountAddress), isSigner: false, isWritable: true },
     ].concat(exchangeRouteSwapInstructionOne.keys.slice(13)).concat(exchangeRouteSwapInstructionTwo.keys.slice(13)); // remaining accounts from index 12 onwards
 
-    const data = solanaWeb3_js.Buffer.alloc(routers$1.solana.api.routeRaydiumClTwoHopSwapSolIn.layout.span);
-    routers$1.solana.api.routeRaydiumClTwoHopSwapSolIn.layout.encode({
-      anchorDiscriminator: routers$1.solana.api.routeRaydiumClTwoHopSwapSolIn.anchorDiscriminator,
+    const data = solanaWeb3_js.Buffer.alloc(routers.solana.api.routeRaydiumClTwoHopSwapSolIn.layout.span);
+    routers.solana.api.routeRaydiumClTwoHopSwapSolIn.layout.encode({
+      anchorDiscriminator: routers.solana.api.routeRaydiumClTwoHopSwapSolIn.anchorDiscriminator,
       amountInOne: new solanaWeb3_js.BN(paymentRoute.exchangeRoutes[0].amounts[0].toString()),
       amountInTwo: new solanaWeb3_js.BN(paymentRoute.exchangeRoutes[0].amounts[1].toString()),
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
@@ -4185,7 +4279,7 @@
     
     return new solanaWeb3_js.TransactionInstruction({
       keys,
-      programId: new solanaWeb3_js.PublicKey(routers$1.solana.address),
+      programId: new solanaWeb3_js.PublicKey(routers.solana.address),
       data
     })
   };
@@ -4196,7 +4290,7 @@
     const escrowMiddlePublicKey = await getEscrowMiddleAccountPublicKey({ paymentRoute });
     await getEscrowInWSolAccountPublicKey();
     const exchangeRouteTransaction = await paymentRoute.exchangeRoutes[0].getTransaction({ account: paymentRoute.fromAddress });
-    const exchangeRouteSwapInstructions = exchangeRouteTransaction.instructions.filter((instruction)=>instruction.programId.toString() === routers$1.solana.exchanges.raydiumCL);
+    const exchangeRouteSwapInstructions = exchangeRouteTransaction.instructions.filter((instruction)=>instruction.programId.toString() === routers.solana.exchanges.raydiumCL);
     const exchangeRouteSwapInstructionOne = exchangeRouteSwapInstructions[0];
     const exchangeRouteSwapInstructionTwo = exchangeRouteSwapInstructions[1];
 
@@ -4208,7 +4302,7 @@
       // token_program_2022
       { pubkey: new solanaWeb3_js.PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'), isSigner: false, isWritable: false },
       // clmm_program
-      { pubkey: new solanaWeb3_js.PublicKey(routers$1.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
+      { pubkey: new solanaWeb3_js.PublicKey(routers.solana.exchanges.raydiumCL), isSigner: false, isWritable: false },
       // memo_program
       { pubkey: new solanaWeb3_js.PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'), isSigner: false, isWritable: false },
       // sender
@@ -4255,9 +4349,9 @@
       { pubkey: new solanaWeb3_js.PublicKey(paymentRoute.fee2 ? paymentRoute.fee2.receiver : paymentRoute.toAddress), isSigner: false, isWritable: true },
     ].concat(exchangeRouteSwapInstructionOne.keys.slice(13)).concat(exchangeRouteSwapInstructionTwo.keys.slice(13)); // remaining accounts from index 12 onwards
 
-    const data = solanaWeb3_js.Buffer.alloc(routers$1.solana.api.routeRaydiumClTwoHopSwapSolOut.layout.span);
-    routers$1.solana.api.routeRaydiumClTwoHopSwapSolOut.layout.encode({
-      anchorDiscriminator: routers$1.solana.api.routeRaydiumClTwoHopSwapSolOut.anchorDiscriminator,
+    const data = solanaWeb3_js.Buffer.alloc(routers.solana.api.routeRaydiumClTwoHopSwapSolOut.layout.span);
+    routers.solana.api.routeRaydiumClTwoHopSwapSolOut.layout.encode({
+      anchorDiscriminator: routers.solana.api.routeRaydiumClTwoHopSwapSolOut.anchorDiscriminator,
       amountInOne: new solanaWeb3_js.BN(paymentRoute.exchangeRoutes[0].amounts[0].toString()),
       amountInTwo: new solanaWeb3_js.BN(paymentRoute.exchangeRoutes[0].amounts[1].toString()),
       paymentAmount: new solanaWeb3_js.BN(paymentRoute.toAmount.toString()),
@@ -4270,7 +4364,7 @@
     
     return new solanaWeb3_js.TransactionInstruction({
       keys,
-      programId: new solanaWeb3_js.PublicKey(routers$1.solana.address),
+      programId: new solanaWeb3_js.PublicKey(routers.solana.address),
       data
     })
   };
@@ -4368,7 +4462,7 @@
     const transaction = {
       blockchain: paymentRoute.blockchain,
       instructions,
-      alts: [routers$1.solana.alt]
+      alts: [routers.solana.alt]
     };
 
     // debug(transaction, paymentRoute)
@@ -4378,102 +4472,14 @@
     return transaction
   };
 
-  const API = [{"inputs":[{"internalType":"address","name":"_PERMIT2","type":"address"},{"internalType":"address","name":"_FORWARDER","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"ExchangeCallFailed","type":"error"},{"inputs":[],"name":"ExchangeCallMissing","type":"error"},{"inputs":[],"name":"ExchangeNotApproved","type":"error"},{"inputs":[],"name":"ForwardingPaymentFailed","type":"error"},{"inputs":[],"name":"InsufficientBalanceInAfterPayment","type":"error"},{"inputs":[],"name":"InsufficientBalanceOutAfterPayment","type":"error"},{"inputs":[],"name":"InsufficientProtocolAmount","type":"error"},{"inputs":[],"name":"NativeFeePaymentFailed","type":"error"},{"inputs":[],"name":"NativePaymentFailed","type":"error"},{"inputs":[],"name":"PaymentDeadlineReached","type":"error"},{"inputs":[],"name":"PaymentToZeroAddressNotAllowed","type":"error"},{"inputs":[],"name":"WrongAmountPaidIn","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"exchange","type":"address"}],"name":"Disabled","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"exchange","type":"address"}],"name":"Enabled","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferStarted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":true,"internalType":"uint256","name":"deadline","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"amountIn","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"feeAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"feeAmount2","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"protocolAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"slippageInAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"slippageOutAmount","type":"uint256"},{"indexed":false,"internalType":"address","name":"tokenInAddress","type":"address"},{"indexed":false,"internalType":"address","name":"tokenOutAddress","type":"address"},{"indexed":false,"internalType":"address","name":"feeReceiverAddress","type":"address"},{"indexed":false,"internalType":"address","name":"feeReceiverAddress2","type":"address"}],"name":"Payment","type":"event"},{"inputs":[],"name":"FORWARDER","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PERMIT2","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"acceptOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"exchange","type":"address"},{"internalType":"bool","name":"enabled","type":"bool"}],"name":"enable","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"exchanges","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"components":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount2","type":"uint256"},{"internalType":"uint256","name":"protocolAmount","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"address","name":"tokenInAddress","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"address","name":"tokenOutAddress","type":"address"},{"internalType":"address","name":"paymentReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress2","type":"address"},{"internalType":"uint8","name":"exchangeType","type":"uint8"},{"internalType":"uint8","name":"receiverType","type":"uint8"},{"internalType":"bool","name":"permit2","type":"bool"},{"internalType":"bytes","name":"exchangeCallData","type":"bytes"},{"internalType":"bytes","name":"receiverCallData","type":"bytes"}],"internalType":"struct IDePayRouterV3.Payment","name":"payment","type":"tuple"},{"components":[{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"internalType":"struct IPermit2.TokenPermissions","name":"permitted","type":"tuple"},{"internalType":"uint256","name":"nonce","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"internalType":"struct IPermit2.PermitTransferFrom","name":"permitTransferFrom","type":"tuple"},{"internalType":"bytes","name":"signature","type":"bytes"}],"internalType":"struct IDePayRouterV3.PermitTransferFromAndSignature","name":"permitTransferFromAndSignature","type":"tuple"}],"name":"pay","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"components":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount2","type":"uint256"},{"internalType":"uint256","name":"protocolAmount","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"address","name":"tokenInAddress","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"address","name":"tokenOutAddress","type":"address"},{"internalType":"address","name":"paymentReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress2","type":"address"},{"internalType":"uint8","name":"exchangeType","type":"uint8"},{"internalType":"uint8","name":"receiverType","type":"uint8"},{"internalType":"bool","name":"permit2","type":"bool"},{"internalType":"bytes","name":"exchangeCallData","type":"bytes"},{"internalType":"bytes","name":"receiverCallData","type":"bytes"}],"internalType":"struct IDePayRouterV3.Payment","name":"payment","type":"tuple"}],"name":"pay","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"components":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount","type":"uint256"},{"internalType":"uint256","name":"feeAmount2","type":"uint256"},{"internalType":"uint256","name":"protocolAmount","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"address","name":"tokenInAddress","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"address","name":"tokenOutAddress","type":"address"},{"internalType":"address","name":"paymentReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress","type":"address"},{"internalType":"address","name":"feeReceiverAddress2","type":"address"},{"internalType":"uint8","name":"exchangeType","type":"uint8"},{"internalType":"uint8","name":"receiverType","type":"uint8"},{"internalType":"bool","name":"permit2","type":"bool"},{"internalType":"bytes","name":"exchangeCallData","type":"bytes"},{"internalType":"bytes","name":"receiverCallData","type":"bytes"}],"internalType":"struct IDePayRouterV3.Payment","name":"payment","type":"tuple"},{"components":[{"components":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint160","name":"amount","type":"uint160"},{"internalType":"uint48","name":"expiration","type":"uint48"},{"internalType":"uint48","name":"nonce","type":"uint48"}],"internalType":"struct IPermit2.PermitDetails","name":"details","type":"tuple"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"sigDeadline","type":"uint256"}],"internalType":"struct IPermit2.PermitSingle","name":"permitSingle","type":"tuple"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"pay","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"pendingOwner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdraw","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}];
-
-  var svmRouters = {
-
-    ethereum: {
-      address: '0x365f7B56D2fB16C8Af89D7d33b420E4e013461e8',
-      api: API
-    },
-
-    bsc: {
-      address: '0x5F565EDfB9C446976a9F9910631cfeDb6A87220c',
-      api: API
-    },
-
-    polygon: {
-      address: '0xe04b08Dfc6CaA0F4Ec523a3Ae283Ece7efE00019',
-      api: API
-    },
-
-    avalanche: {
-      address: '0x39E7C98BF4ac3E4C394dD600397f5f7Ee3779BE8',
-      api: API
-    },
-
-    gnosis: {
-      address: '0x328FE8bbd30487BB7b5A8eEb909f892E9E229271',
-      api: API
-    },
-
-    arbitrum: {
-      address: '0x328FE8bbd30487BB7b5A8eEb909f892E9E229271',
-      api: API
-    },
-
-    optimism: {
-      address: '0x558302715e3011Be6695605c11A65526D2ba2245',
-      api: API
-    },
-
-    base: {
-      address: '0x48825133EF08327535D0b24d73779E82BE6Ea4d9',
-      api: API
-    },
-
-    worldchain: {
-      address: '0x886eb82a7e5E7310F66A0E83748662A17E391eb0',
-      api: API
-    },
-
-  };
-
-  let evmRouters = {};
-
-
-  var routers = {... evmRouters, ...svmRouters};
-
-  let supported = ['solana'];
-  supported.evm = [];
-  supported.svm = ['solana'];
-
   let evmGetTransaction = ()=>{};
 
   const getTransaction$1 = ({ paymentRoute, fee, options })=>{
-    if(supported.evm.includes(paymentRoute.blockchain)) {
+    if(supported$2.evm.includes(paymentRoute.blockchain)) {
       return evmGetTransaction()
-    } else if(supported.svm.includes(paymentRoute.blockchain)) {
+    } else if(supported$2.svm.includes(paymentRoute.blockchain)) {
       return getTransaction$2({ paymentRoute, fee, options })
     } else {
-      throw('Blockchain not supported!')
-    }
-  };
-
-  let evmGetRouterApprovalTransaction = ()=>{};
-  let evmGetPermit2ApprovalTransaction = ()=>{};
-  let evmGetPermit2ApprovalSignature = ()=>{};
-
-  const getRouterApprovalTransaction = ({ paymentRoute, options })=>{
-    if(supported.evm.includes(paymentRoute.blockchain)) {
-      return evmGetRouterApprovalTransaction()
-    } else if(supported.svm.includes(paymentRoute.blockchain)) ; else {
-      throw('Blockchain not supported!')
-    }
-  };
-
-  const getPermit2ApprovalTransaction = ({ paymentRoute, options })=>{
-    if(supported.evm.includes(paymentRoute.blockchain)) {
-      return evmGetPermit2ApprovalTransaction()
-    } else if(supported.svm.includes(paymentRoute.blockchain)) ; else {
-      throw('Blockchain not supported!')
-    }
-  };
-
-  const getPermit2ApprovalSignature = ({ paymentRoute, options })=>{
-    if(supported.evm.includes(paymentRoute.blockchain)) {
-      return evmGetPermit2ApprovalSignature()
-    } else if(supported.svm.includes(paymentRoute.blockchain)) ; else {
       throw('Blockchain not supported!')
     }
   };
@@ -4652,7 +4658,7 @@
       setTimeout(()=>fetchBestController.abort(), 10000);
 
       fetch(
-        `https://public.depay.com/routes/best`,
+        config.endpoints.routesBest,
         {
           method: 'POST',
           body: JSON.stringify({
@@ -4674,7 +4680,8 @@
           bestRoute = await remoteRouteToPaymentRoute({ remoteRoute: bestRoute, from, accept })
             .catch((error)=>{ fail('Best route could not be loaded!', error); });
           if(typeof best == 'function' && _optionalChain([bestRoute, 'optionalAccess', _7 => _7.fromAmount]) && _optionalChain([bestRoute, 'optionalAccess', _8 => _8.fromAmount]) != '0') {
-            best(bestRoute);
+            const callbackResult = best(bestRoute);
+            if(callbackResult === false) { return resolveAll([]) }
           }
           const fetchAllController = new AbortController();
           setTimeout(()=>fetchAllController.abort(), 10000);
@@ -4736,7 +4743,7 @@
       ];
     } else {
       allowances = await Promise.all([
-        route.fromToken.allowance(route.fromAddress, routers[route.blockchain].address).catch(()=>{}),
+        route.fromToken.allowance(route.fromAddress, routers$1[route.blockchain].address).catch(()=>{}),
         route.fromToken.allowance(route.fromAddress, Blockchains__default["default"][route.blockchain].permit2).catch(()=>{})
       ]);
     }
@@ -4817,7 +4824,7 @@
 
   let addRouteAmounts = (route)=> {
 
-    if(supported.evm.includes(route.blockchain)) {
+    if(supported$2.evm.includes(route.blockchain)) {
 
       if(route.directTransfer && !route.fee && !route.fee2) {
         route.fromAmount = route.toAmount;
@@ -4835,7 +4842,7 @@
           route.protocolFeeAmount = protocolFeeAmount;
         }
       }
-    } else if (supported.svm.includes(route.blockchain)) {
+    } else if (supported$2.svm.includes(route.blockchain)) {
 
       let { fromAmount, toAmount, feeAmount, feeAmount2, protocolFeeAmount } = calculateAmounts({ paymentRoute: route, exchangeRoute: route.exchangeRoutes[0] });
       route.fromAmount = fromAmount;
@@ -4860,9 +4867,10 @@
     }
   };
 
+  exports.config = config;
   exports.getTransaction = getTransaction;
   exports.route = route;
-  exports.routers = routers;
+  exports.routers = routers$1;
 
   Object.defineProperty(exports, '__esModule', { value: true });
 
