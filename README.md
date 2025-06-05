@@ -240,21 +240,7 @@ let paymentRoutes = await route({
 // splits 1% of the amount paid and sends it to the feeReceiver 2: 0x1dCf54C768352d5A5be0F08891262fd0E53A37ce
 ```
 
-`fee.amount` can be passed as percentage (String with ending %) or as a BigNumber string or as a pure number/decimal
-
-```javascript
-let paymentRoutes = await route({
-  
-  accept: [{
-    //...
-    fee: {
-      amount: '300000000000000000',
-      receiver: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
-    }
-  }]
-})
-// splits '300000000000000000' (BigNumber) of the amount paid and sends it to the feeReceiver
-```
+`fee.amount` can be passed as percentage (String with ending %) or as a human readable number/decimal
 
 ```javascript
 let paymentRoutes = await route({
