@@ -240,11 +240,13 @@ function route({ accept, from, allow, deny, best, blacklist, whitelist }) {
           if(!allRoutesResponse.ok) { fail('All routes could not be loaded!') }
           allRoutesResponse.json()
           .then(async (allRoutes)=>{
-            allRoutes = await Promise.all(allRoutes.map((remoteRoute)=>{
-              return remoteRouteToPaymentRoute({ remoteRoute, from, accept })
-            })).catch((error)=>{ fail('All routes could not be loaded!', error) })
+            allRoutes = await Promise.allSettled(allRoutes.map((remoteRoute)=>{
+                return remoteRouteToPaymentRoute({ remoteRoute, from, accept })
+            }))
             resolveAll(
-              allRoutes
+              (allRoutes || [])
+              .filter(result => result.status === 'fulfilled')
+              .map(result => result.value)
               .filter(Boolean)
               .filter((route)=>route?.fromAmount !== '0')
               .sort((a, b)=>{
