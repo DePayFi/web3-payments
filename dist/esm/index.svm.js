@@ -4538,9 +4538,6 @@ class PaymentRoute {
   }
 }
 
-const aWins = -1;
-const bWins = 1;
-
 function feeSanityCheck(accept, attribute) {
   if(!accept) { return }
 
@@ -4648,84 +4645,90 @@ function route({ accept, from, allow, deny, best, blacklist, whitelist }) {
       })
     });
 
-    const fetchBestController = new AbortController();
-    setTimeout(()=>fetchBestController.abort(), 10000);
-
-    fetch(
-      config.endpoints.routesBest,
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          accounts: from,
-          accept: reducedAccept,
-          allow: allow || whitelist,
-          deny: deny || blacklist,
-        }),
-        headers: { "Content-Type": "application/json" },
-        signal: fetchBestController.signal
-      }
-    )
-    .catch((error)=>{ fail('Best route could not be loaded!', error); })
-    .then(async(bestRouteResponse)=>{
-      if(bestRouteResponse.status == 404) { return resolveAll([]) }
-      if(!bestRouteResponse.ok) { fail('Best route could not be loaded!'); }
-      bestRouteResponse.json()
-      .then(async(bestRoute)=>{
-        bestRoute = await remoteRouteToPaymentRoute({ remoteRoute: bestRoute, from, accept })
-          .catch((error)=>{ fail('Best route could not be loaded!', error); });
-        if(typeof best == 'function' && _optionalChain([bestRoute, 'optionalAccess', _7 => _7.fromAmount]) && _optionalChain([bestRoute, 'optionalAccess', _8 => _8.fromAmount]) != '0') {
-          const callbackResult = best(bestRoute);
-          if(callbackResult === false) { return resolveAll([]) }
-        }
-        const fetchAllController = new AbortController();
-        setTimeout(()=>fetchAllController.abort(), 10000);
-        fetch(
-          `https://public.depay.com/routes/all`,
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              accounts: from,
-              accept: reducedAccept,
-              allow: allow || whitelist,
-              deny: deny || blacklist,
-            }),
-            headers: { "Content-Type": "application/json" },
-            signal: fetchAllController.signal
-          }
-        )
-        .then((allRoutesResponse)=>{
-          if(!allRoutesResponse.ok) { fail('All routes could not be loaded!'); }
-          allRoutesResponse.json()
-          .then(async (allRoutes)=>{
-            allRoutes = await Promise.allSettled(allRoutes.map((remoteRoute)=>{
-                return remoteRouteToPaymentRoute({ remoteRoute, from, accept })
-            }));
-            resolveAll(
-              (allRoutes || [])
-              .filter(result => result.status === 'fulfilled')
-              .map(result => result.value)
-              .filter(Boolean)
-              .filter((route)=>_optionalChain([route, 'optionalAccess', _9 => _9.fromAmount]) !== '0')
-              .sort((a, b)=>{
-                // requiring approval is less cost efficient
-                if (a.approvalRequired && !b.approvalRequired) {
-                  return bWins
-                }
-                if (b.approvalRequired && !a.approvalRequired) {
-                  return aWins
-                }
-                return 0
-              })
-            );
-          })
-          .catch((error)=>{ fail('All routes could not be loaded!', error); });
-        })
-        .catch((error)=>{ fail('Best route could not be loaded!', error); });
+    // Helper to perform a fetch with timeout
+    const fetchWithTimeout = (url, options = {}, timeout = 10000) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeout);
+      return fetch(url, {
+        ...options,
+        signal: controller.signal
       })
-      .catch((error)=> {
-        fail('Best route could not be loaded!', error);
-      });
-    });
+        .finally(() => clearTimeout(timer))
+    };
+
+    // Always try to load the best route, but don’t block loading all routes if it fails
+    try {
+      const bestResponse = await fetchWithTimeout(
+        config.endpoints.routesBest,
+        {
+          method: 'POST',
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            accounts: from,
+            accept: reducedAccept,
+            allow: allow || whitelist,
+            deny: deny || blacklist,
+          })
+        }
+      );
+
+      if (bestResponse.ok && bestResponse.status !== 404) {
+        const remoteBest = await bestResponse.json().catch(() => null);
+        if (remoteBest) {
+          const bestRoute = await remoteRouteToPaymentRoute({ remoteRoute: remoteBest, from, accept })
+            .catch(error => { console.error('Best route could not be loaded!', error); });
+
+          if (typeof best === 'function' && _optionalChain([bestRoute, 'optionalAccess', _7 => _7.fromAmount]) && bestRoute.fromAmount !== '0') {
+            best(bestRoute);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Best route could not be loaded!', error);
+    }
+
+    // Always load all routes regardless of best route outcome
+    try {
+      const allResponse = await fetchWithTimeout(
+        `https://public.depay.com/routes/all`,
+        {
+          method: 'POST',
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            accounts: from,
+            accept: reducedAccept,
+            allow: allow || whitelist,
+            deny: deny || blacklist,
+          })
+        }
+      );
+
+      if (!allResponse.ok) {
+        throw new Error(`All routes: HTTP ${allResponse.status}`)
+      }
+
+      const remoteAll = await allResponse.json();
+      const settled = await Promise.allSettled(
+        remoteAll.map(remoteRoute =>
+          remoteRouteToPaymentRoute({ remoteRoute, from, accept })
+        )
+      );
+
+      const validRoutes = settled
+        .filter(r => r.status === 'fulfilled' && _optionalChain([r, 'access', _8 => _8.value, 'optionalAccess', _9 => _9.fromAmount]) && r.value.fromAmount !== '0')
+        .map(r => r.value)
+        .sort((a, b) => {
+          // requiring approval is less cost efficient
+          if (a.approvalRequired && !b.approvalRequired) return 1
+          if (b.approvalRequired && !a.approvalRequired) return -1
+          return 0
+        });
+
+      resolveAll(validRoutes);
+    } catch (error) {
+      fail('All routes could not be loaded!', error);
+    }
+
   })
 }
 
