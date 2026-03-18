@@ -47,4 +47,9 @@ export default {
     api: API
   },
 
+  celo: {
+    address: '0x886eb82a7e5E7310F66A0E83748662A17E391eb0', // TODO: Deploy DePayRouterV3 on Celo and update this address
+    api: API
+  },
+
 }
